@@ -1609,11 +1609,32 @@ function parseIntervals(value) {
     return value.split(",").map((s)=>s.trim()).filter(Boolean);
 }
 async function GET(request) {
+    const startTime = Date.now();
+    // Debug: Check if environment variables are being read
+    const nocodbUrl = process.env.NOCODB_URL;
+    const nocodbToken = process.env.NOCODB_TOKEN;
+    const mealsTableId = process.env.NOCODB_TABLE_MEALS;
+    const extrasTableId = process.env.NOCODB_TABLE_EXTRAS;
+    const zonesTableId = process.env.NOCODB_TABLE_DELIVERY_ZONES;
+    console.log(`[MENU API] Request started`);
+    console.log(`[MENU API] Environment check:`);
+    console.log(`  - NOCODB_URL: ${nocodbUrl ? `${nocodbUrl.substring(0, 30)}...` : "❌ NOT SET"}`);
+    console.log(`  - NOCODB_TOKEN: ${nocodbToken ? `${nocodbToken.substring(0, 10)}...` : "❌ NOT SET"}`);
+    console.log(`  - NOCODB_TABLE_MEALS: ${mealsTableId ? `${mealsTableId.substring(0, 10)}...` : "❌ NOT SET"}`);
+    console.log(`  - NOCODB_TABLE_EXTRAS: ${extrasTableId ? `${extrasTableId.substring(0, 10)}...` : "❌ NOT SET"}`);
+    console.log(`  - NOCODB_TABLE_DELIVERY_ZONES: ${zonesTableId ? `${zonesTableId.substring(0, 10)}...` : "❌ NOT SET"}`);
     const { searchParams } = new URL(request.url);
     const weekType = searchParams.get("week");
-    console.log(`[v0] /api/menu GET request, weekType: ${weekType}`);
+    console.log(`[MENU API] Request params: weekType=${weekType || "all"}`);
+    // Детальная проверка конфигурации
     if (!(0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$nocodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["isNocoDBConfigured"])()) {
-        console.log("[v0] NocoDB not configured");
+        const missingVars = [];
+        if (!nocodbUrl) missingVars.push("NOCODB_URL");
+        if (!nocodbToken) missingVars.push("NOCODB_TOKEN");
+        if (!mealsTableId) missingVars.push("NOCODB_TABLE_MEALS");
+        const errorMessage = `NocoDB not configured. Missing variables: ${missingVars.join(", ")}`;
+        console.error(`[MENU API] ❌ ${errorMessage}`);
+        console.error(`[MENU API] 💡 Hint: Add missing environment variables in Vercel Dashboard → Settings → Environment Variables`);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             meals: {
                 breakfast: [],
@@ -1634,16 +1655,36 @@ async function GET(request) {
             deliveryZones: [],
             deliveryTimes: __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["DELIVERY_TIMES"],
             source: "empty",
-            reason: "NocoDB not configured"
+            reason: errorMessage,
+            error: {
+                type: "configuration",
+                missingVariables: missingVars,
+                hint: "Add missing environment variables in Vercel Dashboard → Settings → Environment Variables and redeploy"
+            }
+        }, {
+            status: 503
         });
     }
     try {
+        console.log(`[MENU API] Fetching data from NocoDB...`);
+        const fetchStartTime = Date.now();
         const [nocoMeals, nocoExtras, nocoZones] = await Promise.all([
-            (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$nocodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["fetchMeals"])(weekType || undefined),
-            (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$nocodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["fetchExtras"])(),
-            (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$nocodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["fetchDeliveryZones"])()
+            (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$nocodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["fetchMeals"])(weekType || undefined).catch((err)=>{
+                console.error(`[MENU API] ❌ Failed to fetch Meals:`, err);
+                throw new Error(`Failed to fetch Meals: ${err instanceof Error ? err.message : String(err)}`);
+            }),
+            (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$nocodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["fetchExtras"])().catch((err)=>{
+                console.error(`[MENU API] ❌ Failed to fetch Extras:`, err);
+                throw new Error(`Failed to fetch Extras: ${err instanceof Error ? err.message : String(err)}`);
+            }),
+            (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$nocodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["fetchDeliveryZones"])().catch((err)=>{
+                console.error(`[MENU API] ❌ Failed to fetch Delivery Zones:`, err);
+                throw new Error(`Failed to fetch Delivery Zones: ${err instanceof Error ? err.message : String(err)}`);
+            })
         ]);
-        console.log(`[v0] Got data: meals=${nocoMeals.length}, extras=${nocoExtras.length}, zones=${nocoZones.length}`);
+        const fetchEndTime = Date.now();
+        console.log(`[MENU API] ✅ Data fetched successfully in ${fetchEndTime - fetchStartTime}ms`);
+        console.log(`[MENU API] Data counts: meals=${nocoMeals.length}, extras=${nocoExtras.length}, zones=${nocoZones.length}`);
         const groupedMeals = {
             breakfast: [],
             lunch_salad: [],
@@ -1736,8 +1777,8 @@ async function GET(request) {
                 }
             }
         }
-        console.log(`[v0] Meals filter: skipped ${skippedNotAvailable} not available, ${skippedWrongWeek} wrong week`);
-        console.log(`[v0] Grouped meals:`, Object.entries(groupedMeals).map(([k, v])=>`${k}:${v.length}`).join(", "));
+        console.log(`[MENU API] Meals filtering: skipped ${skippedNotAvailable} not available, ${skippedWrongWeek} wrong week`);
+        console.log(`[MENU API] Grouped meals:`, Object.entries(groupedMeals).map(([k, v])=>`${k}:${v.length}`).join(", "));
         // ... existing code for extras ...
         const groupedExtras = {
             drink: [],
@@ -1770,7 +1811,7 @@ async function GET(request) {
                 groupedExtras[category].push(extra);
             }
         }
-        console.log(`[v0] Grouped extras:`, Object.entries(groupedExtras).map(([k, v])=>`${k}:${v.length}`).join(", "));
+        console.log(`[MENU API] Grouped extras:`, Object.entries(groupedExtras).map(([k, v])=>`${k}:${v.length}`).join(", "));
         // ... existing code for deliveryZones ...
         const deliveryZones = nocoZones.filter((zone)=>parseBoolean(zone.is_available)).map((zone)=>({
                 id: zone.Id || zone.id,
@@ -1792,6 +1833,8 @@ async function GET(request) {
         });
         // Сортируем интервалы и используем их, если есть, иначе fallback
         const deliveryTimes = allIntervals.size > 0 ? Array.from(allIntervals).sort() : __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["DELIVERY_TIMES"];
+        const totalTime = Date.now() - startTime;
+        console.log(`[MENU API] ✅ Request completed successfully in ${totalTime}ms`);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             meals: groupedMeals,
             extras: groupedExtras,
@@ -1803,11 +1846,69 @@ async function GET(request) {
                 filteredMeals: Object.values(groupedMeals).flat().length,
                 extras: nocoExtras.length,
                 deliveryZones: deliveryZones.length
+            },
+            _meta: {
+                processingTime: `${totalTime}ms`,
+                weekType: weekType || "all"
             }
         });
     } catch (error) {
+        const totalTime = Date.now() - startTime;
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        console.error("[v0] Failed to fetch from NocoDB:", errorMessage);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        // Детальное логирование ошибки
+        console.error(`[MENU API] ❌ Error after ${totalTime}ms:`);
+        console.error(`  Message: ${errorMessage}`);
+        if (errorStack) {
+            console.error(`  Stack: ${errorStack}`);
+        }
+        // Определяем тип ошибки для более понятного сообщения
+        let errorType = "unknown";
+        let userFriendlyMessage = errorMessage;
+        let recommendations = [];
+        if (errorMessage.includes("TABLE_NOT_FOUND")) {
+            errorType = "table_not_found";
+            const tableMatch = errorMessage.match(/TABLE_NOT_FOUND:(\w+)/);
+            const tableName = tableMatch ? tableMatch[1] : "unknown";
+            userFriendlyMessage = `Таблица ${tableName} не найдена в NocoDB`;
+            recommendations.push(`Проверьте правильность NOCODB_TABLE_${tableName.toUpperCase()}`);
+            recommendations.push("Убедитесь, что таблица существует в NocoDB");
+        } else if (errorMessage.includes("NocoDB is not configured")) {
+            errorType = "configuration";
+            userFriendlyMessage = "NocoDB не настроен";
+            recommendations.push("Проверьте переменные окружения NOCODB_URL и NOCODB_TOKEN");
+            recommendations.push("Добавьте переменные в Vercel Dashboard → Settings → Environment Variables");
+        } else if (errorMessage.includes("timeout") || errorMessage.includes("TIMEOUT")) {
+            errorType = "timeout";
+            userFriendlyMessage = "Таймаут при подключении к NocoDB";
+            recommendations.push("Проверьте доступность NocoDB сервера");
+            recommendations.push("Проверьте настройки firewall и IP whitelist в NocoDB");
+        } else if (errorMessage.includes("ENOTFOUND") || errorMessage.includes("DNS")) {
+            errorType = "network";
+            userFriendlyMessage = "Не удалось подключиться к NocoDB";
+            recommendations.push("Проверьте правильность NOCODB_URL");
+            recommendations.push("Убедитесь, что NocoDB доступен из интернета");
+        } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+            errorType = "authentication";
+            userFriendlyMessage = "Ошибка аутентификации в NocoDB";
+            recommendations.push("Проверьте правильность NOCODB_TOKEN");
+            recommendations.push("Убедитесь, что токен не истек и имеет необходимые права");
+        } else if (errorMessage.includes("403") || errorMessage.includes("Forbidden")) {
+            errorType = "authorization";
+            userFriendlyMessage = "Доступ запрещен к NocoDB";
+            recommendations.push("Проверьте права доступа токена");
+            recommendations.push("Убедитесь, что токен имеет доступ к необходимым таблицам");
+        } else if (errorMessage.includes("Failed to fetch")) {
+            errorType = "network";
+            userFriendlyMessage = "Не удалось получить данные из NocoDB";
+            recommendations.push("Проверьте доступность NocoDB сервера");
+            recommendations.push("Проверьте логи Vercel для деталей");
+        }
+        console.error(`[MENU API] Error type: ${errorType}`);
+        if (recommendations.length > 0) {
+            console.error(`[MENU API] Recommendations:`);
+            recommendations.forEach((rec, i)=>console.error(`  ${i + 1}. ${rec}`));
+        }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             meals: {
                 breakfast: [],
@@ -1828,7 +1929,19 @@ async function GET(request) {
             deliveryZones: [],
             deliveryTimes: __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["DELIVERY_TIMES"],
             source: "error",
-            reason: errorMessage
+            reason: userFriendlyMessage,
+            error: {
+                type: errorType,
+                message: errorMessage,
+                recommendations,
+                hint: "Используйте /api/diagnose для детальной диагностики"
+            },
+            _meta: {
+                processingTime: `${totalTime}ms`,
+                timestamp: new Date().toISOString()
+            }
+        }, {
+            status: 503
         });
     }
 }

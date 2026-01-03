@@ -2454,3 +2454,69 @@ Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
 [04:26:26.562] Server  LOG     [v0] Grouped meals: "breakfast:17, lunch_salad:5, lunch_soup:10, lunch_main:20, dinner_salad:5, dinner_soup:10, dinner_main:20, garnish:7"
 [04:26:26.562] Server  LOG     [v0] Grouped extras: "drink:4, sauce:6, dessert:8, snack:9"
 [04:33:08.419] Server  LOG       Reload env: .env.local
+[05:16:13.910] Server  LOG     [v0] /api/menu GET request, weekType: next
+[05:16:14.283] Server  LOG     [v0] fetchMeals: got 406 meals, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-25 20:08:55+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Крем-суп из цветной капусты\",\"category\":\"soup\",\"ingredients\":\"Вода питьевая, цветная капуста, картофель, лук репчатый"
+[05:16:14.284] Server  LOG     [v0] fetchExtras: got 76 extras, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-24 20:55:58+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Томатный кетчуп\",\"category\":\"sauce\",\"ingredients\":\"Вода, паста томатная, сахар, уксус натуральный, экстракты специй\","
+[05:16:14.286] Server  LOG     [v0] fetchDeliveryZones: got 19 zones, first item: {}
+[05:16:14.286] Server  LOG     [v0] Got data: meals=406, extras=76, zones=19
+[05:16:14.288] Server  LOG     [v0] Meals filter: skipped 347 not available, 0 wrong week
+[05:16:14.288] Server  LOG     [v0] Grouped meals: "breakfast:17, lunch_salad:5, lunch_soup:10, lunch_main:20, dinner_salad:5, dinner_soup:10, dinner_main:20, garnish:7"
+[05:16:14.288] Server  LOG     [v0] Grouped extras: "drink:4, sauce:6, dessert:8, snack:9"
+[05:25:39.404] Server  LOG     [v0] /api/menu GET request, weekType: current
+[05:25:39.494] Server  LOG     [v0] fetchMeals: got 406 meals, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-25 20:08:55+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Крем-суп из цветной капусты\",\"category\":\"soup\",\"ingredients\":\"Вода питьевая, цветная капуста, картофель, лук репчатый"
+[05:25:39.499] Server  LOG     [v0] fetchExtras: got 76 extras, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-24 20:55:58+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Томатный кетчуп\",\"category\":\"sauce\",\"ingredients\":\"Вода, паста томатная, сахар, уксус натуральный, экстракты специй\","
+[05:25:39.500] Server  LOG     [v0] fetchDeliveryZones: got 19 zones, first item: {}
+[05:25:39.501] Server  LOG     [v0] Got data: meals=406, extras=76, zones=19
+[05:25:39.508] Server  LOG     [v0] Meals filter: skipped 347 not available, 0 wrong week
+[05:25:39.508] Server  LOG     [v0] Grouped meals: "breakfast:17, lunch_salad:5, lunch_soup:10, lunch_main:20, dinner_salad:5, dinner_soup:10, dinner_main:20, garnish:7"
+[05:25:39.509] Server  LOG     [v0] Grouped extras: "drink:4, sauce:6, dessert:8, snack:9"
+[05:25:45.736] Server  LOG     ✓ Compiled in 1363ms
+[05:26:05.136] Server  LOG     ✓ Compiled in 5ms
+[05:33:57.803] Server  LOG     [MENU API] Request started
+[05:33:57.809] Server  LOG     [MENU API] Environment check:
+[05:33:57.809] Server  LOG       - NOCODB_URL: https://noco.povarnakolesah.ru...
+[05:33:57.809] Server  LOG       - NOCODB_TOKEN: eppmI3qJq8...
+[05:33:57.809] Server  LOG       - NOCODB_TABLE_MEALS: mmtctn4fls...
+[05:33:57.809] Server  LOG       - NOCODB_TABLE_EXTRAS: mksy21hmtt...
+[05:33:57.809] Server  LOG       - NOCODB_TABLE_DELIVERY_ZONES: mpoppulqhs...
+[05:33:57.810] Server  LOG     [MENU API] Request params: weekType=current
+[05:33:57.810] Server  LOG     [MENU API] Fetching data from NocoDB...
+[05:33:57.858] Server  LOG     [v0] fetchMeals: got 406 meals, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-25 20:08:55+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Крем-суп из цветной капусты\",\"category\":\"soup\",\"ingredients\":\"Вода питьевая, цветная капуста, картофель, лук репчатый"
+[05:33:57.861] Server  LOG     [v0] fetchExtras: got 76 extras, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-24 20:55:58+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Томатный кетчуп\",\"category\":\"sauce\",\"ingredients\":\"Вода, паста томатная, сахар, уксус натуральный, экстракты специй\","
+[05:33:57.862] Server  LOG     [v0] fetchDeliveryZones: got 19 zones, first item: {}
+[05:33:57.862] Server  LOG     [MENU API] ✅ Data fetched successfully in 52ms
+[05:33:57.862] Server  LOG     [MENU API] Data counts: meals=406, extras=76, zones=19
+[05:33:57.863] Server  LOG     [MENU API] Meals filtering: skipped 347 not available, 0 wrong week
+[05:33:57.864] Server  LOG     [MENU API] Grouped meals: "breakfast:17, lunch_salad:5, lunch_soup:10, lunch_main:20, dinner_salad:5, dinner_soup:10, dinner_main:20, garnish:7"
+[05:33:57.864] Server  LOG     [MENU API] Grouped extras: "drink:4, sauce:6, dessert:8, snack:9"
+[05:33:57.864] Server  LOG     [MENU API] ✅ Request completed successfully in 64ms
+[05:34:01.084] Server  LOG     [MENU API] Request started
+[05:34:01.085] Server  LOG     [MENU API] Environment check:
+[05:34:01.086] Server  LOG       - NOCODB_URL: https://noco.povarnakolesah.ru...
+[05:34:01.086] Server  LOG       - NOCODB_TOKEN: eppmI3qJq8...
+[05:34:01.086] Server  LOG       - NOCODB_TABLE_MEALS: mmtctn4fls...
+[05:34:01.086] Server  LOG       - NOCODB_TABLE_EXTRAS: mksy21hmtt...
+[05:34:01.086] Server  LOG       - NOCODB_TABLE_DELIVERY_ZONES: mpoppulqhs...
+[05:34:01.087] Server  LOG     [MENU API] Request params: weekType=next
+[05:34:01.087] Server  LOG     [MENU API] Fetching data from NocoDB...
+[05:34:01.103] Server  LOG     [v0] fetchMeals: got 406 meals, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-25 20:08:55+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Крем-суп из цветной капусты\",\"category\":\"soup\",\"ingredients\":\"Вода питьевая, цветная капуста, картофель, лук репчатый"
+[05:34:01.106] Server  LOG     [v0] fetchExtras: got 76 extras, first item: "{\"Id\":1,\"CreatedAt\":\"2025-12-24 20:55:58+00:00\",\"UpdatedAt\":null,\"id1\":\"1\",\"name\":\"Томатный кетчуп\",\"category\":\"sauce\",\"ingredients\":\"Вода, паста томатная, сахар, уксус натуральный, экстракты специй\","
+[05:34:01.107] Server  LOG     [v0] fetchDeliveryZones: got 19 zones, first item: {}
+[05:34:01.107] Server  LOG     [MENU API] ✅ Data fetched successfully in 20ms
+[05:34:01.107] Server  LOG     [MENU API] Data counts: meals=406, extras=76, zones=19
+[05:34:01.111] Server  LOG     [MENU API] Meals filtering: skipped 347 not available, 0 wrong week
+[05:34:01.112] Server  LOG     [MENU API] Grouped meals: "breakfast:17, lunch_salad:5, lunch_soup:10, lunch_main:20, dinner_salad:5, dinner_soup:10, dinner_main:20, garnish:7"
+[05:34:01.113] Server  LOG     [MENU API] Grouped extras: "drink:4, sauce:6, dessert:8, snack:9"
+[05:34:01.113] Server  LOG     [MENU API] ✅ Request completed successfully in 33ms
+[05:34:04.192] Browser ERROR   `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+[05:34:04.192] Browser WARN    Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+[05:34:04.192] Browser ERROR   `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+[05:34:04.192] Browser WARN    Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
