@@ -1,0 +1,15 @@
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+node_modules/
+.next/
+.git/
+build/
+dist/
+public/
+.firebase/
+.idx/
+*.svg
+*.png
+*.jpg
+*.ico
