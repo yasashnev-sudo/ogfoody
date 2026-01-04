@@ -13,7 +13,7 @@ import { TermsModal } from "@/components/terms-modal"
 interface AuthModalProps {
   open: boolean
   onClose: () => void
-  onLogin: (phone: string) => void
+  onLogin: (phone: string) => void | Promise<void>
   redirectAfterLogin?: "checkout" | null
 }
 
@@ -91,7 +91,8 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
     if (code === generatedCode) {
       const cleanPhone = getCleanPhone()
       localStorage.setItem(`user_${cleanPhone}`, JSON.stringify({ phone: cleanPhone }))
-      onLogin(cleanPhone)
+      // onLogin может быть async, но мы не ждем его завершения
+      Promise.resolve(onLogin(cleanPhone)).catch(console.error)
     } else {
       alert("Неверный код")
     }

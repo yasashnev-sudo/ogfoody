@@ -117,6 +117,70 @@ async function serverFetch<T>(tableName: string, params: Record<string, string> 
   }
 }
 
+// Серверная функция для создания/обновления записей напрямую к NocoDB
+async function serverCreateRecord<T>(
+  tableName: string,
+  data: any,
+  method: "POST" | "PATCH" = "POST",
+  recordId?: number,
+): Promise<T> {
+  const config = validateNocoDBConfig()
+  if (!config.isValid) {
+    throw new Error(`NocoDB is not configured: ${config.error}`)
+  }
+
+  let baseUrl = getNocoDBUrl().replace(/\/$/, "")
+  if (!baseUrl.endsWith("/api/v2")) {
+    baseUrl = `${baseUrl}/api/v2`
+  }
+
+  const tableId = getTableId(tableName)
+  if (!tableId) {
+    throw new Error(`TABLE_NOT_CONFIGURED:${tableName}`)
+  }
+
+  const url = method === "PATCH" && recordId
+    ? `${baseUrl}/tables/${tableId}/records/${recordId}`
+    : `${baseUrl}/tables/${tableId}/records`
+
+  const token = getNocoDBToken()
+
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "xc-token": token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+
+  const text = await response.text()
+
+  if (!response.ok) {
+    if (text.includes("TABLE_NOT_FOUND") || response.status === 404) {
+      throw new Error(`TABLE_NOT_FOUND:${tableName}`)
+    }
+    throw new Error(`NocoDB API error: ${response.status} - ${text}`)
+  }
+
+  try {
+    const result = JSON.parse(text)
+    // NocoDB может вернуть запись в разных форматах
+    if (Array.isArray(result)) {
+      return result[0] as T
+    }
+    if (result && typeof result === 'object' && 'Id' in result) {
+      return result as T
+    }
+    if (result && typeof result === 'object' && 'record' in result) {
+      return result.record as T
+    }
+    return result as T
+  } catch {
+    throw new Error(`NocoDB returned invalid JSON: ${text.substring(0, 100)}...`)
+  }
+}
+
 // Клиентский fetch через API proxy
 async function clientFetch<T>(
   tableName: string,
@@ -316,25 +380,65 @@ export async function fetchUserById(id: number): Promise<NocoDBUser | null> {
 }
 
 export async function createUser(user: Omit<NocoDBUser, "Id" | "created_at" | "updated_at">): Promise<NocoDBUser> {
-  return clientFetch<NocoDBUser>(
-    "Users",
-    {},
-    {
-      method: "POST",
-      body: JSON.stringify(user),
-    },
-  )
+  const apiBaseUrl = getApiBaseUrl()
+  
+  if (apiBaseUrl === null) {
+    return serverCreateRecord<NocoDBUser>("Users", user, "POST")
+  } else {
+    const response = await clientFetch<any>(
+      "Users",
+      {},
+      {
+        method: "POST",
+        body: JSON.stringify(user),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      return response[0] as NocoDBUser
+    }
+    
+    if (response && typeof response === 'object' && 'Id' in response) {
+      return response as NocoDBUser
+    }
+    
+    if (response && typeof response === 'object' && 'record' in response) {
+      return response.record as NocoDBUser
+    }
+    
+    return response as NocoDBUser
+  }
 }
 
 export async function updateUser(id: number, data: Partial<NocoDBUser>): Promise<NocoDBUser> {
-  return clientFetch<NocoDBUser>(
-    `Users/${id}`,
-    {},
-    {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    },
-  )
+  const apiBaseUrl = getApiBaseUrl()
+  
+  if (apiBaseUrl === null) {
+    return serverCreateRecord<NocoDBUser>("Users", data, "PATCH", id)
+  } else {
+    const response = await clientFetch<any>(
+      `Users/${id}`,
+      {},
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      return response[0] as NocoDBUser
+    }
+    
+    if (response && typeof response === 'object' && 'Id' in response) {
+      return response as NocoDBUser
+    }
+    
+    if (response && typeof response === 'object' && 'record' in response) {
+      return response.record as NocoDBUser
+    }
+    
+    return response as NocoDBUser
+  }
 }
 
 // === ORDERS ===
@@ -396,25 +500,98 @@ export async function fetchOrderById(id: number): Promise<NocoDBOrder | null> {
 }
 
 export async function createOrder(order: Omit<NocoDBOrder, "Id" | "created_at" | "updated_at">): Promise<NocoDBOrder> {
-  return clientFetch<NocoDBOrder>(
-    "Orders",
-    {},
-    {
-      method: "POST",
-      body: JSON.stringify(order),
-    },
-  )
+  // На сервере используем прямой запрос к NocoDB, на клиенте - через proxy
+  const apiBaseUrl = getApiBaseUrl()
+  
+  let createdOrder: NocoDBOrder
+  
+  if (apiBaseUrl === null) {
+    // Серверная среда - прямой запрос к NocoDB
+    createdOrder = await serverCreateRecord<NocoDBOrder>("Orders", order, "POST")
+  } else {
+    // Клиентская среда - через API proxy
+    const response = await clientFetch<any>(
+      "Orders",
+      {},
+      {
+        method: "POST",
+        body: JSON.stringify(order),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      createdOrder = response[0] as NocoDBOrder
+    } else if (response && typeof response === 'object' && 'Id' in response) {
+      createdOrder = response as NocoDBOrder
+    } else if (response && typeof response === 'object' && 'record' in response) {
+      createdOrder = response.record as NocoDBOrder
+    } else {
+      createdOrder = response as NocoDBOrder
+    }
+  }
+  
+  // NocoDB часто возвращает только Id при создании, поэтому всегда получаем полный объект
+  if (createdOrder?.Id) {
+    // Проверяем, есть ли уже все нужные поля
+    if (!createdOrder.order_number || Object.keys(createdOrder).length < 5) {
+      console.log(`⚠️ Order created but incomplete response, fetching full order ${createdOrder.Id}...`)
+      try {
+        // Небольшая задержка, чтобы запись точно сохранилась
+        await new Promise(resolve => setTimeout(resolve, 300))
+        const fullOrder = await fetchOrderById(createdOrder.Id)
+        if (fullOrder && fullOrder.order_number) {
+          console.log(`✅ Fetched full order with order_number: ${fullOrder.order_number}`)
+          return fullOrder
+        } else {
+          console.warn(`⚠️ Fetched order also incomplete, but using it anyway`)
+          if (fullOrder) return fullOrder
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to fetch full order:`, error)
+        // Если не удалось получить, но есть сгенерированный номер, добавляем его
+        if ('order_number' in order) {
+          return { ...createdOrder, order_number: order.order_number } as NocoDBOrder
+        }
+      }
+    } else {
+      console.log(`✅ Order created with complete data, order_number: ${createdOrder.order_number}`)
+    }
+  }
+  
+  return createdOrder
 }
 
 export async function updateOrder(id: number, data: Partial<NocoDBOrder>): Promise<NocoDBOrder> {
-  return clientFetch<NocoDBOrder>(
-    `Orders/${id}`,
-    {},
-    {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    },
-  )
+  const apiBaseUrl = getApiBaseUrl()
+  
+  if (apiBaseUrl === null) {
+    // Серверная среда - прямой запрос к NocoDB
+    return serverCreateRecord<NocoDBOrder>("Orders", data, "PATCH", id)
+  } else {
+    // Клиентская среда - через API proxy
+    const response = await clientFetch<any>(
+      `Orders/${id}`,
+      {},
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      return response[0] as NocoDBOrder
+    }
+    
+    if (response && typeof response === 'object' && 'Id' in response) {
+      return response as NocoDBOrder
+    }
+    
+    if (response && typeof response === 'object' && 'record' in response) {
+      return response.record as NocoDBOrder
+    }
+    
+    return response as NocoDBOrder
+  }
 }
 
 // === ORDER PERSONS ===
@@ -426,14 +603,34 @@ export interface NocoDBOrderPerson {
 }
 
 export async function createOrderPerson(orderPerson: Omit<NocoDBOrderPerson, "Id">): Promise<NocoDBOrderPerson> {
-  return clientFetch<NocoDBOrderPerson>(
-    "Order_Persons",
-    {},
-    {
-      method: "POST",
-      body: JSON.stringify(orderPerson),
-    },
-  )
+  const apiBaseUrl = getApiBaseUrl()
+  
+  if (apiBaseUrl === null) {
+    return serverCreateRecord<NocoDBOrderPerson>("Order_Persons", orderPerson, "POST")
+  } else {
+    const response = await clientFetch<any>(
+      "Order_Persons",
+      {},
+      {
+        method: "POST",
+        body: JSON.stringify(orderPerson),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      return response[0] as NocoDBOrderPerson
+    }
+    
+    if (response && typeof response === 'object' && 'Id' in response) {
+      return response as NocoDBOrderPerson
+    }
+    
+    if (response && typeof response === 'object' && 'record' in response) {
+      return response.record as NocoDBOrderPerson
+    }
+    
+    return response as NocoDBOrderPerson
+  }
 }
 
 // === ORDER MEALS ===
@@ -453,14 +650,34 @@ export interface NocoDBOrderMeal {
 }
 
 export async function createOrderMeal(orderMeal: Omit<NocoDBOrderMeal, "Id">): Promise<NocoDBOrderMeal> {
-  return clientFetch<NocoDBOrderMeal>(
-    "Order_Meals",
-    {},
-    {
-      method: "POST",
-      body: JSON.stringify(orderMeal),
-    },
-  )
+  const apiBaseUrl = getApiBaseUrl()
+  
+  if (apiBaseUrl === null) {
+    return serverCreateRecord<NocoDBOrderMeal>("Order_Meals", orderMeal, "POST")
+  } else {
+    const response = await clientFetch<any>(
+      "Order_Meals",
+      {},
+      {
+        method: "POST",
+        body: JSON.stringify(orderMeal),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      return response[0] as NocoDBOrderMeal
+    }
+    
+    if (response && typeof response === 'object' && 'Id' in response) {
+      return response as NocoDBOrderMeal
+    }
+    
+    if (response && typeof response === 'object' && 'record' in response) {
+      return response.record as NocoDBOrderMeal
+    }
+    
+    return response as NocoDBOrderMeal
+  }
 }
 
 // === ORDER EXTRAS ===
@@ -474,14 +691,34 @@ export interface NocoDBOrderExtra {
 }
 
 export async function createOrderExtra(orderExtra: Omit<NocoDBOrderExtra, "Id">): Promise<NocoDBOrderExtra> {
-  return clientFetch<NocoDBOrderExtra>(
-    "Order_Extras",
-    {},
-    {
-      method: "POST",
-      body: JSON.stringify(orderExtra),
-    },
-  )
+  const apiBaseUrl = getApiBaseUrl()
+  
+  if (apiBaseUrl === null) {
+    return serverCreateRecord<NocoDBOrderExtra>("Order_Extras", orderExtra, "POST")
+  } else {
+    const response = await clientFetch<any>(
+      "Order_Extras",
+      {},
+      {
+        method: "POST",
+        body: JSON.stringify(orderExtra),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      return response[0] as NocoDBOrderExtra
+    }
+    
+    if (response && typeof response === 'object' && 'Id' in response) {
+      return response as NocoDBOrderExtra
+    }
+    
+    if (response && typeof response === 'object' && 'record' in response) {
+      return response.record as NocoDBOrderExtra
+    }
+    
+    return response as NocoDBOrderExtra
+  }
 }
 
 // Функции для получения данных заказа
@@ -658,12 +895,32 @@ export async function fetchReviewsForUser(userId: number): Promise<NocoDBReview[
 export async function createReview(
   review: Omit<NocoDBReview, "Id" | "created_at" | "updated_at">,
 ): Promise<NocoDBReview> {
-  return clientFetch<NocoDBReview>(
-    "Reviews",
-    {},
-    {
-      method: "POST",
-      body: JSON.stringify(review),
-    },
-  )
+  const apiBaseUrl = getApiBaseUrl()
+  
+  if (apiBaseUrl === null) {
+    return serverCreateRecord<NocoDBReview>("Reviews", review, "POST")
+  } else {
+    const response = await clientFetch<any>(
+      "Reviews",
+      {},
+      {
+        method: "POST",
+        body: JSON.stringify(review),
+      },
+    )
+    
+    if (Array.isArray(response)) {
+      return response[0] as NocoDBReview
+    }
+    
+    if (response && typeof response === 'object' && 'Id' in response) {
+      return response as NocoDBReview
+    }
+    
+    if (response && typeof response === 'object' && 'record' in response) {
+      return response.record as NocoDBReview
+    }
+    
+    return response as NocoDBReview
+  }
 }

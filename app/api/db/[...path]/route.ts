@@ -64,10 +64,17 @@ function buildTargetUrl(baseUrl: string, path: string): string {
     )
   }
 
-  parts[0] = tableId
-  const newPath = parts.join("/")
-
-  return `${cleanBaseUrl}/tables/${newPath}`
+  // Если путь содержит "records", оставляем его, иначе добавляем
+  if (parts.length === 1 || !parts[1]?.startsWith("records")) {
+    parts[0] = tableId
+    const newPath = parts.join("/")
+    return `${cleanBaseUrl}/tables/${newPath}`
+  } else {
+    // Если уже есть "records" в пути, заменяем только имя таблицы
+    parts[0] = tableId
+    const newPath = parts.join("/")
+    return `${cleanBaseUrl}/tables/${newPath}`
+  }
 }
 
 async function proxyToNocoDB(request: NextRequest, path: string, method: string): Promise<NextResponse> {

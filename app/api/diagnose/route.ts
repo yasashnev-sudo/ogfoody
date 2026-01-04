@@ -87,6 +87,15 @@ export async function GET() {
     masked: nocodbToken ? `${nocodbToken.substring(0, 10)}...${nocodbToken.slice(-4)}` : undefined,
   }
 
+  // Проверка окружения Vercel
+  const vercelEnv = process.env.VERCEL_ENV
+  if (vercelEnv === "production" && (!nocodbUrl || !nocodbToken)) {
+    result.summary.issues.push("⚠️ ВАЖНО: Переменные окружения не установлены для Production окружения!")
+    result.summary.recommendations.push(
+      "В Vercel Dashboard → Settings → Environment Variables → для каждой переменной выберите 'Production' в разделе Environments",
+    )
+  }
+
   // Проверка ID таблиц
   const tableNames = [
     "Meals",
@@ -113,12 +122,22 @@ export async function GET() {
   // Проверка базовой конфигурации
   if (!nocodbUrl) {
     result.summary.issues.push("NOCODB_URL не установлен")
-    result.summary.recommendations.push("Добавьте переменную окружения NOCODB_URL в Vercel Dashboard → Settings → Environment Variables")
+    const envHint = vercelEnv === "production" 
+      ? "⚠️ Убедитесь, что переменная установлена для Production окружения (не только Preview)!"
+      : ""
+    result.summary.recommendations.push(
+      `Добавьте переменную окружения NOCODB_URL в Vercel Dashboard → Settings → Environment Variables. ${envHint}`,
+    )
   }
 
   if (!nocodbToken) {
     result.summary.issues.push("NOCODB_TOKEN не установлен")
-    result.summary.recommendations.push("Добавьте переменную окружения NOCODB_TOKEN в Vercel Dashboard → Settings → Environment Variables")
+    const envHint = vercelEnv === "production" 
+      ? "⚠️ Убедитесь, что переменная установлена для Production окружения (не только Preview)!"
+      : ""
+    result.summary.recommendations.push(
+      `Добавьте переменную окружения NOCODB_TOKEN в Vercel Dashboard → Settings → Environment Variables. ${envHint}`,
+    )
   }
 
   // Проверка отсутствующих ID таблиц

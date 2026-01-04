@@ -84,7 +84,7 @@ const CompactMealCard = ({
   return (
     <div
       className={cn(
-        "relative bg-white rounded-xl transition-all flex flex-col h-full group overflow-hidden border-2 border-black shadow-brutal brutal-hover",
+        "relative bg-white rounded-xl transition-all flex flex-col h-full group overflow-hidden border-2 border-black shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover",
         isSelected ? "ring-4 ring-primary" : "",
         isHighlighted && "ring-4 ring-primary z-20",
         disabled && "opacity-50 pointer-events-none",
@@ -126,20 +126,20 @@ const CompactMealCard = ({
             e.stopPropagation()
             onImageClick?.()
           }}
-          className="absolute top-2 right-2 w-7 h-7 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100"
+          className="absolute top-2 right-2 w-7 h-7 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100 brutal-hover"
         >
           <Info className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="p-4 flex flex-col flex-1">
-        <div className="space-y-2 mb-3">
-          <h4 className="font-semibold text-base leading-snug line-clamp-2" title={meal.name}>
+      <div className="p-1.5 sm:p-4 flex flex-col flex-1">
+        <div className="space-y-1 sm:space-y-2 mb-2 sm:mb-3">
+          <h4 className="font-semibold text-xs sm:text-base leading-tight line-clamp-2" title={meal.name}>
             {meal.name}
           </h4>
         </div>
 
-        <div className="mt-auto space-y-3">
+        <div className="mt-auto space-y-1.5 sm:space-y-3">
           {hasMultiplePortions && (
             <div className="relative">
               <button
@@ -148,14 +148,13 @@ const CompactMealCard = ({
                   setShowPortions(!showPortions)
                 }}
                 className={cn(
-                  "w-full flex items-center justify-between bg-white border-2 border-black hover:bg-[#FFEA00] text-xs px-3 py-2 rounded-lg transition-colors font-bold",
+                  "w-full flex items-center justify-between bg-white border-2 border-black hover:bg-[#FFEA00] text-xs sm:text-sm px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg transition-colors font-bold shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover",
                   showPortions && "bg-[#FFEA00]",
                 )}
               >
-                <span className="text-muted-foreground mr-1">Порция:</span>
-                <span className="font-semibold flex items-center gap-1 text-foreground">
+                <span className="font-semibold flex items-center gap-1 sm:gap-1.5 text-foreground text-xs sm:text-sm">
                   {PORTION_LABELS[currentPortion]}
-                  <ChevronDown className={cn("w-3 h-3 transition-transform", showPortions && "rotate-180")} />
+                  <ChevronDown className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform", showPortions && "rotate-180")} />
                 </span>
               </button>
 
@@ -171,7 +170,7 @@ const CompactMealCard = ({
                           handlePortionSelect(p)
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors font-bold",
+                          "w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors font-bold brutal-hover",
                           currentPortion === p
                             ? "bg-[#9D00FF] text-white"
                             : "hover:bg-[#FFEA00]/20 text-black",
@@ -187,10 +186,10 @@ const CompactMealCard = ({
             </div>
           )}
 
-          <div className="flex items-end justify-between pt-1 gap-2">
+          <div className="flex items-end justify-between pt-0.5 sm:pt-1 gap-1.5 sm:gap-2">
             <div className="flex flex-col min-w-0">
-              <span className="text-xs text-muted-foreground font-medium mb-0.5">{weight} г</span>
-              <span className="font-bold text-lg leading-none">{price} ₽</span>
+              <span className="text-[9px] sm:text-xs text-muted-foreground font-medium mb-0.5">{weight} г</span>
+              <span className="font-bold text-sm sm:text-lg leading-none">{price} ₽</span>
             </div>
 
             <button
@@ -199,13 +198,13 @@ const CompactMealCard = ({
                 onSelect(currentPortion)
               }}
               className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-brutal shrink-0 border-2 border-black",
+                "w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal shrink-0 border-2 border-black brutal-hover",
                 isSelected
                   ? "bg-[#9D00FF] text-white"
                   : "bg-white text-black hover:bg-[#FFEA00]",
               )}
             >
-              {isSelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              {isSelected ? <Check className="w-3.5 h-3.5 sm:w-5 sm:h-5" /> : <Plus className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
@@ -253,10 +252,11 @@ const MealSectionComponent = ({
       style={{ scrollMarginTop: '10px' }}
     >
       <div className={cn(
-          "w-full p-4 select-none cursor-pointer transition-colors sticky top-0 z-30 bg-white",
+          "w-full p-2 sm:p-4 select-none cursor-pointer transition-colors sticky top-0 z-30 bg-white",
           isOpen ? "border-b-2 border-black" : "hover:bg-[#FFEA00]",
           "first:rounded-t-lg rounded-lg",
-          isOpen && "rounded-b-none"
+          isOpen && "rounded-b-none",
+          "active:translate-x-[1px] active:translate-y-[1px]"
         )}
         onClick={handleToggle}
         role="button"
@@ -304,7 +304,7 @@ const MealSectionComponent = ({
                  </div>
               )}
               
-              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black hover:bg-[#FFEA00] transition-colors bg-white shadow-brutal">
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black hover:bg-[#FFEA00] transition-colors bg-white shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover cursor-pointer">
                 <ChevronDown className={cn("w-5 h-5 text-black transition-transform duration-200 stroke-[2.5px]", isOpen && "rotate-180")} />
               </div>
           </div>
@@ -312,8 +312,8 @@ const MealSectionComponent = ({
       </div>
 
       {isOpen && (
-        <div className="p-4 pt-0 border-t-2 border-black">
-            <div className="grid grid-cols-2 gap-3 pt-4">
+        <div className="px-1.5 py-1.5 sm:p-4 pt-0 border-t-2 border-black">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 pt-1.5 sm:pt-4">
               {meals.map((meal) => (
                 <div key={meal.id} className="h-full" id={`${id}-meal-${meal.id}`}>
                   <CompactMealCard
@@ -580,7 +580,7 @@ export function MealSelector({
             e.preventDefault();
             onClick(); 
           }} 
-          className="h-9 w-9 rounded-lg p-0 flex items-center justify-center bg-white border-2 border-black hover:bg-[#FFEA00] text-black transition-colors shadow-brutal"
+          className="h-9 w-9 rounded-lg p-0 flex items-center justify-center bg-white border-2 border-black hover:bg-[#FFEA00] text-black transition-colors shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover"
           title="Выбрать случайно"
         >
           <Wand2 className="w-4 h-4 stroke-[2.5px]" />

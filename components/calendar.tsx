@@ -109,11 +109,12 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
     })
   }
 
-  // Find the absolute last day of food across all orders
-  const getLastDayOfFood = (): Date | null => {
-    let lastDay: Date | null = null
+  // Check if this date is the last day of food (day2) for any order
+  const isLastDayOfAnyOrder = (date: Date) => {
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
     
-    orders.forEach(order => {
+    return orders.some(order => {
       const deliveryDate = new Date(order.startDate)
       deliveryDate.setHours(0, 0, 0, 0)
       
@@ -122,47 +123,28 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
       day2.setDate(day2.getDate() + 2)
       day2.setHours(0, 0, 0, 0)
       
-      if (!lastDay || day2.getTime() > lastDay.getTime()) {
-        lastDay = day2
-      }
+      return checkDate.getTime() === day2.getTime()
     })
-    
-    return lastDay
   }
 
-  // Check if this is the last day of food (the absolute last day across all orders)
-  const isLastDayOfFood = (date: Date) => {
-    if (!hasFoodForDate(date)) return false
-    
+  // Check if there's food on the next day (chain continues without gap)
+  // Plus button should show if there's NO food on next day (gap exists)
+  const hasNextOrder = (date: Date) => {
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
     
-    const lastDay = getLastDayOfFood()
-    if (!lastDay) return false
-    
-    return checkDate.getTime() === lastDay.getTime()
-  }
-
-  // Check if there's an order that continues the chain (on last day or next day)
-  const hasNextOrder = (date: Date) => {
-    if (!isLastDayOfFood(date)) return false
-    
-    // PRIORITY 1: Check if there's delivery on the last day itself (new order continues chain)
-    // This is the most important check - if delivery exists on last day, chain continues
+    // PRIORITY 1: Check if there's delivery on this day (new order continues chain)
     if (hasDeliveryForDate(date)) {
       return true
     }
     
-    // PRIORITY 2: Check if there's delivery on the next day
-    const nextDay = new Date(date)
+    // PRIORITY 2: Check if there's FOOD on the next day (no gap - chain continues)
+    // If there's food on next day, the chain continues. If no food, there's a gap and plus should show
+    const nextDay = new Date(checkDate)
     nextDay.setDate(nextDay.getDate() + 1)
     nextDay.setHours(0, 0, 0, 0)
     
-    if (hasDeliveryForDate(nextDay)) {
-      return true
-    }
-    
-    return false
+    return hasFoodForDate(nextDay)
   }
 
   const renderDayCell = (date: Date, index: number) => {
@@ -171,12 +153,12 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
     const isDateToday = isToday(date)
     const hasDelivery = hasDeliveryForDate(date)
     const hasFood = hasFoodForDate(date)
-    const isLastDay = isLastDayOfFood(date)
+    const isLastDayOfOrder = isLastDayOfAnyOrder(date)
     const hasNextOrderForLastDay = hasNextOrder(date)
     
-    // CRITICAL: Yellow + button shows ONLY on last day WITH food, NO delivery, and NO next order
-    // Must have: hasFood AND isLastDay AND !hasDelivery AND !hasNextOrderForLastDay
-    const shouldShowYellowPlus = hasFood && isLastDay && !hasDelivery && !hasNextOrderForLastDay && isCurrentMonth
+    // CRITICAL: Yellow + button shows ONLY on last day of any order WITH food, NO delivery, and NO next order (gap exists)
+    // Must have: hasFood AND isLastDayOfOrder AND !hasDelivery AND !hasNextOrderForLastDay
+    const shouldShowYellowPlus = hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay && isCurrentMonth
     
     const canOrder = canOrderForDate(date)
     const isSaturday = getDay(date) === 6

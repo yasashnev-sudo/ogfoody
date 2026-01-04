@@ -10,6 +10,8 @@ import {
   createOrderPerson,
   createOrderMeal,
   createOrderExtra,
+  fetchOrderById,
+  generateOrderNumber,
 } from "@/lib/nocodb"
 import type { Order, Meal, PortionSize } from "@/lib/types"
 
@@ -22,8 +24,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Если передан полный объект заказа, обновляем все данные
     if (order) {
-      // Обновляем основные поля заказа
+      // Получаем текущий заказ для сохранения order_number
+      const currentOrder = await fetchOrderById(Number(id))
+      
+      // Обновляем основные поля заказа (сохраняем order_number если он был)
       const updatedOrder = await updateOrder(Number(id), {
+        order_number: currentOrder?.order_number || order.orderNumber || generateOrderNumber(),
         start_date: typeof order.startDate === "string" ? order.startDate : order.startDate.toISOString().split("T")[0],
         delivery_time: order.deliveryTime,
         status: order.paid ? "paid" : "pending",
@@ -115,11 +121,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }
       }
 
-      return NextResponse.json({ success: true, order: updatedOrder })
+      // Возвращаем обновленный заказ с order_number
+      return NextResponse.json({ 
+        success: true, 
+        order: updatedOrder,
+        orderNumber: updatedOrder.order_number 
+      })
     } else {
       // Если передан только частичный объект, обновляем только основные поля
       const updatedOrder = await updateOrder(Number(id), body)
-      return NextResponse.json({ success: true, order: updatedOrder })
+      return NextResponse.json({ 
+        success: true, 
+        order: updatedOrder,
+        orderNumber: updatedOrder.order_number 
+      })
     }
   } catch (error) {
     console.error("Failed to update order:", error)

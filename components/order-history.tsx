@@ -24,7 +24,6 @@ interface OrderHistoryProps {
   onCancelOrder: (startDate: Date) => void
   onRepeatOrder: (order: Order, targetDate: Date) => void
   onPayOrder: (order: Order, total: number) => void
-  onMarkCashOrderAsPaid: (order: Order) => void
   onReviewOrder: (order: Order) => void
   availableDates: Date[]
   userProfile: UserProfile | null
@@ -135,7 +134,6 @@ export function OrderHistory({
   onCancelOrder,
   onRepeatOrder,
   onPayOrder,
-  onMarkCashOrderAsPaid,
   onReviewOrder,
   availableDates,
   userProfile,
@@ -151,6 +149,12 @@ export function OrderHistory({
   })
 
   const calculateOrderTotal = (order: Order) => {
+    // Используем total из заказа, если он есть
+    if (order.total && typeof order.total === "number" && order.total > 0) {
+      return order.total
+    }
+    
+    // Иначе вычисляем вручную
     let total = 0
     order.persons.forEach((person) => {
       ;["day1", "day2"].forEach((day) => {
@@ -162,24 +166,107 @@ export function OrderHistory({
         const dinner = ensureFullMealStructure(dayMeals.dinner)
 
         // Завтрак
-        if (breakfast.dish) {
-          total += breakfast.dish.price * (breakfast.dish.portion || 1)
+        if (breakfast.dish && breakfast.dish.prices) {
+          const portion = breakfast.dish.portion || "single"
+          if (portion === "medium" && breakfast.dish.prices.medium) {
+            total += breakfast.dish.prices.medium
+          } else if (portion === "large" && breakfast.dish.prices.large) {
+            total += breakfast.dish.prices.large
+          } else {
+            total += breakfast.dish.prices.single || 0
+          }
         }
 
         // Обед
-        if (lunch.salad) total += lunch.salad.price * (lunch.salad.portion || 1)
-        if (lunch.soup) total += lunch.soup.price * (lunch.soup.portion || 1)
-        if (lunch.main) {
-          total += lunch.main.price * (lunch.main.portion || 1)
-          if (lunch.main.garnish) total += lunch.main.garnish.price * (lunch.main.garnish.portion || 1)
+        if (lunch.salad && lunch.salad.prices) {
+          const portion = lunch.salad.portion || "single"
+          if (portion === "medium" && lunch.salad.prices.medium) {
+            total += lunch.salad.prices.medium
+          } else if (portion === "large" && lunch.salad.prices.large) {
+            total += lunch.salad.prices.large
+          } else {
+            total += lunch.salad.prices.single || 0
+          }
+        }
+        if (lunch.soup && lunch.soup.prices) {
+          const portion = lunch.soup.portion || "single"
+          if (portion === "medium" && lunch.soup.prices.medium) {
+            total += lunch.soup.prices.medium
+          } else if (portion === "large" && lunch.soup.prices.large) {
+            total += lunch.soup.prices.large
+          } else {
+            total += lunch.soup.prices.single || 0
+          }
+        }
+        if (lunch.main && lunch.main.prices) {
+          const portion = lunch.main.portion || "single"
+          if (portion === "medium" && lunch.main.prices.medium) {
+            total += lunch.main.prices.medium
+          } else if (portion === "large" && lunch.main.prices.large) {
+            total += lunch.main.prices.large
+          } else {
+            total += lunch.main.prices.single || 0
+          }
+          if (lunch.main.garnish) {
+            if (!lunch.main.garnish.prices) {
+              console.warn("⚠️ lunch.main.garnish.prices is undefined", lunch.main.garnish)
+            } else {
+              const garnishPortion = lunch.main.garnish.portion || "single"
+              if (garnishPortion === "medium" && lunch.main.garnish.prices.medium) {
+                total += lunch.main.garnish.prices.medium
+              } else if (garnishPortion === "large" && lunch.main.garnish.prices.large) {
+                total += lunch.main.garnish.prices.large
+              } else {
+                total += lunch.main.garnish.prices.single || 0
+              }
+            }
+          }
         }
 
         // Ужин
-        if (dinner.salad) total += dinner.salad.price * (dinner.salad.portion || 1)
-        if (dinner.soup) total += dinner.soup.price * (dinner.soup.portion || 1)
-        if (dinner.main) {
-          total += dinner.main.price * (dinner.main.portion || 1)
-          if (dinner.main.garnish) total += dinner.main.garnish.price * (dinner.main.garnish.portion || 1)
+        if (dinner.salad && dinner.salad.prices) {
+          const portion = dinner.salad.portion || "single"
+          if (portion === "medium" && dinner.salad.prices.medium) {
+            total += dinner.salad.prices.medium
+          } else if (portion === "large" && dinner.salad.prices.large) {
+            total += dinner.salad.prices.large
+          } else {
+            total += dinner.salad.prices.single || 0
+          }
+        }
+        if (dinner.soup && dinner.soup.prices) {
+          const portion = dinner.soup.portion || "single"
+          if (portion === "medium" && dinner.soup.prices.medium) {
+            total += dinner.soup.prices.medium
+          } else if (portion === "large" && dinner.soup.prices.large) {
+            total += dinner.soup.prices.large
+          } else {
+            total += dinner.soup.prices.single || 0
+          }
+        }
+        if (dinner.main && dinner.main.prices) {
+          const portion = dinner.main.portion || "single"
+          if (portion === "medium" && dinner.main.prices.medium) {
+            total += dinner.main.prices.medium
+          } else if (portion === "large" && dinner.main.prices.large) {
+            total += dinner.main.prices.large
+          } else {
+            total += dinner.main.prices.single || 0
+          }
+          if (dinner.main.garnish) {
+            if (!dinner.main.garnish.prices) {
+              console.warn("⚠️ dinner.main.garnish.prices is undefined", dinner.main.garnish)
+            } else {
+              const garnishPortion = dinner.main.garnish.portion || "single"
+              if (garnishPortion === "medium" && dinner.main.garnish.prices.medium) {
+                total += dinner.main.garnish.prices.medium
+              } else if (garnishPortion === "large" && dinner.main.garnish.prices.large) {
+                total += dinner.main.garnish.prices.large
+              } else {
+                total += dinner.main.garnish.prices.single || 0
+              }
+            }
+          }
         }
       })
     })
@@ -209,11 +296,35 @@ export function OrderHistory({
   }
 
   const canReviewOrder = (order: Order, orderKey: string) => {
-    return order.delivered && !reviews.find((r) => r.orderId === orderKey)
+    // Проверяем, есть ли уже отзыв для этого заказа
+    // Используем приведение к строке для надежного сравнения
+    const hasReview = reviews.some((r) => String(r.orderId) === String(orderKey))
+    if (hasReview) {
+      return false
+    }
+    
+    // Можно оставить отзыв, если заказ доставлен
+    if (order.delivered) {
+      return true
+    }
+    
+    // Или если дата доставки уже прошла (заказ был вчера или раньше)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const orderDate = toDate(order.startDate)
+    orderDate.setHours(0, 0, 0, 0)
+    
+    // Заказ на 2 дня, поэтому проверяем второй день доставки
+    const day2Date = new Date(orderDate)
+    day2Date.setDate(day2Date.getDate() + 1)
+    
+    // Можно оставить отзыв, если второй день доставки уже прошел
+    return day2Date.getTime() < today.getTime()
   }
 
   const getOrderReview = (orderKey: string) => {
-    return reviews.find((r) => r.orderId === orderKey)
+    // Используем приведение к строке для надежного сравнения
+    return reviews.find((r) => String(r.orderId) === String(orderKey))
   }
 
   const getFreeDates = () => {
@@ -343,7 +454,9 @@ export function OrderHistory({
                   <CalendarIcon className="w-5 h-5 text-primary" />
                   <div>
                     <div className="font-semibold">Заказ на {formatDisplayDate(orderDate)}</div>
-                    <div className="text-xs text-muted-foreground">Набор на 2 дня</div>
+                    <div className="text-xs text-muted-foreground">
+                      {order.orderNumber ? `№ ${order.orderNumber} · Набор на 2 дня` : "Набор на 2 дня"}
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -485,12 +598,12 @@ export function OrderHistory({
               ) : canReview ? (
                 <div className="mt-3 pt-3 border-t border-border">
                   <Button
-                    variant="outline"
+                    variant="default"
                     size="sm"
-                    className="w-full bg-transparent"
+                    className="w-full bg-primary hover:bg-primary/90"
                     onClick={() => onReviewOrder(order)}
                   >
-                    <MessageSquare className="w-4 h-4 mr-2" />
+                    <Star className="w-4 h-4 mr-2 fill-current" />
                     Оставить отзыв
                   </Button>
                 </div>
@@ -499,7 +612,7 @@ export function OrderHistory({
               {!order.paid && order.paymentMethod === "cash" && (
                 <div className="pt-3 mt-3 border-t border-border">
                   {/* Switch to Card Widget */}
-                  <div className="bg-white border-2 border-black rounded-lg p-4 shadow-brutal mb-3">
+                  <div className="bg-white border-2 border-black rounded-lg p-4 shadow-brutal">
                     <div className="mb-3">
                       <h3 className="font-black text-black text-base mb-1">ОПЛАТА ПРИ ПОЛУЧЕНИИ</h3>
                       <p className="text-sm text-muted-foreground">Можно оплатить сейчас, чтобы не ждать сдачу.</p>
@@ -511,16 +624,6 @@ export function OrderHistory({
                       💳 ОПЛАТИТЬ КАРТОЙ
                     </Button>
                   </div>
-                  
-                  {/* Mark as Paid Button (Alternative) */}
-                  <Button
-                    onClick={() => onMarkCashOrderAsPaid(order)}
-                    variant="outline"
-                    className="w-full bg-transparent border border-border hover:bg-muted"
-                  >
-                    <Banknote className="w-4 h-4 mr-2" />
-                    Отметить как оплаченный наличными
-                  </Button>
                 </div>
               )}
 

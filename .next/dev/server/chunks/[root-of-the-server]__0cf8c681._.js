@@ -196,6 +196,54 @@ async function serverFetch(tableName, params = {}) {
         throw new Error(`NocoDB returned invalid JSON: ${text.substring(0, 100)}...`);
     }
 }
+// Серверная функция для создания/обновления записей напрямую к NocoDB
+async function serverCreateRecord(tableName, data, method = "POST", recordId) {
+    const config = validateNocoDBConfig();
+    if (!config.isValid) {
+        throw new Error(`NocoDB is not configured: ${config.error}`);
+    }
+    let baseUrl = getNocoDBUrl().replace(/\/$/, "");
+    if (!baseUrl.endsWith("/api/v2")) {
+        baseUrl = `${baseUrl}/api/v2`;
+    }
+    const tableId = getTableId(tableName);
+    if (!tableId) {
+        throw new Error(`TABLE_NOT_CONFIGURED:${tableName}`);
+    }
+    const url = method === "PATCH" && recordId ? `${baseUrl}/tables/${tableId}/records/${recordId}` : `${baseUrl}/tables/${tableId}/records`;
+    const token = getNocoDBToken();
+    const response = await fetch(url, {
+        method,
+        headers: {
+            "xc-token": token,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
+    const text = await response.text();
+    if (!response.ok) {
+        if (text.includes("TABLE_NOT_FOUND") || response.status === 404) {
+            throw new Error(`TABLE_NOT_FOUND:${tableName}`);
+        }
+        throw new Error(`NocoDB API error: ${response.status} - ${text}`);
+    }
+    try {
+        const result = JSON.parse(text);
+        // NocoDB может вернуть запись в разных форматах
+        if (Array.isArray(result)) {
+            return result[0];
+        }
+        if (result && typeof result === 'object' && 'Id' in result) {
+            return result;
+        }
+        if (result && typeof result === 'object' && 'record' in result) {
+            return result.record;
+        }
+        return result;
+    } catch  {
+        throw new Error(`NocoDB returned invalid JSON: ${text.substring(0, 100)}...`);
+    }
+}
 // Клиентский fetch через API proxy
 async function clientFetch(tableName, params = {}, options = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -287,16 +335,46 @@ async function fetchUserById(id) {
     return response.list?.[0] || null;
 }
 async function createUser(user) {
-    return clientFetch("Users", {}, {
-        method: "POST",
-        body: JSON.stringify(user)
-    });
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl === null) {
+        return serverCreateRecord("Users", user, "POST");
+    } else {
+        const response = await clientFetch("Users", {}, {
+            method: "POST",
+            body: JSON.stringify(user)
+        });
+        if (Array.isArray(response)) {
+            return response[0];
+        }
+        if (response && typeof response === 'object' && 'Id' in response) {
+            return response;
+        }
+        if (response && typeof response === 'object' && 'record' in response) {
+            return response.record;
+        }
+        return response;
+    }
 }
 async function updateUser(id, data) {
-    return clientFetch(`Users/${id}`, {}, {
-        method: "PATCH",
-        body: JSON.stringify(data)
-    });
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl === null) {
+        return serverCreateRecord("Users", data, "PATCH", id);
+    } else {
+        const response = await clientFetch(`Users/${id}`, {}, {
+            method: "PATCH",
+            body: JSON.stringify(data)
+        });
+        if (Array.isArray(response)) {
+            return response[0];
+        }
+        if (response && typeof response === 'object' && 'Id' in response) {
+            return response;
+        }
+        if (response && typeof response === 'object' && 'record' in response) {
+            return response.record;
+        }
+        return response;
+    }
 }
 async function fetchOrders(userId) {
     const params = {
@@ -325,34 +403,145 @@ async function fetchOrderById(id) {
     return response.list?.[0] || null;
 }
 async function createOrder(order) {
-    return clientFetch("Orders", {}, {
-        method: "POST",
-        body: JSON.stringify(order)
-    });
+    // На сервере используем прямой запрос к NocoDB, на клиенте - через proxy
+    const apiBaseUrl = getApiBaseUrl();
+    let createdOrder;
+    if (apiBaseUrl === null) {
+        // Серверная среда - прямой запрос к NocoDB
+        createdOrder = await serverCreateRecord("Orders", order, "POST");
+    } else {
+        // Клиентская среда - через API proxy
+        const response = await clientFetch("Orders", {}, {
+            method: "POST",
+            body: JSON.stringify(order)
+        });
+        if (Array.isArray(response)) {
+            createdOrder = response[0];
+        } else if (response && typeof response === 'object' && 'Id' in response) {
+            createdOrder = response;
+        } else if (response && typeof response === 'object' && 'record' in response) {
+            createdOrder = response.record;
+        } else {
+            createdOrder = response;
+        }
+    }
+    // NocoDB часто возвращает только Id при создании, поэтому всегда получаем полный объект
+    if (createdOrder?.Id) {
+        // Проверяем, есть ли уже все нужные поля
+        if (!createdOrder.order_number || Object.keys(createdOrder).length < 5) {
+            console.log(`⚠️ Order created but incomplete response, fetching full order ${createdOrder.Id}...`);
+            try {
+                // Небольшая задержка, чтобы запись точно сохранилась
+                await new Promise((resolve)=>setTimeout(resolve, 300));
+                const fullOrder = await fetchOrderById(createdOrder.Id);
+                if (fullOrder && fullOrder.order_number) {
+                    console.log(`✅ Fetched full order with order_number: ${fullOrder.order_number}`);
+                    return fullOrder;
+                } else {
+                    console.warn(`⚠️ Fetched order also incomplete, but using it anyway`);
+                    if (fullOrder) return fullOrder;
+                }
+            } catch (error) {
+                console.warn(`⚠️ Failed to fetch full order:`, error);
+                // Если не удалось получить, но есть сгенерированный номер, добавляем его
+                if ('order_number' in order) {
+                    return {
+                        ...createdOrder,
+                        order_number: order.order_number
+                    };
+                }
+            }
+        } else {
+            console.log(`✅ Order created with complete data, order_number: ${createdOrder.order_number}`);
+        }
+    }
+    return createdOrder;
 }
 async function updateOrder(id, data) {
-    return clientFetch(`Orders/${id}`, {}, {
-        method: "PATCH",
-        body: JSON.stringify(data)
-    });
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl === null) {
+        // Серверная среда - прямой запрос к NocoDB
+        return serverCreateRecord("Orders", data, "PATCH", id);
+    } else {
+        // Клиентская среда - через API proxy
+        const response = await clientFetch(`Orders/${id}`, {}, {
+            method: "PATCH",
+            body: JSON.stringify(data)
+        });
+        if (Array.isArray(response)) {
+            return response[0];
+        }
+        if (response && typeof response === 'object' && 'Id' in response) {
+            return response;
+        }
+        if (response && typeof response === 'object' && 'record' in response) {
+            return response.record;
+        }
+        return response;
+    }
 }
 async function createOrderPerson(orderPerson) {
-    return clientFetch("Order_Persons", {}, {
-        method: "POST",
-        body: JSON.stringify(orderPerson)
-    });
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl === null) {
+        return serverCreateRecord("Order_Persons", orderPerson, "POST");
+    } else {
+        const response = await clientFetch("Order_Persons", {}, {
+            method: "POST",
+            body: JSON.stringify(orderPerson)
+        });
+        if (Array.isArray(response)) {
+            return response[0];
+        }
+        if (response && typeof response === 'object' && 'Id' in response) {
+            return response;
+        }
+        if (response && typeof response === 'object' && 'record' in response) {
+            return response.record;
+        }
+        return response;
+    }
 }
 async function createOrderMeal(orderMeal) {
-    return clientFetch("Order_Meals", {}, {
-        method: "POST",
-        body: JSON.stringify(orderMeal)
-    });
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl === null) {
+        return serverCreateRecord("Order_Meals", orderMeal, "POST");
+    } else {
+        const response = await clientFetch("Order_Meals", {}, {
+            method: "POST",
+            body: JSON.stringify(orderMeal)
+        });
+        if (Array.isArray(response)) {
+            return response[0];
+        }
+        if (response && typeof response === 'object' && 'Id' in response) {
+            return response;
+        }
+        if (response && typeof response === 'object' && 'record' in response) {
+            return response.record;
+        }
+        return response;
+    }
 }
 async function createOrderExtra(orderExtra) {
-    return clientFetch("Order_Extras", {}, {
-        method: "POST",
-        body: JSON.stringify(orderExtra)
-    });
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl === null) {
+        return serverCreateRecord("Order_Extras", orderExtra, "POST");
+    } else {
+        const response = await clientFetch("Order_Extras", {}, {
+            method: "POST",
+            body: JSON.stringify(orderExtra)
+        });
+        if (Array.isArray(response)) {
+            return response[0];
+        }
+        if (response && typeof response === 'object' && 'Id' in response) {
+            return response;
+        }
+        if (response && typeof response === 'object' && 'record' in response) {
+            return response.record;
+        }
+        return response;
+    }
 }
 async function fetchOrderPersons(orderId) {
     const response = await nocoFetch("Order_Persons", {
@@ -485,10 +674,25 @@ async function fetchReviewsForUser(userId) {
     return response.list || [];
 }
 async function createReview(review) {
-    return clientFetch("Reviews", {}, {
-        method: "POST",
-        body: JSON.stringify(review)
-    });
+    const apiBaseUrl = getApiBaseUrl();
+    if (apiBaseUrl === null) {
+        return serverCreateRecord("Reviews", review, "POST");
+    } else {
+        const response = await clientFetch("Reviews", {}, {
+            method: "POST",
+            body: JSON.stringify(review)
+        });
+        if (Array.isArray(response)) {
+            return response[0];
+        }
+        if (response && typeof response === 'object' && 'Id' in response) {
+            return response;
+        }
+        if (response && typeof response === 'object' && 'record' in response) {
+            return response.record;
+        }
+        return response;
+    }
 }
 }),
 "[project]/lib/meals-data.ts [app-route] (ecmascript)", ((__turbopack_context__) => {

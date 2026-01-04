@@ -1732,7 +1732,48 @@ function Home() {
                 }
                 const savedProfile = localStorage.getItem(`profile_${user}`);
                 if (savedProfile) {
-                    setUserProfile(JSON.parse(savedProfile));
+                    const profile = JSON.parse(savedProfile);
+                    setUserProfile(profile);
+                    // Синхронизируем заказы из базы данных для получения номеров заказов
+                    if (profile.id) {
+                        fetch(`/api/orders?userId=${profile.id}`).then({
+                            "Home.useEffect": (res)=>res.json()
+                        }["Home.useEffect"]).then({
+                            "Home.useEffect": (data)=>{
+                                if (data.orders && Array.isArray(data.orders)) {
+                                    // Обновляем заказы с номерами из базы данных
+                                    setOrders({
+                                        "Home.useEffect": (prevOrders)=>{
+                                            const updatedOrders = prevOrders.map({
+                                                "Home.useEffect.updatedOrders": (localOrder)=>{
+                                                    // Ищем соответствующий заказ в базе по id или дате
+                                                    const dbOrder = data.orders.find({
+                                                        "Home.useEffect.updatedOrders.dbOrder": (db)=>localOrder.id && db.Id === localOrder.id || db.start_date === formatDateKey(toDate(localOrder.startDate))
+                                                    }["Home.useEffect.updatedOrders.dbOrder"]);
+                                                    if (dbOrder && dbOrder.order_number && !localOrder.orderNumber) {
+                                                        // Обновляем номер заказа из базы данных
+                                                        return {
+                                                            ...localOrder,
+                                                            id: dbOrder.Id,
+                                                            orderNumber: dbOrder.order_number
+                                                        };
+                                                    }
+                                                    return localOrder;
+                                                }
+                                            }["Home.useEffect.updatedOrders"]);
+                                            // Сохраняем обновленные заказы в localStorage
+                                            localStorage.setItem(`orders_${user}`, serializeOrders(updatedOrders));
+                                            return updatedOrders;
+                                        }
+                                    }["Home.useEffect"]);
+                                }
+                            }
+                        }["Home.useEffect"]).catch({
+                            "Home.useEffect": (error)=>{
+                                console.error("Failed to sync orders from database:", error);
+                            }
+                        }["Home.useEffect"]);
+                    }
                 }
                 const savedReviews = localStorage.getItem(`reviews_${user}`);
                 if (savedReviews) {
@@ -1770,48 +1811,43 @@ function Home() {
             return checkDate.getTime() === day1.getTime() || checkDate.getTime() === day2.getTime();
         });
     };
-    // Helper: Find the absolute last day of food across all orders
-    const getLastDayOfFood = ()=>{
-        let lastDay = null;
-        orders.forEach((order)=>{
+    // Helper: Check if this date is the last day of food (day2) for any order
+    const isLastDayOfAnyOrder = (date)=>{
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+        return orders.some((order)=>{
             const deliveryDate = new Date(order.startDate);
             deliveryDate.setHours(0, 0, 0, 0);
+            // day2 is the last eating day for this order
             const day2 = new Date(deliveryDate);
             day2.setDate(day2.getDate() + 2);
             day2.setHours(0, 0, 0, 0);
-            if (!lastDay || day2.getTime() > lastDay.getTime()) {
-                lastDay = day2;
-            }
+            return checkDate.getTime() === day2.getTime();
         });
-        return lastDay;
     };
-    // Helper: Check if this is the last day of food
-    const isLastDayOfFood = (date)=>{
-        if (!hasFoodForDate(date)) return false;
+    // Helper: Check if there's food on the next day (chain continues without gap)
+    // Plus button should show if there's NO food on next day (gap exists)
+    const hasNextOrder = (date)=>{
         const checkDate = new Date(date);
         checkDate.setHours(0, 0, 0, 0);
-        const lastDay = getLastDayOfFood();
-        if (!lastDay) return false;
-        return checkDate.getTime() === lastDay.getTime();
-    };
-    // Helper: Check if there's an order that continues the chain
-    const hasNextOrder = (date)=>{
-        if (!isLastDayOfFood(date)) return false;
+        // PRIORITY 1: Check if there's delivery on this day (new order continues chain)
         if (hasDeliveryForDate(date)) {
             return true;
         }
-        const nextDay = new Date(date);
+        // PRIORITY 2: Check if there's FOOD on the next day (no gap - chain continues)
+        // If there's food on next day, the chain continues. If no food, there's a gap and plus should show
+        const nextDay = new Date(checkDate);
         nextDay.setDate(nextDay.getDate() + 1);
         nextDay.setHours(0, 0, 0, 0);
-        return hasDeliveryForDate(nextDay);
+        return hasFoodForDate(nextDay);
     };
-    // Helper: Check if yellow plus button should be shown (last day with food, no delivery, no next order)
+    // Helper: Check if yellow plus button should be shown (last day of any order with food, no delivery, no next order)
     const shouldShowYellowPlus = (date)=>{
         const hasFood = hasFoodForDate(date);
-        const isLastDay = isLastDayOfFood(date);
+        const isLastDayOfOrder = isLastDayOfAnyOrder(date);
         const hasDelivery = hasDeliveryForDate(date);
         const hasNextOrderForLastDay = hasNextOrder(date);
-        return hasFood && isLastDay && !hasDelivery && !hasNextOrderForLastDay;
+        return hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay;
     };
     const handleDateClick = (date)=>{
         const isSaturday = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$getDay$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getDay"])(date) === 6;
@@ -1860,6 +1896,12 @@ function Home() {
         const user = localStorage.getItem("currentUser");
         const orderTimestamp = getDateTimestamp(order.startDate);
         const existingOrder = orders.find((o)=>getDateTimestamp(o.startDate) === orderTimestamp);
+        console.log("🔵 handleSaveOrder вызван:", {
+            isAuthenticated,
+            hasUserProfile: !!userProfile,
+            userId: userProfile?.id,
+            hasExistingOrder: !!existingOrder?.id
+        });
         // Если заказ существует и имеет id, и пользователь авторизован, обновляем через API
         if (existingOrder?.id && isAuthenticated && userProfile?.id) {
             try {
@@ -1892,6 +1934,7 @@ function Home() {
                         ...filtered,
                         {
                             ...updatedOrder,
+                            orderNumber: result.orderNumber || existingOrder.orderNumber || updatedOrder.orderNumber,
                             startDate: toDate(updatedOrder.startDate),
                             paid: updatedOrder.paid ?? false
                         }
@@ -1918,6 +1961,12 @@ function Home() {
             }
         } else if (isAuthenticated && userProfile?.id) {
             // Создаем новый заказ через API
+            console.log("✅ Условие для создания заказа выполнено:", {
+                isAuthenticated,
+                hasUserProfile: !!userProfile,
+                userId: userProfile?.id,
+                sendingToServer: true
+            });
             try {
                 const total = calculateOrderTotal(order);
                 const newOrder = {
@@ -1925,6 +1974,11 @@ function Home() {
                     subtotal: total,
                     total: total
                 };
+                console.log("📤 Отправка заказа на сервер:", {
+                    personsCount: newOrder.persons?.length,
+                    extrasCount: newOrder.extras?.length,
+                    userId: userProfile.id
+                });
                 const response = await fetch("/api/orders", {
                     method: "POST",
                     headers: {
@@ -1935,44 +1989,137 @@ function Home() {
                         userId: userProfile.id
                     })
                 });
+                console.log("📥 Ответ сервера:", response.status, response.statusText);
                 if (!response.ok) {
-                    throw new Error("Failed to create order");
+                    const errorData = await response.json().catch(()=>({
+                            error: "Unknown error"
+                        }));
+                    console.error("❌ Ошибка при создании заказа:", errorData);
+                    throw new Error(errorData.error || "Failed to create order");
                 }
                 const result = await response.json();
+                console.log("✅ Результат создания заказа:", result);
+                // Проверяем, что номер заказа получен
+                console.log("Order creation result:", result);
+                if (!result.orderNumber) {
+                    console.warn("⚠️ Order number not received from API:", result);
+                    // Пытаемся получить номер заказа из базы данных
+                    if (result.orderId) {
+                        try {
+                            const fetchResponse = await fetch(`/api/orders?userId=${userProfile.id}`);
+                            const fetchData = await fetchResponse.json();
+                            const dbOrder = fetchData.orders?.find((o)=>o.Id === result.orderId);
+                            if (dbOrder?.order_number) {
+                                result.orderNumber = dbOrder.order_number;
+                                console.log("✅ Retrieved order number from DB:", result.orderNumber);
+                            }
+                        } catch (error) {
+                            console.error("Failed to fetch order number:", error);
+                        }
+                    }
+                }
+                // Обязательно проверяем наличие номера заказа
+                if (!result.orderNumber) {
+                    console.error("❌ CRITICAL: Order number is missing from API response!", result);
+                    // Генерируем номер заказа на клиенте как fallback
+                    const fallbackOrderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                    result.orderNumber = fallbackOrderNumber;
+                    console.warn("⚠️ Using fallback order number:", fallbackOrderNumber);
+                }
                 // Обновляем заказ в состоянии с id из API
+                const savedOrder = {
+                    ...newOrder,
+                    id: result.orderId,
+                    orderNumber: result.orderNumber,
+                    startDate: toDate(newOrder.startDate),
+                    paid: newOrder.paid ?? false
+                };
+                console.log("💾 Saving order to state:", {
+                    id: savedOrder.id,
+                    orderNumber: savedOrder.orderNumber,
+                    startDate: savedOrder.startDate,
+                    hasOrderNumber: !!savedOrder.orderNumber,
+                    orderNumberType: typeof savedOrder.orderNumber
+                });
+                if (!savedOrder.orderNumber) {
+                    console.error("❌ FATAL: Order number is still missing after all checks!", savedOrder);
+                }
                 setOrders((prev)=>{
                     const filtered = prev.filter((o)=>getDateTimestamp(o.startDate) !== orderTimestamp);
                     const newOrders = [
                         ...filtered,
-                        {
-                            ...newOrder,
-                            id: result.orderId,
-                            orderNumber: result.orderNumber,
-                            startDate: toDate(newOrder.startDate),
-                            paid: newOrder.paid ?? false
-                        }
+                        savedOrder
                     ];
+                    // Дополнительная проверка перед сохранением
+                    const orderToSave = newOrders.find((o)=>o.id === savedOrder.id);
+                    if (orderToSave && !orderToSave.orderNumber) {
+                        console.error("❌ Order number lost during state update!", orderToSave);
+                        orderToSave.orderNumber = result.orderNumber;
+                    }
                     if (user) {
-                        localStorage.setItem(`orders_${user}`, serializeOrders(newOrders));
+                        const serialized = serializeOrders(newOrders);
+                        localStorage.setItem(`orders_${user}`, serialized);
+                        // Проверяем после сериализации
+                        const deserialized = deserializeOrders(serialized);
+                        const checkOrder = deserialized.find((o)=>o.id === savedOrder.id);
+                        console.log("✅ Saved to localStorage, orders count:", newOrders.length);
+                        console.log("🔍 Verification - saved order after serialize/deserialize:", {
+                            id: checkOrder?.id,
+                            orderNumber: checkOrder?.orderNumber,
+                            hasOrderNumber: !!checkOrder?.orderNumber,
+                            allFields: Object.keys(checkOrder || {})
+                        });
+                        if (checkOrder && !checkOrder.orderNumber) {
+                            console.error("❌ Order number lost during serialization!", checkOrder);
+                            // Принудительно восстанавливаем номер заказа
+                            checkOrder.orderNumber = result.orderNumber;
+                            // Обновляем localStorage с исправленным заказом
+                            const fixedOrders = newOrders.map((o)=>o.id === checkOrder.id ? {
+                                    ...o,
+                                    orderNumber: result.orderNumber
+                                } : o);
+                            localStorage.setItem(`orders_${user}`, serializeOrders(fixedOrders));
+                            // Обновляем состояние
+                            setTimeout(()=>{
+                                setOrders(fixedOrders);
+                            }, 100);
+                        }
+                    }
+                    // Финальная проверка - убеждаемся, что номер заказа есть
+                    const finalCheck = newOrders.find((o)=>o.id === savedOrder.id);
+                    if (finalCheck && !finalCheck.orderNumber && result.orderNumber) {
+                        console.warn("⚠️ Fixing missing order number in state...");
+                        finalCheck.orderNumber = result.orderNumber;
+                        if (user) {
+                            localStorage.setItem(`orders_${user}`, serializeOrders(newOrders.map((o)=>o.id === finalCheck.id ? finalCheck : o)));
+                        }
                     }
                     return newOrders;
                 });
                 toast({
                     title: "Заказ создан",
-                    description: "Заказ успешно оформлен",
-                    duration: 3000
+                    description: result.orderNumber ? `Заказ № ${result.orderNumber} успешно оформлен` : "Заказ успешно оформлен",
+                    duration: 5000
                 });
             } catch (error) {
-                console.error("Failed to create order:", error);
+                console.error("❌ Ошибка при создании заказа:", error);
                 toast({
                     title: "Ошибка",
-                    description: "Не удалось создать заказ. Попробуйте еще раз.",
+                    description: error instanceof Error ? error.message : "Не удалось создать заказ. Попробуйте еще раз.",
                     variant: "destructive",
                     duration: 5000
                 });
-                return;
             }
         } else {
+            // Пользователь не авторизован или нет userProfile.id
+            const reason = !isAuthenticated ? "Пользователь не авторизован" : !userProfile ? "userProfile отсутствует" : !userProfile.id ? "userProfile.id отсутствует" : "Неизвестная причина";
+            console.warn("⚠️ Заказ не создается через API, причина:", {
+                isAuthenticated,
+                hasUserProfile: !!userProfile,
+                userId: userProfile?.id,
+                reason,
+                userProfileKeys: userProfile ? Object.keys(userProfile) : []
+            });
             // Сохраняем только в localStorage (для гостей или если нет userId)
             setOrders((prev)=>{
                 const filtered = prev.filter((o)=>getDateTimestamp(o.startDate) !== orderTimestamp);
@@ -1991,10 +2138,194 @@ function Home() {
                 }
                 return newOrders;
             });
+            toast({
+                title: "Заказ сохранен локально",
+                description: !isAuthenticated ? "Войдите в систему, чтобы сохранить заказ на сервере" : "Ошибка при создании заказа. Проверьте данные профиля.",
+                variant: !isAuthenticated ? "default" : "destructive",
+                duration: 5000
+            });
         }
         setSelectedDate(null);
     };
-    const handleCancelOrder = (startDate)=>{
+    // Удаляем дублирующий код - больше не нужен
+    /*
+  const handleSaveOrderOld = async (order: Order) => {
+    const user = localStorage.getItem("currentUser")
+    const orderTimestamp = getDateTimestamp(order.startDate)
+    const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+    
+    if (existingOrder?.id && isAuthenticated && userProfile?.id) {
+      // ... existing code ...
+    } else if (isAuthenticated && userProfile?.id) {
+      // ... existing code ...
+    } else {
+      // Сохраняем локально для неавторизованных пользователей
+      const updatedOrders = [...orders]
+      const index = updatedOrders.findIndex((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+      
+      if (index >= 0) {
+        updatedOrders[index] = { ...order, startDate: toDate(order.startDate) }
+      } else {
+        updatedOrders.push({ ...order, startDate: toDate(order.startDate) })
+      }
+      
+      setOrders(updatedOrders)
+      
+      const guestOrders = localStorage.getItem("guest_orders")
+      if (guestOrders) {
+        const parsed = deserializeOrders(guestOrders)
+        const filtered = parsed.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
+        localStorage.setItem("guest_orders", serializeOrders([...filtered, { ...order, startDate: toDate(order.startDate) }]))
+      } else {
+        localStorage.setItem("guest_orders", serializeOrders([{ ...order, startDate: toDate(order.startDate) }]))
+      }
+      
+      toast({
+        title: "Заказ сохранен",
+        description: "Заказ сохранен локально. Войдите в систему, чтобы сохранить его на сервере.",
+        duration: 3000,
+      })
+    }
+  }
+  
+  // Временная заглушка - удалить после проверки
+  const handleSaveOrderBackup = async (order: Order) => {
+    console.log("🔵 handleSaveOrder вызван:", {
+      isAuthenticated,
+      hasUserProfile: !!userProfile,
+      userId: userProfile?.id,
+    })
+    
+    const user = localStorage.getItem("currentUser")
+    const orderTimestamp = getDateTimestamp(order.startDate)
+    const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+    
+    if (existingOrder?.id && isAuthenticated && userProfile?.id) {
+      try {
+        const total = calculateOrderTotal(order)
+        const updatedOrder: Order = {
+          ...order,
+          id: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          subtotal: total,
+          total: total,
+        }
+        
+        const response = await fetch(`/api/orders/${existingOrder.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: updatedOrder }),
+        })
+        
+        if (!response.ok) {
+          throw new Error("Failed to update order")
+        }
+        
+        const result = await response.json()
+        
+        setOrders((prev) => {
+          const filtered = prev.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
+          const newOrders = [
+            ...filtered,
+            {
+              ...updatedOrder,
+              orderNumber: result.orderNumber || existingOrder.orderNumber || updatedOrder.orderNumber,
+              startDate: toDate(updatedOrder.startDate),
+              paid: updatedOrder.paid ?? false,
+            },
+          ]
+          if (user) {
+            localStorage.setItem(`orders_${user}`, serializeOrders(newOrders))
+          }
+          return newOrders
+        })
+        
+        toast({
+          title: "Заказ обновлен",
+          description: "Изменения успешно сохранены",
+          duration: 3000,
+        })
+      } catch (error) {
+        console.error("Failed to update order:", error)
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить заказ. Попробуйте еще раз.",
+          variant: "destructive",
+          duration: 5000,
+        })
+        return
+      }
+    } else if (isAuthenticated && userProfile?.id) {
+      try {
+        const total = calculateOrderTotal(order)
+        const newOrder: Order = {
+          ...order,
+          subtotal: total,
+          total: total,
+        }
+        
+        console.log("📤 Отправка заказа на сервер:", {
+          personsCount: newOrder.persons?.length,
+          extrasCount: newOrder.extras?.length,
+          userId: userProfile.id,
+        })
+        
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: newOrder, userId: userProfile.id }),
+        })
+        
+        console.log("📥 Ответ сервера:", response.status, response.statusText)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+          console.error("❌ Ошибка при создании заказа:", errorData)
+          throw new Error(errorData.error || "Failed to create order")
+        }
+        
+        const result = await response.json()
+        console.log("✅ Результат создания заказа:", result)
+        
+        // Проверяем, что номер заказа получен
+        console.log("Order creation result:", result)
+        if (!result.orderNumber) {
+          console.warn("⚠️ Order number not received from API:", result)
+          // Пытаемся получить номер заказа из базы данных
+          if (result.orderId) {
+            try {
+              const fetchResponse = await fetch(`/api/orders?userId=${userProfile.id}`)
+              const fetchData = await fetchResponse.json()
+              const dbOrder = fetchData.orders?.find((o: any) => o.Id === result.orderId)
+              if (dbOrder?.order_number) {
+                result.orderNumber = dbOrder.order_number
+                console.log("✅ Retrieved order number from DB:", result.orderNumber)
+              }
+            } catch (error) {
+              console.error("Failed to fetch order number:", error)
+            }
+          }
+        }
+        
+        // Обязательно проверяем наличие номера заказа
+        if (!result.orderNumber) {
+          console.error("❌ CRITICAL: Order number is missing from API response!", result)
+          // Генерируем номер заказа на клиенте как fallback
+          const fallbackOrderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+          result.orderNumber = fallbackOrderNumber
+          console.warn("⚠️ Using fallback order number:", fallbackOrderNumber)
+        }
+        
+        // Обновляем заказ в состоянии с id из API
+        const savedOrder: Order = {
+          ...newOrder,
+          id: result.orderId,
+          orderNumber: result.orderNumber, // Гарантируем, что номер заказа есть
+          startDate: toDate(newOrder.startDate),
+          paid: newOrder.paid ?? false,
+        }
+        
+  */ const handleCancelOrder = (startDate)=>{
         const orderTimestamp = getDateTimestamp(startDate);
         const orderToCancel = orders.find((o)=>getDateTimestamp(o.startDate) === orderTimestamp);
         const wasPaid = orderToCancel?.paid && orderToCancel?.paymentMethod !== "cash";
@@ -2183,7 +2514,7 @@ function Home() {
             return newReviews;
         });
     };
-    const handleLogin = (phone)=>{
+    const handleLogin = async (phone)=>{
         setIsAuthenticated(true);
         setCurrentUser(phone);
         localStorage.setItem("currentUser", phone);
@@ -2240,6 +2571,7 @@ function Home() {
             setReviews(JSON.parse(savedReviews));
         }
         const savedProfile = localStorage.getItem(`profile_${phone}`);
+        let profile;
         if (savedProfile) {
             try {
                 const parsed = JSON.parse(savedProfile);
@@ -2247,9 +2579,9 @@ function Home() {
                     parsed.street = parsed.address;
                     delete parsed.address;
                 }
-                setUserProfile(parsed);
+                profile = parsed;
             } catch  {
-                const newProfile = {
+                profile = {
                     phone,
                     name: "",
                     street: "",
@@ -2257,11 +2589,10 @@ function Home() {
                     loyaltyPoints: 0,
                     totalSpent: 0
                 };
-                setUserProfile(newProfile);
-                localStorage.setItem(`profile_${phone}`, JSON.stringify(newProfile));
+                localStorage.setItem(`profile_${phone}`, JSON.stringify(profile));
             }
         } else {
-            const newProfile = {
+            profile = {
                 phone,
                 name: "",
                 street: "",
@@ -2269,9 +2600,53 @@ function Home() {
                 loyaltyPoints: 0,
                 totalSpent: 0
             };
-            setUserProfile(newProfile);
-            localStorage.setItem(`profile_${phone}`, JSON.stringify(newProfile));
+            localStorage.setItem(`profile_${phone}`, JSON.stringify(profile));
         }
+        // Создаем или обновляем пользователя в NocoDB
+        console.log("🔄 Синхронизация пользователя с базой данных...", {
+            phone,
+            hasProfile: !!profile
+        });
+        try {
+            const { fetchUserByPhone, createUser, updateUser } = await __turbopack_context__.A("[project]/lib/nocodb.ts [app-client] (ecmascript, async loader)");
+            console.log("📡 Ищем пользователя в базе по телефону:", phone);
+            const dbUser = await fetchUserByPhone(phone);
+            if (dbUser) {
+                console.log("✅ Пользователь найден в базе:", dbUser.Id);
+                // Пользователь существует, обновляем профиль из базы
+                profile.id = dbUser.Id;
+                profile.name = dbUser.name || profile.name;
+                profile.street = dbUser.street || profile.street;
+                profile.building = dbUser.building || profile.building;
+                profile.loyaltyPoints = typeof dbUser.loyalty_points === 'number' ? dbUser.loyalty_points : parseInt(String(dbUser.loyalty_points)) || 0;
+                profile.totalSpent = typeof dbUser.total_spent === 'number' ? dbUser.total_spent : parseFloat(String(dbUser.total_spent)) || 0;
+                console.log("✅ Профиль обновлен из базы, userProfile.id:", profile.id);
+            } else {
+                console.log("⚠️ Пользователя нет в базе, создаем нового...");
+                // Пользователя нет в базе, создаем
+                const newDbUser = await createUser({
+                    phone,
+                    name: profile.name || "",
+                    loyalty_points: profile.loyaltyPoints || 0,
+                    total_spent: profile.totalSpent || 0
+                });
+                profile.id = newDbUser.Id;
+                console.log("✅ Пользователь создан в базе данных:", newDbUser.Id, "userProfile.id установлен:", profile.id);
+            }
+            // Сохраняем обновленный профиль в localStorage
+            localStorage.setItem(`profile_${phone}`, JSON.stringify(profile));
+            console.log("💾 Профиль сохранен в localStorage с id:", profile.id);
+        } catch (error) {
+            console.error("❌ Ошибка при синхронизации пользователя с базой:", error);
+            console.error("Stack:", error instanceof Error ? error.stack : "No stack");
+        // Продолжаем работу даже если не удалось синхронизировать с базой
+        }
+        console.log("👤 Устанавливаем userProfile:", {
+            id: profile.id,
+            phone: profile.phone,
+            hasId: !!profile.id
+        });
+        setUserProfile(profile);
         setShowAuthModal(false);
         if (pendingCheckout) {
             setPaymentOrder(pendingCheckout);
@@ -2342,7 +2717,7 @@ function Home() {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$preloader$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Preloader"], {}, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 976,
+                lineNumber: 1367,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2365,12 +2740,12 @@ function Home() {
                                             priority: true
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 981,
+                                            lineNumber: 1372,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/page.tsx",
-                                        lineNumber: 980,
+                                        lineNumber: 1371,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2380,7 +2755,7 @@ function Home() {
                                                 children: "OGFooDY"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/page.tsx",
-                                                lineNumber: 991,
+                                                lineNumber: 1382,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2388,19 +2763,19 @@ function Home() {
                                                 children: "домашняя еда на каждый день"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/page.tsx",
-                                                lineNumber: 992,
+                                                lineNumber: 1383,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/page.tsx",
-                                        lineNumber: 990,
+                                        lineNumber: 1381,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 979,
+                                lineNumber: 1370,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2410,7 +2785,7 @@ function Home() {
                                         userPhone: currentUser || ""
                                     }, void 0, false, {
                                         fileName: "[project]/app/page.tsx",
-                                        lineNumber: 996,
+                                        lineNumber: 1387,
                                         columnNumber: 13
                                     }, this),
                                     isAuthenticated ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -2422,12 +2797,12 @@ function Home() {
                                             className: "w-5 h-5"
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 999,
+                                            lineNumber: 1390,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/page.tsx",
-                                        lineNumber: 998,
+                                        lineNumber: 1389,
                                         columnNumber: 15
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
                                         variant: "ghost",
@@ -2439,26 +2814,26 @@ function Home() {
                                                 className: "w-4 h-4 mr-2"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/page.tsx",
-                                                lineNumber: 1008,
+                                                lineNumber: 1399,
                                                 columnNumber: 17
                                             }, this),
                                             "Войти"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/page.tsx",
-                                        lineNumber: 1002,
+                                        lineNumber: 1393,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 995,
+                                lineNumber: 1386,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 978,
+                        lineNumber: 1369,
                         columnNumber: 9
                     }, this),
                     isAuthenticated ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2469,7 +2844,7 @@ function Home() {
                                 className: "w-4 h-4"
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1019,
+                                lineNumber: 1410,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2477,7 +2852,7 @@ function Home() {
                                 children: userProfile?.name || currentUser
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1020,
+                                lineNumber: 1411,
                                 columnNumber: 13
                             }, this),
                             userProfile && userProfile.loyaltyPoints > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2488,13 +2863,13 @@ function Home() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1022,
+                                lineNumber: 1413,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1015,
+                        lineNumber: 1406,
                         columnNumber: 11
                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex items-center gap-2 text-black bg-muted rounded-xl px-3 py-2 w-full border-2 border-black",
@@ -2503,7 +2878,7 @@ function Home() {
                                 className: "w-4 h-4"
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1027,
+                                lineNumber: 1418,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2511,7 +2886,7 @@ function Home() {
                                 children: "Гость"
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1028,
+                                lineNumber: 1419,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2519,19 +2894,19 @@ function Home() {
                                 children: "Войдите для оформления заказа"
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1029,
+                                lineNumber: 1420,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1026,
+                        lineNumber: 1417,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 977,
+                lineNumber: 1368,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2542,7 +2917,7 @@ function Home() {
                         children: view === "calendar" ? "Выберите дату для заказа" : "История ваших заказов"
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1035,
+                        lineNumber: 1426,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2557,14 +2932,14 @@ function Home() {
                                         className: "w-4 h-4 mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/app/page.tsx",
-                                        lineNumber: 1045,
+                                        lineNumber: 1436,
                                         columnNumber: 13
                                     }, this),
                                     "Календарь"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1040,
+                                lineNumber: 1431,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -2577,20 +2952,20 @@ function Home() {
                                         className: "w-4 h-4 mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/app/page.tsx",
-                                        lineNumber: 1054,
+                                        lineNumber: 1445,
                                         columnNumber: 13
                                     }, this),
                                     "История"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1048,
+                                lineNumber: 1439,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1039,
+                        lineNumber: 1430,
                         columnNumber: 9
                     }, this),
                     view === "calendar" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -2645,12 +3020,12 @@ function Home() {
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 1063,
+                                    lineNumber: 1454,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1062,
+                                lineNumber: 1453,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2664,19 +3039,19 @@ function Home() {
                                     onMoveOrder: handleMoveOrder
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 1124,
+                                    lineNumber: 1515,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1123,
+                                lineNumber: 1514,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$fresh$2d$section$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FreshSection"], {
                                 onDishClick: handleDishClick
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 1134,
+                                lineNumber: 1525,
                                 columnNumber: 13
                             }, this)
                         ]
@@ -2685,20 +3060,19 @@ function Home() {
                         onCancelOrder: handleCancelOrder,
                         onRepeatOrder: handleRepeatOrder,
                         onPayOrder: handlePayOrder,
-                        onMarkCashOrderAsPaid: handleMarkCashOrderAsPaid,
                         onReviewOrder: (order)=>setReviewOrder(order),
                         availableDates: availableDates,
                         userProfile: userProfile,
                         reviews: reviews
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 1137,
+                        lineNumber: 1528,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1034,
+                lineNumber: 1425,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$order$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["OrderModal"], {
@@ -2738,7 +3112,7 @@ function Home() {
                 userCity: userProfile?.city
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1151,
+                lineNumber: 1541,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$auth$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AuthModal"], {
@@ -2751,7 +3125,7 @@ function Home() {
                 redirectAfterLogin: pendingCheckout ? "checkout" : null
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1192,
+                lineNumber: 1582,
                 columnNumber: 7
             }, this),
             showProfile && currentUser && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$profile$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ProfileModal"], {
@@ -2760,7 +3134,7 @@ function Home() {
                 onSave: handleProfileSave
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1203,
+                lineNumber: 1593,
                 columnNumber: 9
             }, this),
             paymentOrder && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$payment$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["PaymentModal"], {
@@ -2771,7 +3145,7 @@ function Home() {
                 onPaymentComplete: handlePaymentComplete
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1207,
+                lineNumber: 1597,
                 columnNumber: 9
             }, this),
             reviewOrder && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$review$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ReviewModal"], {
@@ -2780,7 +3154,7 @@ function Home() {
                 onSubmit: handleReviewSubmit
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1217,
+                lineNumber: 1607,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$warning$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["WarningDialog"], {
@@ -2791,7 +3165,7 @@ function Home() {
                 variant: warningDialog.variant
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1220,
+                lineNumber: 1610,
                 columnNumber: 7
             }, this),
             selectedDish && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$dish$2d$smart$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DishSmartModal"], {
@@ -2804,13 +3178,13 @@ function Home() {
                 onOpenExistingOrder: handleOpenExistingOrder
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 1230,
+                lineNumber: 1620,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.tsx",
-        lineNumber: 975,
+        lineNumber: 1366,
         columnNumber: 5
     }, this);
 }

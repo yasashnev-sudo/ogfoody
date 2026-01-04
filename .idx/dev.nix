@@ -18,8 +18,8 @@
     NOCODB_TABLE_USERS = "mvrp4r9o3z69c45";
     NOCODB_TABLE_ORDERS = "meddiicl0gr0r8y";
     NOCODB_TABLE_ORDER_PERSONS = "mvr08d33zm5i8oi";
-    NOCODB_TABLE_ORDER_MEALS = "mz9uw5by177ygug";
-    NOCODB_TABLE_ORDER_EXTRAS = "mksy21hmttmo855";
+    NOCODB_TABLE_ORDER_MEALS = "ma2swd51ph89csr";
+    NOCODB_TABLE_ORDER_EXTRAS = "mebruxwjsnxrxj9";
     NOCODB_TABLE_PROMO_CODES = "mgov8ce836696fy";
     NOCODB_TABLE_REVIEWS = "mv8c69ib9muz9ki";
   };

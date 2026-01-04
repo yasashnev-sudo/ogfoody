@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///Users/sergejasasnev/Downloads/my-project%20%281%29/app/api/db/check-logs/route.ts"],"sourcesContent":["// Простой endpoint для проверки, что сервер работает и логи пишутся\n\nimport { NextResponse } from \"next/server\"\n\nexport async function GET() {\n  console.log(\"🔍 CHECK-LOGS: Endpoint вызван в\", new Date().toISOString())\n  \n  return NextResponse.json({\n    success: true,\n    message: \"Сервер работает, логи пишутся\",\n    timestamp: new Date().toISOString(),\n    instruction: \"Проверьте терминал, где запущен 'npm run dev' - там должны быть логи с эмодзи 📥, 📦, ✅ и т.д.\",\n  })\n}\n\n"],"names":[],"mappings":";;;;AAAA,oEAAoE;AAEpE;;AAEO,eAAe;IACpB,QAAQ,GAAG,CAAC,oCAAoC,IAAI,OAAO,WAAW;IAEtE,OAAO,gJAAY,CAAC,IAAI,CAAC;QACvB,SAAS;QACT,SAAS;QACT,WAAW,IAAI,OAAO,WAAW;QACjC,aAAa;IACf;AACF"}}]
+}

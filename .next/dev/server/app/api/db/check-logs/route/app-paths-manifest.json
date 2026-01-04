@@ -1,0 +1,3 @@
+{
+  "/api/db/check-logs/route": "app/api/db/check-logs/route.js"
+}

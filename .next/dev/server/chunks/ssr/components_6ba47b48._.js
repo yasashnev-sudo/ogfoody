@@ -183,47 +183,35 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
             return checkDate.getTime() === day1.getTime() || checkDate.getTime() === day2.getTime();
         });
     };
-    // Find the absolute last day of food across all orders
-    const getLastDayOfFood = ()=>{
-        let lastDay = null;
-        orders.forEach((order)=>{
+    // Check if this date is the last day of food (day2) for any order
+    const isLastDayOfAnyOrder = (date)=>{
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+        return orders.some((order)=>{
             const deliveryDate = new Date(order.startDate);
             deliveryDate.setHours(0, 0, 0, 0);
             // day2 is the last eating day for this order
             const day2 = new Date(deliveryDate);
             day2.setDate(day2.getDate() + 2);
             day2.setHours(0, 0, 0, 0);
-            if (!lastDay || day2.getTime() > lastDay.getTime()) {
-                lastDay = day2;
-            }
+            return checkDate.getTime() === day2.getTime();
         });
-        return lastDay;
     };
-    // Check if this is the last day of food (the absolute last day across all orders)
-    const isLastDayOfFood = (date)=>{
-        if (!hasFoodForDate(date)) return false;
+    // Check if there's food on the next day (chain continues without gap)
+    // Plus button should show if there's NO food on next day (gap exists)
+    const hasNextOrder = (date)=>{
         const checkDate = new Date(date);
         checkDate.setHours(0, 0, 0, 0);
-        const lastDay = getLastDayOfFood();
-        if (!lastDay) return false;
-        return checkDate.getTime() === lastDay.getTime();
-    };
-    // Check if there's an order that continues the chain (on last day or next day)
-    const hasNextOrder = (date)=>{
-        if (!isLastDayOfFood(date)) return false;
-        // PRIORITY 1: Check if there's delivery on the last day itself (new order continues chain)
-        // This is the most important check - if delivery exists on last day, chain continues
+        // PRIORITY 1: Check if there's delivery on this day (new order continues chain)
         if (hasDeliveryForDate(date)) {
             return true;
         }
-        // PRIORITY 2: Check if there's delivery on the next day
-        const nextDay = new Date(date);
+        // PRIORITY 2: Check if there's FOOD on the next day (no gap - chain continues)
+        // If there's food on next day, the chain continues. If no food, there's a gap and plus should show
+        const nextDay = new Date(checkDate);
         nextDay.setDate(nextDay.getDate() + 1);
         nextDay.setHours(0, 0, 0, 0);
-        if (hasDeliveryForDate(nextDay)) {
-            return true;
-        }
-        return false;
+        return hasFoodForDate(nextDay);
     };
     const renderDayCell = (date, index)=>{
         const isSelected = propSelectedDate ? (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$isSameDay$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["isSameDay"])(date, propSelectedDate) : false;
@@ -231,11 +219,11 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
         const isDateToday = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$isToday$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["isToday"])(date);
         const hasDelivery = hasDeliveryForDate(date);
         const hasFood = hasFoodForDate(date);
-        const isLastDay = isLastDayOfFood(date);
+        const isLastDayOfOrder = isLastDayOfAnyOrder(date);
         const hasNextOrderForLastDay = hasNextOrder(date);
-        // CRITICAL: Yellow + button shows ONLY on last day WITH food, NO delivery, and NO next order
-        // Must have: hasFood AND isLastDay AND !hasDelivery AND !hasNextOrderForLastDay
-        const shouldShowYellowPlus = hasFood && isLastDay && !hasDelivery && !hasNextOrderForLastDay && isCurrentMonth;
+        // CRITICAL: Yellow + button shows ONLY on last day of any order WITH food, NO delivery, and NO next order (gap exists)
+        // Must have: hasFood AND isLastDayOfOrder AND !hasDelivery AND !hasNextOrderForLastDay
+        const shouldShowYellowPlus = hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay && isCurrentMonth;
         const canOrder = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$menu$2d$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["canOrderForDate"])(date);
         const isSaturday = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$getDay$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getDay"])(date) === 6;
         const isAvailableForNewOrder = canOrder && !isSaturday;
@@ -265,12 +253,12 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                         className: "w-3.5 h-3.5 sm:w-4 sm:h-4 text-black stroke-[2.5px]"
                     }, void 0, false, {
                         fileName: "[project]/components/calendar.tsx",
-                        lineNumber: 221,
+                        lineNumber: 203,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/calendar.tsx",
-                    lineNumber: 220,
+                    lineNumber: 202,
                     columnNumber: 11
                 }, this),
                 shouldShowYellowPlus && // Yellow Round Button with "+" (top-right corner, doesn't cover date)
@@ -291,12 +279,12 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                         children: "+"
                     }, void 0, false, {
                         fileName: "[project]/components/calendar.tsx",
-                        lineNumber: 247,
+                        lineNumber: 229,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/components/calendar.tsx",
-                    lineNumber: 230,
+                    lineNumber: 212,
                     columnNumber: 11
                 }, this),
                 isCurrentMonth && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -306,7 +294,7 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                         children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$format$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["format"])(date, "d")
                     }, void 0, false, {
                         fileName: "[project]/components/calendar.tsx",
-                        lineNumber: 256,
+                        lineNumber: 238,
                         columnNumber: 15
                     }, this) : // Empty Days - Black text on white background
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -316,7 +304,7 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                 children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$format$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["format"])(date, "d")
                             }, void 0, false, {
                                 fileName: "[project]/components/calendar.tsx",
-                                lineNumber: 262,
+                                lineNumber: 244,
                                 columnNumber: 17
                             }, this),
                             isDateToday && !hasDelivery && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -324,7 +312,7 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                 children: "Сегодня"
                             }, void 0, false, {
                                 fileName: "[project]/components/calendar.tsx",
-                                lineNumber: 271,
+                                lineNumber: 253,
                                 columnNumber: 19
                             }, this)
                         ]
@@ -333,7 +321,7 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
             ]
         }, date.toISOString(), true, {
             fileName: "[project]/components/calendar.tsx",
-            lineNumber: 205,
+            lineNumber: 187,
             columnNumber: 7
         }, this);
     };
@@ -354,12 +342,12 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                 className: "w-4 h-4"
                             }, void 0, false, {
                                 fileName: "[project]/components/calendar.tsx",
-                                lineNumber: 288,
+                                lineNumber: 270,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/calendar.tsx",
-                            lineNumber: 287,
+                            lineNumber: 269,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -369,7 +357,7 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                             }).toUpperCase()
                         }, void 0, false, {
                             fileName: "[project]/components/calendar.tsx",
-                            lineNumber: 290,
+                            lineNumber: 272,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -381,18 +369,18 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                 className: "w-4 h-4"
                             }, void 0, false, {
                                 fileName: "[project]/components/calendar.tsx",
-                                lineNumber: 294,
+                                lineNumber: 276,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/calendar.tsx",
-                            lineNumber: 293,
+                            lineNumber: 275,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/calendar.tsx",
-                    lineNumber: 286,
+                    lineNumber: 268,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -410,12 +398,12 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                             children: day
                         }, day, false, {
                             fileName: "[project]/components/calendar.tsx",
-                            lineNumber: 300,
+                            lineNumber: 282,
                             columnNumber: 13
                         }, this))
                 }, void 0, false, {
                     fileName: "[project]/components/calendar.tsx",
-                    lineNumber: 298,
+                    lineNumber: 280,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -423,7 +411,7 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                     children: calendarDays.map((date, index)=>renderDayCell(date, index))
                 }, void 0, false, {
                     fileName: "[project]/components/calendar.tsx",
-                    lineNumber: 306,
+                    lineNumber: 288,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -438,12 +426,12 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                         className: "w-4 h-4 sm:w-5 sm:h-5 text-black stroke-[2.5px]"
                                     }, void 0, false, {
                                         fileName: "[project]/components/calendar.tsx",
-                                        lineNumber: 314,
+                                        lineNumber: 296,
                                         columnNumber: 19
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/calendar.tsx",
-                                    lineNumber: 313,
+                                    lineNumber: 295,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -451,13 +439,13 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                     children: "Доставка"
                                 }, void 0, false, {
                                     fileName: "[project]/components/calendar.tsx",
-                                    lineNumber: 316,
+                                    lineNumber: 298,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/calendar.tsx",
-                            lineNumber: 312,
+                            lineNumber: 294,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -467,7 +455,7 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                     className: "w-7 h-7 sm:w-8 sm:h-8 bg-[#9D00FF] rounded-lg border-2 border-black shadow-brutal"
                                 }, void 0, false, {
                                     fileName: "[project]/components/calendar.tsx",
-                                    lineNumber: 319,
+                                    lineNumber: 301,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -475,13 +463,13 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                     children: "Есть еда"
                                 }, void 0, false, {
                                     fileName: "[project]/components/calendar.tsx",
-                                    lineNumber: 320,
+                                    lineNumber: 302,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/calendar.tsx",
-                            lineNumber: 318,
+                            lineNumber: 300,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -496,17 +484,17 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                             children: "+"
                                         }, void 0, false, {
                                             fileName: "[project]/components/calendar.tsx",
-                                            lineNumber: 325,
+                                            lineNumber: 307,
                                             columnNumber: 21
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/calendar.tsx",
-                                        lineNumber: 324,
+                                        lineNumber: 306,
                                         columnNumber: 19
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/calendar.tsx",
-                                    lineNumber: 323,
+                                    lineNumber: 305,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -514,30 +502,30 @@ function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, selecte
                                     children: "Заказать, чтобы не голодать"
                                 }, void 0, false, {
                                     fileName: "[project]/components/calendar.tsx",
-                                    lineNumber: 328,
+                                    lineNumber: 310,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/calendar.tsx",
-                            lineNumber: 322,
+                            lineNumber: 304,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/calendar.tsx",
-                    lineNumber: 311,
+                    lineNumber: 293,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/calendar.tsx",
-            lineNumber: 285,
+            lineNumber: 267,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/calendar.tsx",
-        lineNumber: 284,
+        lineNumber: 266,
         columnNumber: 5
     }, this);
 }
@@ -1460,7 +1448,7 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
         setShowPortions(false);
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("relative bg-white rounded-xl transition-all flex flex-col h-full group overflow-hidden border-2 border-black shadow-brutal brutal-hover", isSelected ? "ring-4 ring-primary" : "", isHighlighted && "ring-4 ring-primary z-20", disabled && "opacity-50 pointer-events-none"),
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("relative bg-white rounded-xl transition-all flex flex-col h-full group overflow-hidden border-2 border-black shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover", isSelected ? "ring-4 ring-primary" : "", isHighlighted && "ring-4 ring-primary z-20", disabled && "opacity-50 pointer-events-none"),
         style: {
             scrollMarginTop: '100px',
             transition: 'all 0.4s ease-out'
@@ -1523,7 +1511,7 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
                             e.stopPropagation();
                             onImageClick?.();
                         },
-                        className: "absolute top-2 right-2 w-7 h-7 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100",
+                        className: "absolute top-2 right-2 w-7 h-7 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100 brutal-hover",
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$info$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Info$3e$__["Info"], {
                             className: "w-4 h-4"
                         }, void 0, false, {
@@ -1543,12 +1531,12 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "p-4 flex flex-col flex-1",
+                className: "p-1.5 sm:p-4 flex flex-col flex-1",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "space-y-2 mb-3",
+                        className: "space-y-1 sm:space-y-2 mb-2 sm:mb-3",
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
-                            className: "font-semibold text-base leading-snug line-clamp-2",
+                            className: "font-semibold text-xs sm:text-base leading-tight line-clamp-2",
                             title: meal.name,
                             children: meal.name
                         }, void 0, false, {
@@ -1562,7 +1550,7 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "mt-auto space-y-3",
+                        className: "mt-auto space-y-1.5 sm:space-y-3",
                         children: [
                             hasMultiplePortions && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "relative",
@@ -1572,35 +1560,25 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
                                             e.stopPropagation();
                                             setShowPortions(!showPortions);
                                         },
-                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-full flex items-center justify-between bg-white border-2 border-black hover:bg-[#FFEA00] text-xs px-3 py-2 rounded-lg transition-colors font-bold", showPortions && "bg-[#FFEA00]"),
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "text-muted-foreground mr-1",
-                                                children: "Порция:"
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/meal-selector.tsx",
-                                                lineNumber: 155,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0)),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "font-semibold flex items-center gap-1 text-foreground",
-                                                children: [
-                                                    PORTION_LABELS[currentPortion],
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
-                                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-3 h-3 transition-transform", showPortions && "rotate-180")
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/components/meal-selector.tsx",
-                                                        lineNumber: 158,
-                                                        columnNumber: 19
-                                                    }, ("TURBOPACK compile-time value", void 0))
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/components/meal-selector.tsx",
-                                                lineNumber: 156,
-                                                columnNumber: 17
-                                            }, ("TURBOPACK compile-time value", void 0))
-                                        ]
-                                    }, void 0, true, {
+                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-full flex items-center justify-between bg-white border-2 border-black hover:bg-[#FFEA00] text-xs sm:text-sm px-1.5 sm:px-3 py-1 sm:py-2 rounded-lg transition-colors font-bold shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover", showPortions && "bg-[#FFEA00]"),
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "font-semibold flex items-center gap-1 sm:gap-1.5 text-foreground text-xs sm:text-sm",
+                                            children: [
+                                                PORTION_LABELS[currentPortion],
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
+                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform", showPortions && "rotate-180")
+                                                }, void 0, false, {
+                                                    fileName: "[project]/components/meal-selector.tsx",
+                                                    lineNumber: 157,
+                                                    columnNumber: 19
+                                                }, ("TURBOPACK compile-time value", void 0))
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/components/meal-selector.tsx",
+                                            lineNumber: 155,
+                                            columnNumber: 17
+                                        }, ("TURBOPACK compile-time value", void 0))
+                                    }, void 0, false, {
                                         fileName: "[project]/components/meal-selector.tsx",
                                         lineNumber: 145,
                                         columnNumber: 15
@@ -1618,32 +1596,32 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
                                                     e.stopPropagation();
                                                     handlePortionSelect(p);
                                                 },
-                                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors font-bold", currentPortion === p ? "bg-[#9D00FF] text-white" : "hover:bg-[#FFEA00]/20 text-black"),
+                                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors font-bold brutal-hover", currentPortion === p ? "bg-[#9D00FF] text-white" : "hover:bg-[#FFEA00]/20 text-black"),
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                         children: PORTION_LABELS[p]
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/meal-selector.tsx",
-                                                        lineNumber: 180,
+                                                        lineNumber: 179,
                                                         columnNumber: 25
                                                     }, ("TURBOPACK compile-time value", void 0)),
                                                     currentPortion === p && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__["Check"], {
                                                         className: "w-3 h-3"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/meal-selector.tsx",
-                                                        lineNumber: 181,
+                                                        lineNumber: 180,
                                                         columnNumber: 50
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 ]
                                             }, p, true, {
                                                 fileName: "[project]/components/meal-selector.tsx",
-                                                lineNumber: 167,
+                                                lineNumber: 166,
                                                 columnNumber: 23
                                             }, ("TURBOPACK compile-time value", void 0));
                                         })
                                     }, void 0, false, {
                                         fileName: "[project]/components/meal-selector.tsx",
-                                        lineNumber: 163,
+                                        lineNumber: 162,
                                         columnNumber: 17
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
@@ -1653,37 +1631,37 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "flex items-end justify-between pt-1 gap-2",
+                                className: "flex items-end justify-between pt-0.5 sm:pt-1 gap-1.5 sm:gap-2",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex flex-col min-w-0",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "text-xs text-muted-foreground font-medium mb-0.5",
+                                                className: "text-[9px] sm:text-xs text-muted-foreground font-medium mb-0.5",
                                                 children: [
                                                     weight,
                                                     " г"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/meal-selector.tsx",
-                                                lineNumber: 192,
+                                                lineNumber: 191,
                                                 columnNumber: 15
                                             }, ("TURBOPACK compile-time value", void 0)),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "font-bold text-lg leading-none",
+                                                className: "font-bold text-sm sm:text-lg leading-none",
                                                 children: [
                                                     price,
                                                     " ₽"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/meal-selector.tsx",
-                                                lineNumber: 193,
+                                                lineNumber: 192,
                                                 columnNumber: 15
                                             }, ("TURBOPACK compile-time value", void 0))
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/meal-selector.tsx",
-                                        lineNumber: 191,
+                                        lineNumber: 190,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1691,29 +1669,29 @@ const CompactMealCard = ({ meal, isSelected, onSelect, selectedPortion = "single
                                             e.stopPropagation();
                                             onSelect(currentPortion);
                                         },
-                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-brutal shrink-0 border-2 border-black", isSelected ? "bg-[#9D00FF] text-white" : "bg-white text-black hover:bg-[#FFEA00]"),
+                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal shrink-0 border-2 border-black brutal-hover", isSelected ? "bg-[#9D00FF] text-white" : "bg-white text-black hover:bg-[#FFEA00]"),
                                         children: isSelected ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__["Check"], {
-                                            className: "w-5 h-5"
+                                            className: "w-3.5 h-3.5 sm:w-5 sm:h-5"
                                         }, void 0, false, {
                                             fileName: "[project]/components/meal-selector.tsx",
-                                            lineNumber: 208,
+                                            lineNumber: 207,
                                             columnNumber: 29
                                         }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$plus$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Plus$3e$__["Plus"], {
-                                            className: "w-5 h-5"
+                                            className: "w-3.5 h-3.5 sm:w-5 sm:h-5"
                                         }, void 0, false, {
                                             fileName: "[project]/components/meal-selector.tsx",
-                                            lineNumber: 208,
-                                            columnNumber: 61
+                                            lineNumber: 207,
+                                            columnNumber: 79
                                         }, ("TURBOPACK compile-time value", void 0))
                                     }, void 0, false, {
                                         fileName: "[project]/components/meal-selector.tsx",
-                                        lineNumber: 196,
+                                        lineNumber: 195,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/meal-selector.tsx",
-                                lineNumber: 190,
+                                lineNumber: 189,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
@@ -1749,7 +1727,7 @@ const MealSectionComponent = ({ title, meals, selectedMeal, onMealSelect, colorC
         },
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-full p-4 select-none cursor-pointer transition-colors sticky top-0 z-30 bg-white", isOpen ? "border-b-2 border-black" : "hover:bg-[#FFEA00]", "first:rounded-t-lg rounded-lg", isOpen && "rounded-b-none"),
+                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-full p-2 sm:p-4 select-none cursor-pointer transition-colors sticky top-0 z-30 bg-white", isOpen ? "border-b-2 border-black" : "hover:bg-[#FFEA00]", "first:rounded-t-lg rounded-lg", isOpen && "rounded-b-none", "active:translate-x-[1px] active:translate-y-[1px]"),
                 onClick: handleToggle,
                 role: "button",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1853,7 +1831,7 @@ const MealSectionComponent = ({ title, meals, selectedMeal, onMealSelect, colorC
                                     columnNumber: 18
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black hover:bg-[#FFEA00] transition-colors bg-white shadow-brutal",
+                                    className: "w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black hover:bg-[#FFEA00] transition-colors bg-white shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover cursor-pointer",
                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
                                         className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("w-5 h-5 text-black transition-transform duration-200 stroke-[2.5px]", isOpen && "rotate-180")
                                     }, void 0, false, {
@@ -1880,13 +1858,13 @@ const MealSectionComponent = ({ title, meals, selectedMeal, onMealSelect, colorC
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/components/meal-selector.tsx",
-                lineNumber: 255,
+                lineNumber: 254,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             isOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "p-4 pt-0 border-t-2 border-black",
+                className: "px-1.5 py-1.5 sm:p-4 pt-0 border-t-2 border-black",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "grid grid-cols-2 gap-3 pt-4",
+                    className: "grid grid-cols-2 gap-2.5 sm:gap-3 pt-1.5 sm:pt-4",
                     children: meals.map((meal)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "h-full",
                             id: `${id}-meal-${meal.id}`,
@@ -1940,7 +1918,7 @@ const MealSectionComponent = ({ title, meals, selectedMeal, onMealSelect, colorC
         ]
     }, void 0, true, {
         fileName: "[project]/components/meal-selector.tsx",
-        lineNumber: 250,
+        lineNumber: 249,
         columnNumber: 5
     }, ("TURBOPACK compile-time value", void 0));
 };
@@ -2173,7 +2151,7 @@ function MealSelector({ personNumber, dayNumber, selectedMeals = {}, onUpdate, m
                     e.preventDefault();
                     onClick();
                 },
-                className: "h-9 w-9 rounded-lg p-0 flex items-center justify-center bg-white border-2 border-black hover:bg-[#FFEA00] text-black transition-colors shadow-brutal",
+                className: "h-9 w-9 rounded-lg p-0 flex items-center justify-center bg-white border-2 border-black hover:bg-[#FFEA00] text-black transition-colors shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover",
                 title: "Выбрать случайно",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$wand$2d$sparkles$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Wand2$3e$__["Wand2"], {
                     className: "w-4 h-4 stroke-[2.5px]"
@@ -4355,7 +4333,7 @@ function OrderModal({ date, existingOrder, onClose, onSave, onCancel, allOrders,
                                     scrollBehavior: 'auto'
                                 },
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "p-4 pb-20",
+                                    className: "px-1.5 py-1.5 sm:p-4 pb-20",
                                     children: [
                                         !isInDeliveryZone && userCity && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg",
@@ -5939,7 +5917,6 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$triangle$2d$alert$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__AlertTriangle$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/triangle-alert.js [app-ssr] (ecmascript) <export default as AlertTriangle>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$credit$2d$card$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CreditCard$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/credit-card.js [app-ssr] (ecmascript) <export default as CreditCard>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/star.js [app-ssr] (ecmascript) <export default as Star>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/message-square.js [app-ssr] (ecmascript) <export default as MessageSquare>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$banknote$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Banknote$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/banknote.js [app-ssr] (ecmascript) <export default as Banknote>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$alert$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__AlertCircle$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/circle-alert.js [app-ssr] (ecmascript) <export default as AlertCircle>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/button.tsx [app-ssr] (ecmascript)");
@@ -6064,7 +6041,7 @@ const checkOrderAvailability = (order)=>{
         unavailableItems
     };
 };
-function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMarkCashOrderAsPaid, onReviewOrder, availableDates, userProfile, reviews }) {
+function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onReviewOrder, availableDates, userProfile, reviews }) {
     const [repeatMenuOpen, setRepeatMenuOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const [cancelConfirmOrder, setCancelConfirmOrder] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const activeOrders = orders.filter((o)=>!o.cancelled);
@@ -6074,6 +6051,11 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
         return toDate(b.startDate).getTime() - toDate(a.startDate).getTime();
     });
     const calculateOrderTotal = (order)=>{
+        // Используем total из заказа, если он есть
+        if (order.total && typeof order.total === "number" && order.total > 0) {
+            return order.total;
+        }
+        // Иначе вычисляем вручную
         let total = 0;
         order.persons.forEach((person)=>{
             ;
@@ -6087,22 +6069,105 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                 const lunch = ensureFullMealStructure(dayMeals.lunch);
                 const dinner = ensureFullMealStructure(dayMeals.dinner);
                 // Завтрак
-                if (breakfast.dish) {
-                    total += breakfast.dish.price * (breakfast.dish.portion || 1);
+                if (breakfast.dish && breakfast.dish.prices) {
+                    const portion = breakfast.dish.portion || "single";
+                    if (portion === "medium" && breakfast.dish.prices.medium) {
+                        total += breakfast.dish.prices.medium;
+                    } else if (portion === "large" && breakfast.dish.prices.large) {
+                        total += breakfast.dish.prices.large;
+                    } else {
+                        total += breakfast.dish.prices.single || 0;
+                    }
                 }
                 // Обед
-                if (lunch.salad) total += lunch.salad.price * (lunch.salad.portion || 1);
-                if (lunch.soup) total += lunch.soup.price * (lunch.soup.portion || 1);
-                if (lunch.main) {
-                    total += lunch.main.price * (lunch.main.portion || 1);
-                    if (lunch.main.garnish) total += lunch.main.garnish.price * (lunch.main.garnish.portion || 1);
+                if (lunch.salad && lunch.salad.prices) {
+                    const portion = lunch.salad.portion || "single";
+                    if (portion === "medium" && lunch.salad.prices.medium) {
+                        total += lunch.salad.prices.medium;
+                    } else if (portion === "large" && lunch.salad.prices.large) {
+                        total += lunch.salad.prices.large;
+                    } else {
+                        total += lunch.salad.prices.single || 0;
+                    }
+                }
+                if (lunch.soup && lunch.soup.prices) {
+                    const portion = lunch.soup.portion || "single";
+                    if (portion === "medium" && lunch.soup.prices.medium) {
+                        total += lunch.soup.prices.medium;
+                    } else if (portion === "large" && lunch.soup.prices.large) {
+                        total += lunch.soup.prices.large;
+                    } else {
+                        total += lunch.soup.prices.single || 0;
+                    }
+                }
+                if (lunch.main && lunch.main.prices) {
+                    const portion = lunch.main.portion || "single";
+                    if (portion === "medium" && lunch.main.prices.medium) {
+                        total += lunch.main.prices.medium;
+                    } else if (portion === "large" && lunch.main.prices.large) {
+                        total += lunch.main.prices.large;
+                    } else {
+                        total += lunch.main.prices.single || 0;
+                    }
+                    if (lunch.main.garnish) {
+                        if (!lunch.main.garnish.prices) {
+                            console.warn("⚠️ lunch.main.garnish.prices is undefined", lunch.main.garnish);
+                        } else {
+                            const garnishPortion = lunch.main.garnish.portion || "single";
+                            if (garnishPortion === "medium" && lunch.main.garnish.prices.medium) {
+                                total += lunch.main.garnish.prices.medium;
+                            } else if (garnishPortion === "large" && lunch.main.garnish.prices.large) {
+                                total += lunch.main.garnish.prices.large;
+                            } else {
+                                total += lunch.main.garnish.prices.single || 0;
+                            }
+                        }
+                    }
                 }
                 // Ужин
-                if (dinner.salad) total += dinner.salad.price * (dinner.salad.portion || 1);
-                if (dinner.soup) total += dinner.soup.price * (dinner.soup.portion || 1);
-                if (dinner.main) {
-                    total += dinner.main.price * (dinner.main.portion || 1);
-                    if (dinner.main.garnish) total += dinner.main.garnish.price * (dinner.main.garnish.portion || 1);
+                if (dinner.salad && dinner.salad.prices) {
+                    const portion = dinner.salad.portion || "single";
+                    if (portion === "medium" && dinner.salad.prices.medium) {
+                        total += dinner.salad.prices.medium;
+                    } else if (portion === "large" && dinner.salad.prices.large) {
+                        total += dinner.salad.prices.large;
+                    } else {
+                        total += dinner.salad.prices.single || 0;
+                    }
+                }
+                if (dinner.soup && dinner.soup.prices) {
+                    const portion = dinner.soup.portion || "single";
+                    if (portion === "medium" && dinner.soup.prices.medium) {
+                        total += dinner.soup.prices.medium;
+                    } else if (portion === "large" && dinner.soup.prices.large) {
+                        total += dinner.soup.prices.large;
+                    } else {
+                        total += dinner.soup.prices.single || 0;
+                    }
+                }
+                if (dinner.main && dinner.main.prices) {
+                    const portion = dinner.main.portion || "single";
+                    if (portion === "medium" && dinner.main.prices.medium) {
+                        total += dinner.main.prices.medium;
+                    } else if (portion === "large" && dinner.main.prices.large) {
+                        total += dinner.main.prices.large;
+                    } else {
+                        total += dinner.main.prices.single || 0;
+                    }
+                    if (dinner.main.garnish) {
+                        if (!dinner.main.garnish.prices) {
+                            console.warn("⚠️ dinner.main.garnish.prices is undefined", dinner.main.garnish);
+                        } else {
+                            const garnishPortion = dinner.main.garnish.portion || "single";
+                            if (garnishPortion === "medium" && dinner.main.garnish.prices.medium) {
+                                total += dinner.main.garnish.prices.medium;
+                            } else if (garnishPortion === "large" && dinner.main.garnish.prices.large) {
+                                total += dinner.main.garnish.prices.large;
+                            } else {
+                                total += dinner.main.garnish.prices.single || 0;
+                            }
+                        }
+                    }
                 }
             });
         });
@@ -6127,10 +6192,30 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
         return dateIsValid;
     };
     const canReviewOrder = (order, orderKey)=>{
-        return order.delivered && !reviews.find((r)=>r.orderId === orderKey);
+        // Проверяем, есть ли уже отзыв для этого заказа
+        // Используем приведение к строке для надежного сравнения
+        const hasReview = reviews.some((r)=>String(r.orderId) === String(orderKey));
+        if (hasReview) {
+            return false;
+        }
+        // Можно оставить отзыв, если заказ доставлен
+        if (order.delivered) {
+            return true;
+        }
+        // Или если дата доставки уже прошла (заказ был вчера или раньше)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const orderDate = toDate(order.startDate);
+        orderDate.setHours(0, 0, 0, 0);
+        // Заказ на 2 дня, поэтому проверяем второй день доставки
+        const day2Date = new Date(orderDate);
+        day2Date.setDate(day2Date.getDate() + 1);
+        // Можно оставить отзыв, если второй день доставки уже прошел
+        return day2Date.getTime() < today.getTime();
     };
     const getOrderReview = (orderKey)=>{
-        return reviews.find((r)=>r.orderId === orderKey);
+        // Используем приведение к строке для надежного сравнения
+        return reviews.find((r)=>String(r.orderId) === String(orderKey));
     };
     const getFreeDates = ()=>{
         const orderDates = new Set(activeOrders.map((o)=>formatDateKey(toDate(o.startDate))));
@@ -6156,7 +6241,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                         className: "w-12 h-12 text-muted-foreground mx-auto mb-3"
                     }, void 0, false, {
                         fileName: "[project]/components/order-history.tsx",
-                        lineNumber: 240,
+                        lineNumber: 351,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6164,7 +6249,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                         children: "У вас пока нет заказов"
                     }, void 0, false, {
                         fileName: "[project]/components/order-history.tsx",
-                        lineNumber: 241,
+                        lineNumber: 352,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6172,18 +6257,18 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                         children: "Перейдите в календарь, чтобы оформить первый заказ"
                     }, void 0, false, {
                         fileName: "[project]/components/order-history.tsx",
-                        lineNumber: 242,
+                        lineNumber: 353,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/order-history.tsx",
-                lineNumber: 239,
+                lineNumber: 350,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/order-history.tsx",
-            lineNumber: 238,
+            lineNumber: 349,
             columnNumber: 7
         }, this);
     }
@@ -6204,14 +6289,14 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             children: "Завтрак:"
                         }, void 0, false, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 261,
+                            lineNumber: 372,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                             children: breakfast.dish.name
                         }, void 0, false, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 262,
+                            lineNumber: 373,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6223,13 +6308,13 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 263,
+                            lineNumber: 374,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/order-history.tsx",
-                    lineNumber: 260,
+                    lineNumber: 371,
                     columnNumber: 11
                 }, this),
                 (lunch.salad || lunch.soup || lunch.main) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6240,7 +6325,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             children: "Обед:"
                         }, void 0, false, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 268,
+                            lineNumber: 379,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6251,7 +6336,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             ].filter(Boolean).join(", ")
                         }, void 0, false, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 269,
+                            lineNumber: 380,
                             columnNumber: 13
                         }, this),
                         lunch.main?.garnish && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6262,13 +6347,13 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 271,
+                            lineNumber: 382,
                             columnNumber: 15
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/order-history.tsx",
-                    lineNumber: 267,
+                    lineNumber: 378,
                     columnNumber: 11
                 }, this),
                 (dinner.salad || dinner.soup || dinner.main) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6279,7 +6364,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             children: "Ужин:"
                         }, void 0, false, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 277,
+                            lineNumber: 388,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6290,7 +6375,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             ].filter(Boolean).join(", ")
                         }, void 0, false, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 278,
+                            lineNumber: 389,
                             columnNumber: 13
                         }, this),
                         dinner.main?.garnish && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6301,19 +6386,19 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 280,
+                            lineNumber: 391,
                             columnNumber: 15
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/order-history.tsx",
-                    lineNumber: 276,
+                    lineNumber: 387,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/order-history.tsx",
-            lineNumber: 258,
+            lineNumber: 369,
             columnNumber: 7
         }, this);
     };
@@ -6334,12 +6419,12 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                         className: "w-5 h-5 text-orange-600"
                                     }, void 0, false, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 295,
+                                        lineNumber: 406,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 294,
+                                    lineNumber: 405,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -6347,13 +6432,13 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                     children: "Отменить заказ?"
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 297,
+                                    lineNumber: 408,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 293,
+                            lineNumber: 404,
                             columnNumber: 13
                         }, this),
                         cancelConfirmOrder.paid && cancelConfirmOrder.paymentMethod !== "cash" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -6363,7 +6448,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                     children: "Вы уверены, что хотите отменить оплаченный заказ?"
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 301,
+                                    lineNumber: 412,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6373,12 +6458,12 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                         children: "Деньги вернутся на карту в течение 3 рабочих дней."
                                     }, void 0, false, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 303,
+                                        lineNumber: 414,
                                         columnNumber: 19
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 302,
+                                    lineNumber: 413,
                                     columnNumber: 17
                                 }, this)
                             ]
@@ -6387,7 +6472,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                             children: "Вы уверены, что хотите отменить этот заказ? Это действие нельзя отменить."
                         }, void 0, false, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 309,
+                            lineNumber: 420,
                             columnNumber: 15
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6400,7 +6485,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                     children: "Не отменять"
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 314,
+                                    lineNumber: 425,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -6410,24 +6495,24 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                     children: "Отменить заказ"
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 317,
+                                    lineNumber: 428,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/order-history.tsx",
-                            lineNumber: 313,
+                            lineNumber: 424,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/order-history.tsx",
-                    lineNumber: 292,
+                    lineNumber: 403,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/order-history.tsx",
-                lineNumber: 291,
+                lineNumber: 402,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6457,7 +6542,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 className: "w-5 h-5 text-primary"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 343,
+                                                lineNumber: 454,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6470,27 +6555,27 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/order-history.tsx",
-                                                        lineNumber: 345,
+                                                        lineNumber: 456,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "text-xs text-muted-foreground",
-                                                        children: "Набор на 2 дня"
+                                                        children: order.orderNumber ? `№ ${order.orderNumber} · Набор на 2 дня` : "Набор на 2 дня"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/order-history.tsx",
-                                                        lineNumber: 346,
+                                                        lineNumber: 457,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 344,
+                                                lineNumber: 455,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 342,
+                                        lineNumber: 453,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6504,7 +6589,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                             className: "w-3 h-3"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 357,
+                                                            lineNumber: 470,
                                                             columnNumber: 25
                                                         }, this),
                                                         "Доставлен"
@@ -6515,7 +6600,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                             className: "w-3 h-3"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 362,
+                                                            lineNumber: 475,
                                                             columnNumber: 25
                                                         }, this),
                                                         "Ожидает"
@@ -6523,7 +6608,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 }, void 0, true)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 350,
+                                                lineNumber: 463,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6534,7 +6619,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                             className: "w-3 h-3"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 374,
+                                                            lineNumber: 487,
                                                             columnNumber: 25
                                                         }, this),
                                                         order.paid ? "Оплачен" : "Наличными"
@@ -6545,7 +6630,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                             className: "w-3 h-3"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 379,
+                                                            lineNumber: 492,
                                                             columnNumber: 25
                                                         }, this),
                                                         order.paid ? "Оплачен" : "Не оплачен"
@@ -6553,19 +6638,19 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 }, void 0, true)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 367,
+                                                lineNumber: 480,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 349,
+                                        lineNumber: 462,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 341,
+                                lineNumber: 452,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6578,7 +6663,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 className: "w-4 h-4 text-muted-foreground"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 389,
+                                                lineNumber: 502,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6586,7 +6671,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 children: "Доставка:"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 390,
+                                                lineNumber: 503,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6594,13 +6679,13 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 children: order.deliveryTime
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 391,
+                                                lineNumber: 504,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 388,
+                                        lineNumber: 501,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6610,7 +6695,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 className: "w-4 h-4 text-muted-foreground"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 394,
+                                                lineNumber: 507,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6618,7 +6703,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 children: "Персон:"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 395,
+                                                lineNumber: 508,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6626,19 +6711,19 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 children: order.persons.length
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 396,
+                                                lineNumber: 509,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 393,
+                                        lineNumber: 506,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 387,
+                                lineNumber: 500,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6655,7 +6740,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 403,
+                                                    lineNumber: 516,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6686,26 +6771,26 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/components/order-history.tsx",
-                                                                    lineNumber: 428,
+                                                                    lineNumber: 541,
                                                                     columnNumber: 29
                                                                 }, this),
                                                                 renderMealInfo(dayMeals)
                                                             ]
                                                         }, day, true, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 427,
+                                                            lineNumber: 540,
                                                             columnNumber: 27
                                                         }, this);
                                                     })
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 404,
+                                                    lineNumber: 517,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, person.id, true, {
                                             fileName: "[project]/components/order-history.tsx",
-                                            lineNumber: 402,
+                                            lineNumber: 515,
                                             columnNumber: 19
                                         }, this)),
                                     order.extras && order.extras.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6716,7 +6801,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                 children: "Дополнения"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 441,
+                                                lineNumber: 554,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6730,24 +6815,24 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                         ]
                                                     }, extra.name, true, {
                                                         fileName: "[project]/components/order-history.tsx",
-                                                        lineNumber: 444,
+                                                        lineNumber: 557,
                                                         columnNumber: 25
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 442,
+                                                lineNumber: 555,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 440,
+                                        lineNumber: 553,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 400,
+                                lineNumber: 513,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6758,7 +6843,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                         children: "Итого:"
                                     }, void 0, false, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 454,
+                                        lineNumber: 567,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6769,13 +6854,13 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 455,
+                                        lineNumber: 568,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 453,
+                                lineNumber: 566,
                                 columnNumber: 15
                             }, this),
                             order.paid && order.paymentMethod !== "cash" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6785,12 +6870,12 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                     children: "Заказ оплачен. Изменение состава недоступно. При необходимости отмените заказ и создайте новый."
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 460,
+                                    lineNumber: 573,
                                     columnNumber: 19
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 459,
+                                lineNumber: 572,
                                 columnNumber: 17
                             }, this),
                             orderReview ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6813,12 +6898,12 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                             className: `w-4 h-4 ${star <= orderReview.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`
                                                         }, star, false, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 472,
+                                                            lineNumber: 585,
                                                             columnNumber: 27
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 470,
+                                                    lineNumber: 583,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -6826,13 +6911,13 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                     children: "Ваш отзыв"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 480,
+                                                    lineNumber: 593,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/order-history.tsx",
-                                            lineNumber: 469,
+                                            lineNumber: 582,
                                             columnNumber: 21
                                         }, this),
                                         orderReview.text && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -6840,115 +6925,94 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                             children: orderReview.text
                                         }, void 0, false, {
                                             fileName: "[project]/components/order-history.tsx",
-                                            lineNumber: 482,
+                                            lineNumber: 595,
                                             columnNumber: 42
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 468,
+                                    lineNumber: 581,
                                     columnNumber: 19
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 467,
+                                lineNumber: 580,
                                 columnNumber: 17
                             }, this) : canReview ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "mt-3 pt-3 border-t border-border",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
-                                    variant: "outline",
+                                    variant: "default",
                                     size: "sm",
-                                    className: "w-full bg-transparent",
+                                    className: "w-full bg-primary hover:bg-primary/90",
                                     onClick: ()=>onReviewOrder(order),
                                     children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__["MessageSquare"], {
-                                            className: "w-4 h-4 mr-2"
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__["Star"], {
+                                            className: "w-4 h-4 mr-2 fill-current"
                                         }, void 0, false, {
                                             fileName: "[project]/components/order-history.tsx",
-                                            lineNumber: 493,
+                                            lineNumber: 606,
                                             columnNumber: 21
                                         }, this),
                                         "Оставить отзыв"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 487,
+                                    lineNumber: 600,
                                     columnNumber: 19
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 486,
+                                lineNumber: 599,
                                 columnNumber: 17
                             }, this) : null,
                             !order.paid && order.paymentMethod === "cash" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "pt-3 mt-3 border-t border-border",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "bg-white border-2 border-black rounded-lg p-4 shadow-brutal mb-3",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "mb-3",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                                        className: "font-black text-black text-base mb-1",
-                                                        children: "ОПЛАТА ПРИ ПОЛУЧЕНИИ"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/components/order-history.tsx",
-                                                        lineNumber: 504,
-                                                        columnNumber: 23
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        className: "text-sm text-muted-foreground",
-                                                        children: "Можно оплатить сейчас, чтобы не ждать сдачу."
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/components/order-history.tsx",
-                                                        lineNumber: 505,
-                                                        columnNumber: 23
-                                                    }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 503,
-                                                columnNumber: 21
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
-                                                onClick: ()=>onPayOrder(order, total),
-                                                className: "w-full bg-[#FFEA00] hover:bg-[#FFF033] border-2 border-black text-black font-black shadow-brutal h-12",
-                                                children: "💳 ОПЛАТИТЬ КАРТОЙ"
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 507,
-                                                columnNumber: 21
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 502,
-                                        columnNumber: 19
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
-                                        onClick: ()=>onMarkCashOrderAsPaid(order),
-                                        variant: "outline",
-                                        className: "w-full bg-transparent border border-border hover:bg-muted",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$banknote$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Banknote$3e$__["Banknote"], {
-                                                className: "w-4 h-4 mr-2"
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/order-history.tsx",
-                                                lineNumber: 521,
-                                                columnNumber: 21
-                                            }, this),
-                                            "Отметить как оплаченный наличными"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/components/order-history.tsx",
-                                        lineNumber: 516,
-                                        columnNumber: 19
-                                    }, this)
-                                ]
-                            }, void 0, true, {
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "bg-white border-2 border-black rounded-lg p-4 shadow-brutal",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "mb-3",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                                    className: "font-black text-black text-base mb-1",
+                                                    children: "ОПЛАТА ПРИ ПОЛУЧЕНИИ"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/components/order-history.tsx",
+                                                    lineNumber: 617,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-sm text-muted-foreground",
+                                                    children: "Можно оплатить сейчас, чтобы не ждать сдачу."
+                                                }, void 0, false, {
+                                                    fileName: "[project]/components/order-history.tsx",
+                                                    lineNumber: 618,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/components/order-history.tsx",
+                                            lineNumber: 616,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
+                                            onClick: ()=>onPayOrder(order, total),
+                                            className: "w-full bg-[#FFEA00] hover:bg-[#FFF033] border-2 border-black text-black font-black shadow-brutal h-12",
+                                            children: "💳 ОПЛАТИТЬ КАРТОЙ"
+                                        }, void 0, false, {
+                                            fileName: "[project]/components/order-history.tsx",
+                                            lineNumber: 620,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/components/order-history.tsx",
+                                    lineNumber: 615,
+                                    columnNumber: 19
+                                }, this)
+                            }, void 0, false, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 500,
+                                lineNumber: 613,
                                 columnNumber: 17
                             }, this),
                             !order.paid && !order.paymentMethod && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6961,7 +7025,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                             className: "w-4 h-4 mr-2"
                                         }, void 0, false, {
                                             fileName: "[project]/components/order-history.tsx",
-                                            lineNumber: 530,
+                                            lineNumber: 633,
                                             columnNumber: 21
                                         }, this),
                                         "Оплатить ",
@@ -6970,12 +7034,12 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 529,
+                                    lineNumber: 632,
                                     columnNumber: 19
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 528,
+                                lineNumber: 631,
                                 columnNumber: 17
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -6993,14 +7057,14 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                     className: "w-4 h-4 mr-2"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 545,
+                                                    lineNumber: 648,
                                                     columnNumber: 23
                                                 }, this),
                                                 "Повторить заказ"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/order-history.tsx",
-                                            lineNumber: 539,
+                                            lineNumber: 642,
                                             columnNumber: 21
                                         }, this),
                                         repeatMenuOpen === orderKey && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7011,7 +7075,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                     children: "Выберите дату:"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 551,
+                                                    lineNumber: 654,
                                                     columnNumber: 25
                                                 }, this),
                                                 !allItemsAvailable && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7021,7 +7085,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                             className: "w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 555,
+                                                            lineNumber: 658,
                                                             columnNumber: 29
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7032,7 +7096,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                                     children: "Некоторые позиции недоступны:"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/order-history.tsx",
-                                                                    lineNumber: 557,
+                                                                    lineNumber: 660,
                                                                     columnNumber: 31
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7040,7 +7104,7 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                                     children: unavailableItems.join(", ")
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/order-history.tsx",
-                                                                    lineNumber: 558,
+                                                                    lineNumber: 661,
                                                                     columnNumber: 31
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7048,19 +7112,19 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                                     children: "Они будут пропущены при повторении"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/order-history.tsx",
-                                                                    lineNumber: 559,
+                                                                    lineNumber: 662,
                                                                     columnNumber: 31
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 556,
+                                                            lineNumber: 659,
                                                             columnNumber: 29
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 554,
+                                                    lineNumber: 657,
                                                     columnNumber: 27
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7074,36 +7138,36 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                                             children: formatDisplayDate(date)
                                                         }, formatDateKey(date), false, {
                                                             fileName: "[project]/components/order-history.tsx",
-                                                            lineNumber: 566,
+                                                            lineNumber: 669,
                                                             columnNumber: 29
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/order-history.tsx",
-                                                    lineNumber: 564,
+                                                    lineNumber: 667,
                                                     columnNumber: 25
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/order-history.tsx",
-                                            lineNumber: 550,
+                                            lineNumber: 653,
                                             columnNumber: 23
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 538,
+                                    lineNumber: 641,
                                     columnNumber: 19
                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "text-xs text-muted-foreground text-center",
                                     children: "Нет доступных дат для повторения"
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 582,
+                                    lineNumber: 685,
                                     columnNumber: 19
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 536,
+                                lineNumber: 639,
                                 columnNumber: 15
                             }, this),
                             canCancel && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7116,30 +7180,30 @@ function OrderHistory({ orders, onCancelOrder, onRepeatOrder, onPayOrder, onMark
                                     children: "Отменить заказ"
                                 }, void 0, false, {
                                     fileName: "[project]/components/order-history.tsx",
-                                    lineNumber: 588,
+                                    lineNumber: 691,
                                     columnNumber: 19
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/order-history.tsx",
-                                lineNumber: 587,
+                                lineNumber: 690,
                                 columnNumber: 17
                             }, this)
                         ]
                     }, orderKey, true, {
                         fileName: "[project]/components/order-history.tsx",
-                        lineNumber: 340,
+                        lineNumber: 451,
                         columnNumber: 13
                     }, this);
                 })
             }, void 0, false, {
                 fileName: "[project]/components/order-history.tsx",
-                lineNumber: 325,
+                lineNumber: 436,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/order-history.tsx",
-        lineNumber: 289,
+        lineNumber: 400,
         columnNumber: 5
     }, this);
 }
@@ -7735,7 +7799,8 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
             localStorage.setItem(`user_${cleanPhone}`, JSON.stringify({
                 phone: cleanPhone
             }));
-            onLogin(cleanPhone);
+            // onLogin может быть async, но мы не ждем его завершения
+            Promise.resolve(onLogin(cleanPhone)).catch(console.error);
         } else {
             alert("Неверный код");
         }
@@ -7763,17 +7828,17 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             className: "w-8 h-8 text-white"
                                         }, void 0, false, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 112,
+                                            lineNumber: 113,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/auth-modal.tsx",
-                                        lineNumber: 111,
+                                        lineNumber: 112,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 110,
+                                    lineNumber: 111,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["DialogTitle"], {
@@ -7781,20 +7846,20 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                     children: step === "phone" ? "Вход в аккаунт" : "Введите код"
                                 }, void 0, false, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 115,
+                                    lineNumber: 116,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["DialogDescription"], {
                                     children: step === "phone" ? redirectAfterLogin === "checkout" ? "Для оформления заказа войдите в аккаунт" : "Введите номер телефона для входа или регистрации" : authMethod === "sms" ? `Код отправлен на ${phone}` : `Ожидайте звонок на ${phone}`
                                 }, void 0, false, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 118,
+                                    lineNumber: 119,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/auth-modal.tsx",
-                            lineNumber: 109,
+                            lineNumber: 110,
                             columnNumber: 11
                         }, this),
                         step === "phone" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7808,7 +7873,7 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             children: "Номер телефона"
                                         }, void 0, false, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 132,
+                                            lineNumber: 133,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7820,13 +7885,13 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             className: "text-lg tracking-wide"
                                         }, void 0, false, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 133,
+                                            lineNumber: 134,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 131,
+                                    lineNumber: 132,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7841,14 +7906,14 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                                     className: "w-4 h-4 mr-2"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/auth-modal.tsx",
-                                                    lineNumber: 149,
+                                                    lineNumber: 150,
                                                     columnNumber: 19
                                                 }, this),
                                                 "СМС-код"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 144,
+                                            lineNumber: 145,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -7861,20 +7926,20 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                                     className: "w-4 h-4 mr-2"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/auth-modal.tsx",
-                                                    lineNumber: 158,
+                                                    lineNumber: 159,
                                                     columnNumber: 19
                                                 }, this),
                                                 "Звонок"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 152,
+                                            lineNumber: 153,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 143,
+                                    lineNumber: 144,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -7889,7 +7954,7 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             children: "условиями использования"
                                         }, void 0, false, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 165,
+                                            lineNumber: 166,
                                             columnNumber: 17
                                         }, this),
                                         " ",
@@ -7897,13 +7962,13 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 163,
+                                    lineNumber: 164,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/auth-modal.tsx",
-                            lineNumber: 130,
+                            lineNumber: 131,
                             columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
                             onSubmit: handleVerifyCode,
@@ -7917,7 +7982,7 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             children: authMethod === "sms" ? "Код из СМС" : "Последние 4 цифры номера"
                                         }, void 0, false, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 174,
+                                            lineNumber: 175,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -7932,13 +7997,13 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             autoFocus: true
                                         }, void 0, false, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 175,
+                                            lineNumber: 176,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 173,
+                                    lineNumber: 174,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -7948,7 +8013,7 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                     children: "Подтвердить"
                                 }, void 0, false, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 188,
+                                    lineNumber: 189,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -7963,7 +8028,7 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 194,
+                                            lineNumber: 195,
                                             columnNumber: 19
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "flex gap-3",
@@ -7975,7 +8040,7 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                                     children: "Отправить СМС"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/auth-modal.tsx",
-                                                    lineNumber: 197,
+                                                    lineNumber: 198,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -7985,13 +8050,13 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                                     children: "Позвонить"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/auth-modal.tsx",
-                                                    lineNumber: 204,
+                                                    lineNumber: 205,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 196,
+                                            lineNumber: 197,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -8004,37 +8069,37 @@ function AuthModal({ open, onClose, onLogin, redirectAfterLogin }) {
                                             children: "Изменить номер"
                                         }, void 0, false, {
                                             fileName: "[project]/components/auth-modal.tsx",
-                                            lineNumber: 214,
+                                            lineNumber: 215,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/auth-modal.tsx",
-                                    lineNumber: 192,
+                                    lineNumber: 193,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/auth-modal.tsx",
-                            lineNumber: 172,
+                            lineNumber: 173,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/auth-modal.tsx",
-                    lineNumber: 108,
+                    lineNumber: 109,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/auth-modal.tsx",
-                lineNumber: 107,
+                lineNumber: 108,
                 columnNumber: 7
             }, this),
             showTerms && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$terms$2d$modal$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TermsModal"], {
                 onClose: ()=>setShowTerms(false)
             }, void 0, false, {
                 fileName: "[project]/components/auth-modal.tsx",
-                lineNumber: 230,
+                lineNumber: 231,
                 columnNumber: 21
             }, this)
         ]
@@ -11942,7 +12007,9 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$locale$2f$ru$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/date-fns/locale/ru.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/button.tsx [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/dialog.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$visually$2d$hidden$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/@radix-ui/react-visually-hidden/dist/index.mjs [app-ssr] (ecmascript)");
 "use client";
+;
 ;
 ;
 ;
@@ -11983,13 +12050,9 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["DialogContent"], {
             className: "max-w-md p-0 gap-0 bg-white border-4 border-black rounded-xl shadow-[8px_8px_0px_0px_#000000] overflow-hidden",
             children: [
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "relative w-full h-64 bg-muted border-b-4 border-black",
-                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
-                        src: dish.image || "/placeholder.jpg",
-                        alt: dish.name,
-                        fill: true,
-                        className: "object-cover"
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$visually$2d$hidden$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["VisuallyHidden"], {
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$dialog$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["DialogTitle"], {
+                        children: dish.name
                     }, void 0, false, {
                         fileName: "[project]/components/dish-smart-modal.tsx",
                         lineNumber: 63,
@@ -12001,6 +12064,23 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "relative w-full h-64 bg-muted border-b-4 border-black",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
+                        src: dish.image || "/placeholder.jpg",
+                        alt: dish.name,
+                        fill: true,
+                        className: "object-cover"
+                    }, void 0, false, {
+                        fileName: "[project]/components/dish-smart-modal.tsx",
+                        lineNumber: 67,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/components/dish-smart-modal.tsx",
+                    lineNumber: 66,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "p-6 space-y-4",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -12008,7 +12088,7 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
                             children: dish.name.toUpperCase()
                         }, void 0, false, {
                             fileName: "[project]/components/dish-smart-modal.tsx",
-                            lineNumber: 74,
+                            lineNumber: 78,
                             columnNumber: 11
                         }, this),
                         dish.description && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -12016,7 +12096,7 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
                             children: dish.description
                         }, void 0, false, {
                             fileName: "[project]/components/dish-smart-modal.tsx",
-                            lineNumber: 80,
+                            lineNumber: 84,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -12030,18 +12110,18 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
                                         children: availabilityText
                                     }, void 0, false, {
                                         fileName: "[project]/components/dish-smart-modal.tsx",
-                                        lineNumber: 88,
+                                        lineNumber: 92,
                                         columnNumber: 36
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/dish-smart-modal.tsx",
-                                lineNumber: 87,
+                                lineNumber: 91,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/dish-smart-modal.tsx",
-                            lineNumber: 86,
+                            lineNumber: 90,
                             columnNumber: 11
                         }, this),
                         existingOrder ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -12054,12 +12134,12 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
                                         children: "Заказ на эту дату уже сделан"
                                     }, void 0, false, {
                                         fileName: "[project]/components/dish-smart-modal.tsx",
-                                        lineNumber: 96,
+                                        lineNumber: 100,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/components/dish-smart-modal.tsx",
-                                    lineNumber: 95,
+                                    lineNumber: 99,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -12068,13 +12148,13 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
                                     children: "ОТКРЫТЬ ЗАКАЗ"
                                 }, void 0, false, {
                                     fileName: "[project]/components/dish-smart-modal.tsx",
-                                    lineNumber: 100,
+                                    lineNumber: 104,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dish-smart-modal.tsx",
-                            lineNumber: 94,
+                            lineNumber: 98,
                             columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
                             onClick: handleAction,
@@ -12088,24 +12168,24 @@ function DishSmartModal({ open, onClose, dish, availableDate, orders, onGoToOrde
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/dish-smart-modal.tsx",
-                            lineNumber: 108,
+                            lineNumber: 112,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/dish-smart-modal.tsx",
-                    lineNumber: 72,
+                    lineNumber: 76,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/dish-smart-modal.tsx",
-            lineNumber: 60,
+            lineNumber: 61,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/dish-smart-modal.tsx",
-        lineNumber: 59,
+        lineNumber: 60,
         columnNumber: 5
     }, this);
 }

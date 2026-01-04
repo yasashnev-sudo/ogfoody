@@ -287,7 +287,46 @@ export default function Home() {
       }
       const savedProfile = localStorage.getItem(`profile_${user}`)
       if (savedProfile) {
-        setUserProfile(JSON.parse(savedProfile))
+        const profile = JSON.parse(savedProfile)
+        setUserProfile(profile)
+        
+        // Синхронизируем заказы из базы данных для получения номеров заказов
+        if (profile.id) {
+          fetch(`/api/orders?userId=${profile.id}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.orders && Array.isArray(data.orders)) {
+                // Обновляем заказы с номерами из базы данных
+                setOrders((prevOrders) => {
+                  const updatedOrders = prevOrders.map((localOrder) => {
+                    // Ищем соответствующий заказ в базе по id или дате
+                    const dbOrder = data.orders.find(
+                      (db: any) =>
+                        (localOrder.id && db.Id === localOrder.id) ||
+                        (db.start_date === formatDateKey(toDate(localOrder.startDate)))
+                    )
+                    
+                    if (dbOrder && dbOrder.order_number && !localOrder.orderNumber) {
+                      // Обновляем номер заказа из базы данных
+                      return {
+                        ...localOrder,
+                        id: dbOrder.Id,
+                        orderNumber: dbOrder.order_number,
+                      }
+                    }
+                    return localOrder
+                  })
+                  
+                  // Сохраняем обновленные заказы в localStorage
+                  localStorage.setItem(`orders_${user}`, serializeOrders(updatedOrders))
+                  return updatedOrders
+                })
+              }
+            })
+            .catch((error) => {
+              console.error("Failed to sync orders from database:", error)
+            })
+        }
       }
       const savedReviews = localStorage.getItem(`reviews_${user}`)
       if (savedReviews) {
@@ -332,62 +371,52 @@ export default function Home() {
     })
   }
 
-  // Helper: Find the absolute last day of food across all orders
-  const getLastDayOfFood = (): Date | null => {
-    let lastDay: Date | null = null
+  // Helper: Check if this date is the last day of food (day2) for any order
+  const isLastDayOfAnyOrder = (date: Date) => {
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
     
-    orders.forEach(order => {
+    return orders.some(order => {
       const deliveryDate = new Date(order.startDate)
       deliveryDate.setHours(0, 0, 0, 0)
       
+      // day2 is the last eating day for this order
       const day2 = new Date(deliveryDate)
       day2.setDate(day2.getDate() + 2)
       day2.setHours(0, 0, 0, 0)
       
-      if (!lastDay || day2.getTime() > lastDay.getTime()) {
-        lastDay = day2
-      }
+      return checkDate.getTime() === day2.getTime()
     })
-    
-    return lastDay
   }
 
-  // Helper: Check if this is the last day of food
-  const isLastDayOfFood = (date: Date) => {
-    if (!hasFoodForDate(date)) return false
-    
+  // Helper: Check if there's food on the next day (chain continues without gap)
+  // Plus button should show if there's NO food on next day (gap exists)
+  const hasNextOrder = (date: Date) => {
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
     
-    const lastDay = getLastDayOfFood()
-    if (!lastDay) return false
-    
-    return checkDate.getTime() === lastDay.getTime()
-  }
-
-  // Helper: Check if there's an order that continues the chain
-  const hasNextOrder = (date: Date) => {
-    if (!isLastDayOfFood(date)) return false
-    
+    // PRIORITY 1: Check if there's delivery on this day (new order continues chain)
     if (hasDeliveryForDate(date)) {
       return true
     }
     
-    const nextDay = new Date(date)
+    // PRIORITY 2: Check if there's FOOD on the next day (no gap - chain continues)
+    // If there's food on next day, the chain continues. If no food, there's a gap and plus should show
+    const nextDay = new Date(checkDate)
     nextDay.setDate(nextDay.getDate() + 1)
     nextDay.setHours(0, 0, 0, 0)
     
-    return hasDeliveryForDate(nextDay)
+    return hasFoodForDate(nextDay)
   }
 
-  // Helper: Check if yellow plus button should be shown (last day with food, no delivery, no next order)
+  // Helper: Check if yellow plus button should be shown (last day of any order with food, no delivery, no next order)
   const shouldShowYellowPlus = (date: Date) => {
     const hasFood = hasFoodForDate(date)
-    const isLastDay = isLastDayOfFood(date)
+    const isLastDayOfOrder = isLastDayOfAnyOrder(date)
     const hasDelivery = hasDeliveryForDate(date)
     const hasNextOrderForLastDay = hasNextOrder(date)
     
-    return hasFood && isLastDay && !hasDelivery && !hasNextOrderForLastDay
+    return hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay
   }
 
   const handleDateClick = (date: Date) => {
@@ -467,6 +496,13 @@ export default function Home() {
     const orderTimestamp = getDateTimestamp(order.startDate)
     const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
     
+    console.log("🔵 handleSaveOrder вызван:", {
+      isAuthenticated,
+      hasUserProfile: !!userProfile,
+      userId: userProfile?.id,
+      hasExistingOrder: !!existingOrder?.id,
+    })
+    
     // Если заказ существует и имеет id, и пользователь авторизован, обновляем через API
     if (existingOrder?.id && isAuthenticated && userProfile?.id) {
       try {
@@ -499,6 +535,7 @@ export default function Home() {
             ...filtered,
             {
               ...updatedOrder,
+              orderNumber: result.orderNumber || existingOrder.orderNumber || updatedOrder.orderNumber, // Сохраняем номер заказа из ответа API
               startDate: toDate(updatedOrder.startDate),
               paid: updatedOrder.paid ?? false,
             },
@@ -526,6 +563,12 @@ export default function Home() {
       }
     } else if (isAuthenticated && userProfile?.id) {
       // Создаем новый заказ через API
+      console.log("✅ Условие для создания заказа выполнено:", {
+        isAuthenticated,
+        hasUserProfile: !!userProfile,
+        userId: userProfile?.id,
+        sendingToServer: true,
+      })
       try {
         const total = calculateOrderTotal(order)
         const newOrder: Order = {
@@ -534,53 +577,170 @@ export default function Home() {
           total: total,
         }
         
+        console.log("📤 Отправка заказа на сервер:", {
+          personsCount: newOrder.persons?.length,
+          extrasCount: newOrder.extras?.length,
+          userId: userProfile.id,
+        })
+        
         const response = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ order: newOrder, userId: userProfile.id }),
         })
         
+        console.log("📥 Ответ сервера:", response.status, response.statusText)
+        
         if (!response.ok) {
-          throw new Error("Failed to create order")
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+          console.error("❌ Ошибка при создании заказа:", errorData)
+          throw new Error(errorData.error || "Failed to create order")
         }
         
         const result = await response.json()
+        console.log("✅ Результат создания заказа:", result)
+        
+        // Проверяем, что номер заказа получен
+        console.log("Order creation result:", result)
+        if (!result.orderNumber) {
+          console.warn("⚠️ Order number not received from API:", result)
+          // Пытаемся получить номер заказа из базы данных
+          if (result.orderId) {
+            try {
+              const fetchResponse = await fetch(`/api/orders?userId=${userProfile.id}`)
+              const fetchData = await fetchResponse.json()
+              const dbOrder = fetchData.orders?.find((o: any) => o.Id === result.orderId)
+              if (dbOrder?.order_number) {
+                result.orderNumber = dbOrder.order_number
+                console.log("✅ Retrieved order number from DB:", result.orderNumber)
+              }
+            } catch (error) {
+              console.error("Failed to fetch order number:", error)
+            }
+          }
+        }
+        
+        // Обязательно проверяем наличие номера заказа
+        if (!result.orderNumber) {
+          console.error("❌ CRITICAL: Order number is missing from API response!", result)
+          // Генерируем номер заказа на клиенте как fallback
+          const fallbackOrderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+          result.orderNumber = fallbackOrderNumber
+          console.warn("⚠️ Using fallback order number:", fallbackOrderNumber)
+        }
         
         // Обновляем заказ в состоянии с id из API
+        const savedOrder: Order = {
+          ...newOrder,
+          id: result.orderId,
+          orderNumber: result.orderNumber, // Гарантируем, что номер заказа есть
+          startDate: toDate(newOrder.startDate),
+          paid: newOrder.paid ?? false,
+        }
+        
+        console.log("💾 Saving order to state:", { 
+          id: savedOrder.id, 
+          orderNumber: savedOrder.orderNumber, 
+          startDate: savedOrder.startDate,
+          hasOrderNumber: !!savedOrder.orderNumber,
+          orderNumberType: typeof savedOrder.orderNumber
+        })
+        
+        if (!savedOrder.orderNumber) {
+          console.error("❌ FATAL: Order number is still missing after all checks!", savedOrder)
+        }
+        
         setOrders((prev) => {
           const filtered = prev.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
-          const newOrders = [
-            ...filtered,
-            {
-              ...newOrder,
-              id: result.orderId,
-              orderNumber: result.orderNumber,
-              startDate: toDate(newOrder.startDate),
-              paid: newOrder.paid ?? false,
-            },
-          ]
-          if (user) {
-            localStorage.setItem(`orders_${user}`, serializeOrders(newOrders))
+          const newOrders = [...filtered, savedOrder]
+          
+          // Дополнительная проверка перед сохранением
+          const orderToSave = newOrders.find(o => o.id === savedOrder.id)
+          if (orderToSave && !orderToSave.orderNumber) {
+            console.error("❌ Order number lost during state update!", orderToSave)
+            orderToSave.orderNumber = result.orderNumber
           }
+          
+          if (user) {
+            const serialized = serializeOrders(newOrders)
+            localStorage.setItem(`orders_${user}`, serialized)
+            
+            // Проверяем после сериализации
+            const deserialized = deserializeOrders(serialized)
+            const checkOrder = deserialized.find(o => o.id === savedOrder.id)
+            console.log("✅ Saved to localStorage, orders count:", newOrders.length)
+            console.log("🔍 Verification - saved order after serialize/deserialize:", { 
+              id: checkOrder?.id, 
+              orderNumber: checkOrder?.orderNumber,
+              hasOrderNumber: !!checkOrder?.orderNumber,
+              allFields: Object.keys(checkOrder || {})
+            })
+            
+            if (checkOrder && !checkOrder.orderNumber) {
+              console.error("❌ Order number lost during serialization!", checkOrder)
+              // Принудительно восстанавливаем номер заказа
+              checkOrder.orderNumber = result.orderNumber
+              // Обновляем localStorage с исправленным заказом
+              const fixedOrders = newOrders.map(o => 
+                o.id === checkOrder.id ? { ...o, orderNumber: result.orderNumber } : o
+              )
+              localStorage.setItem(`orders_${user}`, serializeOrders(fixedOrders))
+              // Обновляем состояние
+              setTimeout(() => {
+                setOrders(fixedOrders)
+              }, 100)
+            }
+          }
+          
+          // Финальная проверка - убеждаемся, что номер заказа есть
+          const finalCheck = newOrders.find(o => o.id === savedOrder.id)
+          if (finalCheck && !finalCheck.orderNumber && result.orderNumber) {
+            console.warn("⚠️ Fixing missing order number in state...")
+            finalCheck.orderNumber = result.orderNumber
+            if (user) {
+              localStorage.setItem(`orders_${user}`, serializeOrders(newOrders.map(o => 
+                o.id === finalCheck.id ? finalCheck : o
+              )))
+            }
+          }
+          
           return newOrders
         })
         
         toast({
           title: "Заказ создан",
-          description: "Заказ успешно оформлен",
-          duration: 3000,
+          description: result.orderNumber 
+            ? `Заказ № ${result.orderNumber} успешно оформлен` 
+            : "Заказ успешно оформлен",
+          duration: 5000,
         })
       } catch (error) {
-        console.error("Failed to create order:", error)
+        console.error("❌ Ошибка при создании заказа:", error)
         toast({
           title: "Ошибка",
-          description: "Не удалось создать заказ. Попробуйте еще раз.",
+          description: error instanceof Error ? error.message : "Не удалось создать заказ. Попробуйте еще раз.",
           variant: "destructive",
           duration: 5000,
         })
-        return
       }
     } else {
+      // Пользователь не авторизован или нет userProfile.id
+      const reason = !isAuthenticated 
+        ? "Пользователь не авторизован" 
+        : !userProfile 
+          ? "userProfile отсутствует"
+          : !userProfile.id 
+            ? "userProfile.id отсутствует" 
+            : "Неизвестная причина"
+      
+      console.warn("⚠️ Заказ не создается через API, причина:", {
+        isAuthenticated,
+        hasUserProfile: !!userProfile,
+        userId: userProfile?.id,
+        reason,
+        userProfileKeys: userProfile ? Object.keys(userProfile) : [],
+      })
+      
       // Сохраняем только в localStorage (для гостей или если нет userId)
       setOrders((prev) => {
         const filtered = prev.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
@@ -592,10 +752,199 @@ export default function Home() {
         }
         return newOrders
       })
+      
+      toast({
+        title: "Заказ сохранен локально",
+        description: !isAuthenticated 
+          ? "Войдите в систему, чтобы сохранить заказ на сервере" 
+          : "Ошибка при создании заказа. Проверьте данные профиля.",
+        variant: !isAuthenticated ? "default" : "destructive",
+        duration: 5000,
+      })
     }
     
     setSelectedDate(null)
   }
+  
+  // Удаляем дублирующий код - больше не нужен
+  /*
+  const handleSaveOrderOld = async (order: Order) => {
+    const user = localStorage.getItem("currentUser")
+    const orderTimestamp = getDateTimestamp(order.startDate)
+    const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+    
+    if (existingOrder?.id && isAuthenticated && userProfile?.id) {
+      // ... existing code ...
+    } else if (isAuthenticated && userProfile?.id) {
+      // ... existing code ...
+    } else {
+      // Сохраняем локально для неавторизованных пользователей
+      const updatedOrders = [...orders]
+      const index = updatedOrders.findIndex((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+      
+      if (index >= 0) {
+        updatedOrders[index] = { ...order, startDate: toDate(order.startDate) }
+      } else {
+        updatedOrders.push({ ...order, startDate: toDate(order.startDate) })
+      }
+      
+      setOrders(updatedOrders)
+      
+      const guestOrders = localStorage.getItem("guest_orders")
+      if (guestOrders) {
+        const parsed = deserializeOrders(guestOrders)
+        const filtered = parsed.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
+        localStorage.setItem("guest_orders", serializeOrders([...filtered, { ...order, startDate: toDate(order.startDate) }]))
+      } else {
+        localStorage.setItem("guest_orders", serializeOrders([{ ...order, startDate: toDate(order.startDate) }]))
+      }
+      
+      toast({
+        title: "Заказ сохранен",
+        description: "Заказ сохранен локально. Войдите в систему, чтобы сохранить его на сервере.",
+        duration: 3000,
+      })
+    }
+  }
+  
+  // Временная заглушка - удалить после проверки
+  const handleSaveOrderBackup = async (order: Order) => {
+    console.log("🔵 handleSaveOrder вызван:", {
+      isAuthenticated,
+      hasUserProfile: !!userProfile,
+      userId: userProfile?.id,
+    })
+    
+    const user = localStorage.getItem("currentUser")
+    const orderTimestamp = getDateTimestamp(order.startDate)
+    const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+    
+    if (existingOrder?.id && isAuthenticated && userProfile?.id) {
+      try {
+        const total = calculateOrderTotal(order)
+        const updatedOrder: Order = {
+          ...order,
+          id: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          subtotal: total,
+          total: total,
+        }
+        
+        const response = await fetch(`/api/orders/${existingOrder.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: updatedOrder }),
+        })
+        
+        if (!response.ok) {
+          throw new Error("Failed to update order")
+        }
+        
+        const result = await response.json()
+        
+        setOrders((prev) => {
+          const filtered = prev.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
+          const newOrders = [
+            ...filtered,
+            {
+              ...updatedOrder,
+              orderNumber: result.orderNumber || existingOrder.orderNumber || updatedOrder.orderNumber,
+              startDate: toDate(updatedOrder.startDate),
+              paid: updatedOrder.paid ?? false,
+            },
+          ]
+          if (user) {
+            localStorage.setItem(`orders_${user}`, serializeOrders(newOrders))
+          }
+          return newOrders
+        })
+        
+        toast({
+          title: "Заказ обновлен",
+          description: "Изменения успешно сохранены",
+          duration: 3000,
+        })
+      } catch (error) {
+        console.error("Failed to update order:", error)
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить заказ. Попробуйте еще раз.",
+          variant: "destructive",
+          duration: 5000,
+        })
+        return
+      }
+    } else if (isAuthenticated && userProfile?.id) {
+      try {
+        const total = calculateOrderTotal(order)
+        const newOrder: Order = {
+          ...order,
+          subtotal: total,
+          total: total,
+        }
+        
+        console.log("📤 Отправка заказа на сервер:", {
+          personsCount: newOrder.persons?.length,
+          extrasCount: newOrder.extras?.length,
+          userId: userProfile.id,
+        })
+        
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: newOrder, userId: userProfile.id }),
+        })
+        
+        console.log("📥 Ответ сервера:", response.status, response.statusText)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+          console.error("❌ Ошибка при создании заказа:", errorData)
+          throw new Error(errorData.error || "Failed to create order")
+        }
+        
+        const result = await response.json()
+        console.log("✅ Результат создания заказа:", result)
+        
+        // Проверяем, что номер заказа получен
+        console.log("Order creation result:", result)
+        if (!result.orderNumber) {
+          console.warn("⚠️ Order number not received from API:", result)
+          // Пытаемся получить номер заказа из базы данных
+          if (result.orderId) {
+            try {
+              const fetchResponse = await fetch(`/api/orders?userId=${userProfile.id}`)
+              const fetchData = await fetchResponse.json()
+              const dbOrder = fetchData.orders?.find((o: any) => o.Id === result.orderId)
+              if (dbOrder?.order_number) {
+                result.orderNumber = dbOrder.order_number
+                console.log("✅ Retrieved order number from DB:", result.orderNumber)
+              }
+            } catch (error) {
+              console.error("Failed to fetch order number:", error)
+            }
+          }
+        }
+        
+        // Обязательно проверяем наличие номера заказа
+        if (!result.orderNumber) {
+          console.error("❌ CRITICAL: Order number is missing from API response!", result)
+          // Генерируем номер заказа на клиенте как fallback
+          const fallbackOrderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+          result.orderNumber = fallbackOrderNumber
+          console.warn("⚠️ Using fallback order number:", fallbackOrderNumber)
+        }
+        
+        // Обновляем заказ в состоянии с id из API
+        const savedOrder: Order = {
+          ...newOrder,
+          id: result.orderId,
+          orderNumber: result.orderNumber, // Гарантируем, что номер заказа есть
+          startDate: toDate(newOrder.startDate),
+          paid: newOrder.paid ?? false,
+        }
+        
+  */
 
   const handleCancelOrder = (startDate: Date) => {
     const orderTimestamp = getDateTimestamp(startDate)
@@ -794,7 +1143,7 @@ export default function Home() {
     })
   }
 
-  const handleLogin = (phone: string) => {
+  const handleLogin = async (phone: string) => {
     setIsAuthenticated(true)
     setCurrentUser(phone)
     localStorage.setItem("currentUser", phone)
@@ -862,6 +1211,8 @@ export default function Home() {
       setReviews(JSON.parse(savedReviews))
     }
     const savedProfile = localStorage.getItem(`profile_${phone}`)
+    let profile: UserProfile
+    
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile)
@@ -869,9 +1220,9 @@ export default function Home() {
           parsed.street = parsed.address
           delete parsed.address
         }
-        setUserProfile(parsed)
+        profile = parsed
       } catch {
-        const newProfile: UserProfile = {
+        profile = {
           phone,
           name: "",
           street: "",
@@ -879,11 +1230,10 @@ export default function Home() {
           loyaltyPoints: 0,
           totalSpent: 0,
         }
-        setUserProfile(newProfile)
-        localStorage.setItem(`profile_${phone}`, JSON.stringify(newProfile))
+        localStorage.setItem(`profile_${phone}`, JSON.stringify(profile))
       }
     } else {
-      const newProfile: UserProfile = {
+      profile = {
         phone,
         name: "",
         street: "",
@@ -891,9 +1241,50 @@ export default function Home() {
         loyaltyPoints: 0,
         totalSpent: 0,
       }
-      setUserProfile(newProfile)
-      localStorage.setItem(`profile_${phone}`, JSON.stringify(newProfile))
+      localStorage.setItem(`profile_${phone}`, JSON.stringify(profile))
     }
+    
+    // Создаем или обновляем пользователя в NocoDB
+    console.log("🔄 Синхронизация пользователя с базой данных...", { phone, hasProfile: !!profile })
+    try {
+      const { fetchUserByPhone, createUser, updateUser } = await import("@/lib/nocodb")
+      console.log("📡 Ищем пользователя в базе по телефону:", phone)
+      const dbUser = await fetchUserByPhone(phone)
+      
+      if (dbUser) {
+        console.log("✅ Пользователь найден в базе:", dbUser.Id)
+        // Пользователь существует, обновляем профиль из базы
+        profile.id = dbUser.Id
+        profile.name = dbUser.name || profile.name
+        profile.street = dbUser.street || profile.street
+        profile.building = dbUser.building || profile.building
+        profile.loyaltyPoints = typeof dbUser.loyalty_points === 'number' ? dbUser.loyalty_points : parseInt(String(dbUser.loyalty_points)) || 0
+        profile.totalSpent = typeof dbUser.total_spent === 'number' ? dbUser.total_spent : parseFloat(String(dbUser.total_spent)) || 0
+        console.log("✅ Профиль обновлен из базы, userProfile.id:", profile.id)
+      } else {
+        console.log("⚠️ Пользователя нет в базе, создаем нового...")
+        // Пользователя нет в базе, создаем
+        const newDbUser = await createUser({
+          phone,
+          name: profile.name || "",
+          loyalty_points: profile.loyaltyPoints || 0,
+          total_spent: profile.totalSpent || 0,
+        })
+        profile.id = newDbUser.Id
+        console.log("✅ Пользователь создан в базе данных:", newDbUser.Id, "userProfile.id установлен:", profile.id)
+      }
+      
+      // Сохраняем обновленный профиль в localStorage
+      localStorage.setItem(`profile_${phone}`, JSON.stringify(profile))
+      console.log("💾 Профиль сохранен в localStorage с id:", profile.id)
+    } catch (error) {
+      console.error("❌ Ошибка при синхронизации пользователя с базой:", error)
+      console.error("Stack:", error instanceof Error ? error.stack : "No stack")
+      // Продолжаем работу даже если не удалось синхронизировать с базой
+    }
+    
+    console.log("👤 Устанавливаем userProfile:", { id: profile.id, phone: profile.phone, hasId: !!profile.id })
+    setUserProfile(profile)
 
     setShowAuthModal(false)
     if (pendingCheckout) {
@@ -1139,7 +1530,6 @@ export default function Home() {
             onCancelOrder={handleCancelOrder}
             onRepeatOrder={handleRepeatOrder}
             onPayOrder={handlePayOrder}
-            onMarkCashOrderAsPaid={handleMarkCashOrderAsPaid}
             onReviewOrder={(order) => setReviewOrder(order)}
             availableDates={availableDates}
             userProfile={userProfile}

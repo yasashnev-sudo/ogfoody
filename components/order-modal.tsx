@@ -786,7 +786,7 @@ export function OrderModal({
               className="flex-1 overflow-y-auto"
               style={{ scrollBehavior: 'auto' }}
             >
-              <div className="p-4 pb-20">
+              <div className="px-1.5 py-1.5 sm:p-4 pb-20">
                 {!isInDeliveryZone && userCity && (
                   <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <div className="flex items-start gap-3">

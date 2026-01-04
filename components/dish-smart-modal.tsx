@@ -4,7 +4,8 @@ import Image from "next/image"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import { Order } from "@/lib/types"
 
 interface DishSmartModalProps {
@@ -58,6 +59,9 @@ export function DishSmartModal({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 gap-0 bg-white border-4 border-black rounded-xl shadow-[8px_8px_0px_0px_#000000] overflow-hidden">
+        <VisuallyHidden>
+          <DialogTitle>{dish.name}</DialogTitle>
+        </VisuallyHidden>
         {/* Image */}
         <div className="relative w-full h-64 bg-muted border-b-4 border-black">
           <Image
