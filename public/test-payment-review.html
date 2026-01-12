@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест оплаты и отзывов</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border-left: 4px solid #0070f3;
+        }
+        .result.success {
+            border-left-color: #22c55e;
+            background: #f0fdf4;
+        }
+        .result.error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест оплаты и отзывов</h1>
+        
+        <div class="form-group">
+            <label for="orderNumber">Номер заказа (например: ORD-20260105-13QGDU):</label>
+            <input type="text" id="orderNumber" placeholder="ORD-20260105-13QGDU" value="ORD-20260105-13QGDU">
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Телефон пользователя (для отзыва):</label>
+            <input type="text" id="phone" placeholder="+79991234567">
+        </div>
+        
+        <div class="form-group">
+            <label for="testType">Тип теста:</label>
+            <select id="testType">
+                <option value="both">Оба теста (оплата + отзыв)</option>
+                <option value="payment">Только оплата</option>
+                <option value="review">Только отзыв</option>
+            </select>
+        </div>
+        
+        <button onclick="runTest()" id="testBtn">Запустить тест</button>
+        <button onclick="testPaymentUpdate()" id="paymentBtn">Тест обновления оплаты</button>
+        <button onclick="testReviewCreate()" id="reviewBtn">Тест создания отзыва</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function showResult(data, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const className = isError ? 'result error' : 'result success';
+            resultDiv.innerHTML = `
+                <div class="${className}">
+                    <h3>${isError ? '❌ Ошибка' : '✅ Результат'}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        async function runTest() {
+            const orderNumber = document.getElementById('orderNumber').value;
+            const phone = document.getElementById('phone').value;
+            const testType = document.getElementById('testType').value;
+            const btn = document.getElementById('testBtn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Тестирование...';
+            
+            try {
+                const response = await fetch('/api/db/test-payment-review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderNumber, phone, testType }),
+                });
+                
+                const data = await response.json();
+                showResult(data, !data.success);
+            } catch (error) {
+                showResult({ error: error.message }, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Запустить тест';
+            }
+        }
+
+        async function testPaymentUpdate() {
+            const orderNumber = document.getElementById('orderNumber').value;
+            const btn = document.getElementById('paymentBtn');
+            
+            if (!orderNumber) {
+                showResult({ error: 'Укажите номер заказа' }, true);
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Обновление оплаты...';
+            
+            try {
+                // Сначала найдем заказ по номеру
+                const findResponse = await fetch(`/api/orders?orderNumber=${orderNumber}`);
+                const findData = await findResponse.json();
+                
+                if (!findData.orders || findData.orders.length === 0) {
+                    showResult({ error: `Заказ ${orderNumber} не найден` }, true);
+                    return;
+                }
+                
+                const order = findData.orders[0];
+                const now = new Date().toISOString();
+                
+                // Обновляем статус оплаты
+                const updateResponse = await fetch(`/api/orders/${order.Id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        paid: true,
+                        paid_at: now,
+                        payment_method: 'card',
+                        payment_status: 'paid',
+                        updated_at: now,
+                    }),
+                });
+                
+                const updateData = await updateResponse.json();
+                
+                if (updateResponse.ok) {
+                    showResult({
+                        success: true,
+                        message: 'Статус оплаты обновлен',
+                        orderId: order.Id,
+                        orderNumber: order.order_number,
+                        before: {
+                            payment_status: order.payment_status,
+                            paid: order.paid,
+                        },
+                        after: {
+                            payment_status: 'paid',
+                            paid: true,
+                            paid_at: now,
+                        },
+                    });
+                } else {
+                    showResult({ error: updateData.error || 'Ошибка обновления' }, true);
+                }
+            } catch (error) {
+                showResult({ error: error.message }, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Тест обновления оплаты';
+            }
+        }
+
+        async function testReviewCreate() {
+            const orderNumber = document.getElementById('orderNumber').value;
+            const phone = document.getElementById('phone').value;
+            const btn = document.getElementById('reviewBtn');
+            
+            if (!orderNumber) {
+                showResult({ error: 'Укажите номер заказа' }, true);
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Создание отзыва...';
+            
+            try {
+                // Найдем заказ
+                const findOrderResponse = await fetch(`/api/orders?orderNumber=${orderNumber}`);
+                const findOrderData = await findOrderResponse.json();
+                
+                if (!findOrderData.orders || findOrderData.orders.length === 0) {
+                    showResult({ error: `Заказ ${orderNumber} не найден` }, true);
+                    return;
+                }
+                
+                const order = findOrderData.orders[0];
+                
+                // Найдем пользователя
+                let userId = order.user_id;
+                
+                if (!userId && phone) {
+                    const findUserResponse = await fetch(`/api/db/[...path]?path=Users&where=(Phone,eq,${phone})`);
+                    const findUserData = await findUserResponse.json();
+                    if (findUserData.list && findUserData.list.length > 0) {
+                        userId = findUserData.list[0].Id;
+                    }
+                }
+                
+                if (!userId) {
+                    showResult({ 
+                        error: 'Не найден user_id для заказа. Укажите телефон пользователя или убедитесь, что заказ привязан к пользователю' 
+                    }, true);
+                    return;
+                }
+                
+                // Создаем отзыв
+                const reviewData = {
+                    order_id: order.Id,
+                    user_id: userId,
+                    rating: 5,
+                    text: `Тестовый отзыв от ${new Date().toLocaleString('ru-RU')}`,
+                };
+                
+                const createResponse = await fetch('/api/db/[...path]', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: 'Reviews',
+                        data: reviewData,
+                    }),
+                });
+                
+                const createData = await createResponse.json();
+                
+                if (createResponse.ok) {
+                    showResult({
+                        success: true,
+                        message: 'Отзыв создан',
+                        review: createData,
+                        orderId: order.Id,
+                        orderNumber: order.order_number,
+                        userId: userId,
+                    });
+                } else {
+                    showResult({ error: createData.error || 'Ошибка создания отзыва' }, true);
+                }
+            } catch (error) {
+                showResult({ error: error.message }, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Тест создания отзыва';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+

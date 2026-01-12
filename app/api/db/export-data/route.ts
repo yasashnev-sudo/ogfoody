@@ -15,6 +15,7 @@ function getTableId(tableName: string): string {
     Order_Extras: process.env.NOCODB_TABLE_ORDER_EXTRAS,
     Promo_Codes: process.env.NOCODB_TABLE_PROMO_CODES,
     Reviews: process.env.NOCODB_TABLE_REVIEWS,
+    Loyalty_Points_Transactions: process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,
   }
   return tableIds[tableName] || ""
 }
@@ -47,6 +48,7 @@ export async function GET() {
     "Order_Extras",
     "Promo_Codes",
     "Reviews",
+    "Loyalty_Points_Transactions",
   ]
 
   const results: Record<string, any> = {}
@@ -125,4 +127,5 @@ export async function GET() {
     },
   })
 }
+
 

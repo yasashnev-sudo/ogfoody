@@ -6,23 +6,34 @@ import {
   Users,
   Clock,
   CalendarIcon,
-  Check,
   Copy,
   AlertTriangle,
   CreditCard,
   Star,
   MessageSquare,
-  Banknote,
   AlertCircle,
+  RotateCcw,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { isMealAvailable, isExtraAvailable } from "@/lib/meals-data"
-import type { Order, UserProfile, Review, DayMeals, BreakfastSelection, FullMealSelection } from "@/lib/types"
+import type { Order, UserProfile, Review, DayMeals, BreakfastSelection, FullMealSelection, PortionSize } from "@/lib/types"
+import { getMealWeight } from "@/lib/types"
 
 interface OrderHistoryProps {
   orders: Order[]
-  onCancelOrder: (startDate: Date) => void
-  onRepeatOrder: (order: Order, targetDate: Date) => void
+  onCancelOrder: (order: Order) => void // ✅ ИСПРАВЛЕНО: передаем объект Order, а не ID
+  onRepeatOrder: (order: Order, targetDate: Date) => Promise<void> // ✅ ИЗМЕНЕНО: теперь async
   onPayOrder: (order: Order, total: number) => void
   onReviewOrder: (order: Order) => void
   availableDates: Date[]
@@ -141,8 +152,10 @@ export function OrderHistory({
 }: OrderHistoryProps) {
   const [repeatMenuOpen, setRepeatMenuOpen] = useState<string | null>(null)
   const [cancelConfirmOrder, setCancelConfirmOrder] = useState<Order | null>(null)
+  // ✅ НОВОЕ: Loading state для кнопки "Повторить"
+  const [repeatLoading, setRepeatLoading] = useState<string | null>(null)
 
-  const activeOrders = orders.filter((o) => !o.cancelled)
+  const activeOrders = orders.filter((o) => o.orderStatus !== "cancelled")
 
   const sortedOrders = [...activeOrders].sort((a, b) => {
     return toDate(b.startDate).getTime() - toDate(a.startDate).getTime()
@@ -277,11 +290,6 @@ export function OrderHistory({
   }
 
   const canCancelOrder = (startDate: Date | string, order?: Order) => {
-    // Если заказ уже доставлен, нельзя отменить
-    if (order?.delivered) {
-      return false
-    }
-    
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const orderDate = toDate(startDate)
@@ -303,12 +311,7 @@ export function OrderHistory({
       return false
     }
     
-    // Можно оставить отзыв, если заказ доставлен
-    if (order.delivered) {
-      return true
-    }
-    
-    // Или если дата доставки уже прошла (заказ был вчера или раньше)
+    // Можно оставить отзыв, если дата доставки уже прошла (заказ был вчера или раньше)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const orderDate = toDate(order.startDate)
@@ -337,8 +340,8 @@ export function OrderHistory({
   }
 
   const confirmCancelPaidOrder = () => {
-    if (cancelConfirmOrder) {
-      onCancelOrder(toDate(cancelConfirmOrder.startDate))
+    if (cancelConfirmOrder && cancelConfirmOrder.id) {
+      onCancelOrder(cancelConfirmOrder) // ✅ ИСПРАВЛЕНО: передаем объект Order, а не только ID
       setCancelConfirmOrder(null)
       // Warning dialog will be shown by handleCancelOrder in parent component
     }
@@ -363,33 +366,47 @@ export function OrderHistory({
     const lunch = ensureFullMealStructure(dayMeals.lunch)
     const dinner = ensureFullMealStructure(dayMeals.dinner)
 
-    const getPortionText = (p: number) => (p === 1 ? "обычная" : p === 2 ? "двойная" : "тройная")
+    const formatDish = (dish: any, withWeight: boolean = true) => {
+      if (!dish) return null
+      const portion = dish.portion || "single"
+      const weight = withWeight && dish.weights ? getMealWeight(dish, portion) : 0
+      return weight > 0 ? `${dish.name} (${weight}г)` : dish.name
+    }
+
+    const formatMeal = (items: string[]) => items.filter(Boolean).join(", ")
 
     return (
-      <div className="space-y-1 pl-2">
+      <div className="space-y-1.5 text-xs">
         {breakfast.dish && (
-          <div className="flex items-start gap-1 flex-wrap">
-            <span className="text-muted-foreground">Завтрак:</span>
-            <span>{breakfast.dish.name}</span>
-            <span className="text-muted-foreground text-[10px]">({getPortionText(breakfast.dish.portion || 1)})</span>
+          <div>
+            <span className="font-bold">🌅 </span>
+            {formatDish(breakfast.dish)}
           </div>
         )}
         {(lunch.salad || lunch.soup || lunch.main) && (
-          <div className="flex items-start gap-1 flex-wrap">
-            <span className="text-muted-foreground">Обед:</span>
-            <span>{[lunch.salad?.name, lunch.soup?.name, lunch.main?.name].filter(Boolean).join(", ")}</span>
-            {lunch.main?.garnish && (
-              <span className="text-muted-foreground text-[10px]">+ {lunch.main.garnish.name}</span>
-            )}
+          <div>
+            <span className="font-bold">☀️ </span>
+            {formatMeal([
+              lunch.salad ? formatDish(lunch.salad, false) : null,
+              lunch.soup ? formatDish(lunch.soup, false) : null,
+              lunch.main ? (
+                formatDish(lunch.main) + 
+                (lunch.main.garnish ? ` + ${formatDish(lunch.main.garnish)}` : '')
+              ) : null
+            ])}
           </div>
         )}
         {(dinner.salad || dinner.soup || dinner.main) && (
-          <div className="flex items-start gap-1 flex-wrap">
-            <span className="text-muted-foreground">Ужин:</span>
-            <span>{[dinner.salad?.name, dinner.soup?.name, dinner.main?.name].filter(Boolean).join(", ")}</span>
-            {dinner.main?.garnish && (
-              <span className="text-muted-foreground text-[10px]">+ {dinner.main.garnish.name}</span>
-            )}
+          <div>
+            <span className="font-bold">🌙 </span>
+            {formatMeal([
+              dinner.salad ? formatDish(dinner.salad, false) : null,
+              dinner.soup ? formatDish(dinner.soup, false) : null,
+              dinner.main ? (
+                formatDish(dinner.main) + 
+                (dinner.main.garnish ? ` + ${formatDish(dinner.main.garnish)}` : '')
+              ) : null
+            ])}
           </div>
         )}
       </div>
@@ -422,10 +439,10 @@ export function OrderHistory({
               </p>
             )}
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setCancelConfirmOrder(null)}>
+              <Button variant="outline" className="flex-1 bg-transparent border-2 border-black font-bold" onClick={() => setCancelConfirmOrder(null)}>
                 Не отменять
               </Button>
-              <Button variant="destructive" className="flex-1" onClick={confirmCancelPaidOrder}>
+              <Button className="flex-1 bg-gray-200 hover:bg-gray-300 border-2 border-black text-black font-bold" onClick={confirmCancelPaidOrder}>
                 Отменить заказ
               </Button>
             </div>
@@ -442,79 +459,82 @@ export function OrderHistory({
           const day2Date = new Date(orderDate)
           day2Date.setDate(day2Date.getDate() + 1)
           const orderKey = formatDateKey(orderDate)
+          // ✅ ИСПРАВЛЕНО: Уникальный key с ID заказа или timestamp
+          const uniqueKey = order.id ? `order-${order.id}` : `${orderKey}-${order.startDate}`
           const { available: allItemsAvailable, unavailableItems } = checkOrderAvailability(order)
           const orderReview = getOrderReview(orderKey)
           const canReview = canReviewOrder(order, orderKey)
           const canEdit = !order.paid || order.paymentMethod === "cash"
 
           return (
-            <div key={orderKey} className="bg-card rounded-xl p-4 shadow-sm border border-border">
-              <div className="flex items-start justify-between mb-3">
+            <div key={uniqueKey} className="bg-white rounded-xl p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] border-2 border-black">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <CalendarIcon className="w-5 h-5 text-primary" />
+                  <CalendarIcon className="w-4 h-4" />
                   <div>
-                    <div className="font-semibold">Заказ на {formatDisplayDate(orderDate)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {order.orderNumber ? `№ ${order.orderNumber} · Набор на 2 дня` : "Набор на 2 дня"}
+                    <div className="font-black text-sm">{formatDisplayDate(orderDate)}</div>
+                    <div className="text-[10px] text-gray-600 font-bold">
+                      {order.orderNumber ? `№ ${order.orderNumber}` : "Набор на 2 дня"}
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div
-                    className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                      order.delivered ? "bg-green-500/10 text-green-600" : "bg-orange-500/10 text-orange-600"
-                    }`}
-                  >
-                    {order.delivered ? (
-                      <>
-                        <Check className="w-3 h-3" />
-                        Доставлен
-                      </>
-                    ) : (
-                      <>
-                        <Package className="w-3 h-3" />
-                        Ожидает
-                      </>
-                    )}
-                  </div>
-                  <div
-                    className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                      order.paid ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"
-                    }`}
-                  >
-                    {order.paymentMethod === "cash" ? (
-                      <>
-                        <Banknote className="w-3 h-3" />
-                        {order.paid ? "Оплачен" : "Наличными"}
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-3 h-3" />
-                        {order.paid ? "Оплачен" : "Не оплачен"}
-                      </>
-                    )}
-                  </div>
-                </div>
               </div>
 
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Доставка:</span>
-                  <span className="font-medium">{order.deliveryTime}</span>
+              <div className="flex gap-2 text-[11px] font-bold text-gray-600 mb-2">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {order.deliveryTime}
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Персон:</span>
-                  <span className="font-medium">{order.persons.length}</span>
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  {order.persons.length}
                 </div>
               </div>
+              
+              {/* Информация об оплате, доставке и баллах */}
+              {(order.paid || (order.loyaltyPointsUsed && order.loyaltyPointsUsed > 0) || (order.loyaltyPointsEarned && order.loyaltyPointsEarned > 0) || (order.deliveryFee !== undefined && order.deliveryFee !== null)) && (
+                <div className="bg-purple-50 rounded-lg p-2 border border-black mb-2 text-[11px] space-y-1">
+                  {order.paid && (
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold">
+                        {order.paymentMethod === 'card' && '💳 Карта'}
+                        {order.paymentMethod === 'sbp' && '📱 СБП'}
+                        {order.paymentMethod === 'cash' && '💵 Наличные'}
+                        {order.paymentMethod === 'online' && '🌐 Онлайн'}
+                        {!order.paymentMethod && '✓ Оплачен'}
+                      </span>
+                    </div>
+                  )}
+                  {order.deliveryFee !== undefined && order.deliveryFee !== null && (
+                    <div className="flex items-center justify-between" data-test="delivery-fee-block">
+                      <span className="text-orange-700">🚚 Доставка:</span>
+                      <span className="font-black text-orange-700">
+                        {order.deliveryFee > 0 ? `+${order.deliveryFee}₽` : 'Бесплатно'}
+                      </span>
+                    </div>
+                  )}
+                  {order.loyaltyPointsUsed !== undefined && order.loyaltyPointsUsed > 0 && (
+                    <div className="flex items-center justify-between" data-test="loyalty-used-block">
+                      <span className="text-purple-700">Списано:</span>
+                      <span className="font-black text-purple-700">-{order.loyaltyPointsUsed}₽</span>
+                    </div>
+                  )}
+                  {order.loyaltyPointsEarned && order.loyaltyPointsEarned > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-green-700">Начислено:</span>
+                      <span className="font-black text-green-700">+{order.loyaltyPointsEarned}🎁</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="border-t border-border pt-3">
+              <div className="space-y-2">
                 {order.persons.map((person, index) => (
-                  <div key={person.id} className="mb-3 last:mb-0">
-                    <div className="text-sm font-medium mb-2 text-muted-foreground">Персона {index + 1}</div>
-                    <div className="space-y-2 pl-3">
+                  <div key={person.id} className="bg-gray-50 rounded-lg p-2 border border-black">
+                    <div className="text-[10px] font-black text-gray-600 mb-1.5">
+                      ПЕРСОНА {index + 1}
+                    </div>
+                    <div className="space-y-2">
                       {["day1", "day2"].map((day, dayIndex) => {
                         const dayMeals = person[day as "day1" | "day2"] as DayMeals
                         if (!dayMeals) return null
@@ -537,9 +557,9 @@ export function OrderHistory({
                         const displayDate = dayIndex === 0 ? orderDate : day2Date
 
                         return (
-                          <div key={day} className="text-xs">
-                            <div className="font-medium text-muted-foreground mb-1">
-                              День {dayIndex + 1} ({formatDisplayDate(displayDate)})
+                          <div key={day} className="bg-white rounded p-2 border border-gray-300">
+                            <div className="font-bold text-[10px] mb-1 text-gray-500">
+                              День {dayIndex + 1} · {formatDisplayDate(displayDate)}
                             </div>
                             {renderMealInfo(dayMeals)}
                           </div>
@@ -550,12 +570,12 @@ export function OrderHistory({
                 ))}
 
                 {order.extras && order.extras.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-border/50">
-                    <div className="text-sm font-medium mb-2 text-muted-foreground">Дополнения</div>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="bg-yellow-50 rounded-lg p-2 border border-black">
+                    <div className="text-[10px] font-black text-gray-600 mb-1">ДОПОЛНЕНИЯ</div>
+                    <div className="flex flex-wrap gap-1">
                       {order.extras.map((extra) => (
-                        <span key={extra.name} className="text-xs bg-muted px-2 py-1 rounded">
-                          {extra.name} x{extra.quantity}
+                        <span key={extra.name} className="text-[10px] font-bold bg-white px-2 py-0.5 rounded border border-black">
+                          {extra.name} ×{extra.quantity}
                         </span>
                       ))}
                     </div>
@@ -563,145 +583,182 @@ export function OrderHistory({
                 )}
               </div>
 
-              <div className="border-t border-border pt-3 mt-3 flex items-center justify-between">
-                <span className="font-semibold">Итого:</span>
-                <span className="text-xl font-bold text-primary">{total} ₽</span>
+              <div className="bg-[#9D00FF] rounded-lg p-2 mt-2 border-2 border-black flex items-center justify-between">
+                <span className="font-black text-white text-xs">ИТОГО:</span>
+                <span className="text-xl font-black text-white">{total} ₽</span>
               </div>
 
-              {order.paid && order.paymentMethod !== "cash" && (
-                <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">
-                    Заказ оплачен. Изменение состава недоступно. При необходимости отмените заказ и создайте новый.
-                  </p>
-                </div>
-              )}
-
               {orderReview ? (
-                <div className="mt-3 pt-3 border-t border-border">
-                  <div className="bg-muted/50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`w-4 h-4 ${
-                              star <= orderReview.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs text-muted-foreground">Ваш отзыв</span>
+                <div className="mt-2">
+                  <div className="bg-amber-50 rounded-lg p-2 border border-black text-xs">
+                    <div className="flex gap-0.5 mb-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-3 h-3 ${
+                            star <= orderReview.rating ? "fill-amber-500 text-amber-500" : "text-gray-300"
+                          }`}
+                        />
+                      ))}
                     </div>
-                    {orderReview.text && <p className="text-sm text-muted-foreground">{orderReview.text}</p>}
+                    {orderReview.text && <p className="text-[11px] text-gray-700">{orderReview.text}</p>}
                   </div>
                 </div>
               ) : canReview ? (
-                <div className="mt-3 pt-3 border-t border-border">
+                <div className="mt-2">
                   <Button
-                    variant="default"
                     size="sm"
-                    className="w-full bg-primary hover:bg-primary/90"
+                    className="w-full bg-amber-400 hover:bg-amber-500 border border-black text-black font-black text-xs h-8"
                     onClick={() => onReviewOrder(order)}
                   >
-                    <Star className="w-4 h-4 mr-2 fill-current" />
-                    Оставить отзыв
+                    <Star className="w-3 h-3 mr-1 fill-current" />
+                    ОТЗЫВ
                   </Button>
                 </div>
               ) : null}
 
-              {!order.paid && order.paymentMethod === "cash" && (
-                <div className="pt-3 mt-3 border-t border-border">
-                  {/* Switch to Card Widget */}
-                  <div className="bg-white border-2 border-black rounded-lg p-4 shadow-brutal">
-                    <div className="mb-3">
-                      <h3 className="font-black text-black text-base mb-1">ОПЛАТА ПРИ ПОЛУЧЕНИИ</h3>
-                      <p className="text-sm text-muted-foreground">Можно оплатить сейчас, чтобы не ждать сдачу.</p>
-                    </div>
-                    <Button
-                      onClick={() => onPayOrder(order, total)}
-                      className="w-full bg-[#FFEA00] hover:bg-[#FFF033] border-2 border-black text-black font-black shadow-brutal h-12"
-                    >
-                      💳 ОПЛАТИТЬ КАРТОЙ
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {!order.paid && !order.paymentMethod && (
-                <div className="pt-3 mt-3 border-t border-border">
-                  <Button onClick={() => onPayOrder(order, total)} className="w-full">
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Оплатить {total} ₽
+              {!order.paid && (
+                <div className="mt-2">
+                  <Button
+                    onClick={() => onPayOrder(order, total)}
+                    size="sm"
+                    className="w-full bg-[#FFEA00] hover:bg-[#FFF033] border border-black text-black font-black text-xs h-8"
+                  >
+                    💳 ОПЛАТИТЬ {total} ₽
                   </Button>
                 </div>
               )}
 
-              <div className="border-t border-border pt-3 mt-3">
-                {freeDates.length > 0 ? (
-                  <div className="relative">
+              <div className="mt-2 flex gap-2">
+                {freeDates.length > 0 && (
+                  <div className="relative flex-1">
                     <Button
-                      variant="outline"
                       size="sm"
-                      className="w-full bg-transparent"
                       onClick={() => setRepeatMenuOpen(repeatMenuOpen === orderKey ? null : orderKey)}
+                      className="w-full bg-white hover:bg-gray-50 border border-black text-black font-bold text-xs h-8"
+                      disabled={repeatLoading === orderKey}
+                      data-testid="repeat-order-btn"
                     >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Повторить заказ
+                      {repeatLoading === orderKey ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Загрузка...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          ПОВТОРИТЬ ЗАКАЗ
+                        </>
+                      )}
                     </Button>
 
                     {repeatMenuOpen === orderKey && (
-                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-lg shadow-lg p-3 z-10">
-                        <div className="text-sm font-medium mb-2">Выберите дату:</div>
-
+                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-10 min-w-[200px]">
+                        <div className="text-[10px] font-black mb-2 text-gray-600">📅 ВЫБЕРИТЕ ДАТУ ДОСТАВКИ:</div>
                         {!allItemsAvailable && (
-                          <div className="mb-3 p-2 bg-orange-500/10 rounded-lg flex items-start gap-2">
-                            <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                            <div className="text-xs text-orange-700">
-                              <p className="font-medium">Некоторые позиции недоступны:</p>
-                              <p className="text-orange-600">{unavailableItems.join(", ")}</p>
-                              <p className="mt-1">Они будут пропущены при повторении</p>
+                          <div className="mb-2 p-2 bg-orange-100 rounded-lg border border-orange-500 text-[10px]">
+                            <div className="flex items-start gap-1">
+                              <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <div className="font-bold">Внимание!</div>
+                                <div className="text-orange-700">Недоступные позиции будут пропущены</div>
+                              </div>
                             </div>
                           </div>
                         )}
-
                         <div className="max-h-40 overflow-y-auto space-y-1">
-                          {freeDates.map((date) => (
-                            <button
-                              key={formatDateKey(date)}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-muted rounded transition-colors"
-                              onClick={() => {
-                                onRepeatOrder(order, date)
-                                setRepeatMenuOpen(null)
-                              }}
-                            >
-                              {formatDisplayDate(date)}
-                            </button>
-                          ))}
+                          {freeDates.length === 0 ? (
+                            <div className="text-[10px] text-gray-500 text-center py-2">
+                              Нет доступных дат
+                            </div>
+                          ) : (
+                            freeDates.map((date) => {
+                              const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+                              const dayName = dayNames[date.getDay()]
+                              const today = new Date()
+                              today.setHours(0, 0, 0, 0)
+                              const dateTime = new Date(date)
+                              dateTime.setHours(0, 0, 0, 0)
+                              const daysFromNow = Math.floor((dateTime.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                              const isThisWeek = daysFromNow >= 0 && daysFromNow <= 7
+                              
+                              return (
+                                <button
+                                  key={formatDateKey(date)}
+                                  className={`w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-blue-50 rounded-lg border-2 transition-all ${
+                                    isThisWeek 
+                                      ? 'border-blue-500 bg-blue-50/50' 
+                                      : 'border-gray-300 bg-white'
+                                  }`}
+                                  onClick={async () => {
+                                    // ✅ КРИТИЧНО: Устанавливаем loading перед вызовом
+                                    setRepeatLoading(orderKey)
+                                    try {
+                                      await onRepeatOrder(order, date)
+                                    } finally {
+                                      // ✅ Всегда снимаем loading даже при ошибке
+                                      setRepeatLoading(null)
+                                      setRepeatMenuOpen(null)
+                                    }
+                                  }}
+                                  disabled={repeatLoading === orderKey}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span>{dayName}, {formatDisplayDate(date)}</span>
+                                    {isThisWeek && (
+                                      <span className="text-[9px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">
+                                        {daysFromNow === 0 ? 'СЕГОДНЯ' : daysFromNow === 1 ? 'ЗАВТРА' : `+${daysFromNow}д`}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              )
+                            })
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center">Нет доступных дат для повторения</p>
                 )}
-              </div>
-
-              {canCancel && (
-                <div className="pt-3 mt-3 border-t border-border">
+              
+                {canCancel && (
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={() => handleCancelClick(order)}
-                    className="w-full bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
+                    variant="outline"
+                    className="flex-1 border-2 border-black text-black font-bold text-xs h-8 hover:bg-gray-100"
                   >
-                    Отменить заказ
+                    🗑️ ОТМЕНИТЬ
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )
         })}
       </div>
+
+      {/* Диалог подтверждения отмены заказа */}
+      <AlertDialog open={!!cancelConfirmOrder} onOpenChange={(open) => !open && setCancelConfirmOrder(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Отменить заказ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelConfirmOrder?.paid
+                ? "Вы уверены, что хотите отменить этот оплаченный заказ? Баллы, начисленные за этот заказ, будут списаны."
+                : "Вы уверены, что хотите отменить этот заказ?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Назад</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelPaidOrder}
+              className="bg-gray-200 text-black font-bold border-2 border-black hover:bg-gray-300"
+            >
+              Отменить заказ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

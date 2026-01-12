@@ -37,7 +37,9 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
   }, [countdown])
 
   useEffect(() => {
+    console.log("🔐 AuthModal: open изменился на", open)
     if (open) {
+      console.log("✅ AuthModal: открываем модальное окно, сбрасываем состояние")
       setStep("phone")
       setCode("")
     }
@@ -67,7 +69,6 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
   const handleSendCode = (method: AuthMethod) => {
     const cleanPhone = getCleanPhone()
     if (cleanPhone.length !== 11) {
-      alert("Введите корректный номер телефона")
       return
     }
 
@@ -75,26 +76,28 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
     const newCode = Math.floor(1000 + Math.random() * 9000).toString()
     setGeneratedCode(newCode)
 
-    if (method === "sms") {
-      alert(`СМС с кодом отправлено на ${phone}\n\nДемо-код: ${newCode}`)
-    } else {
-      alert(`Вам поступит звонок на ${phone}\nПоследние 4 цифры номера - ваш код\n\nДемо-код: ${newCode}`)
-    }
+    // Демо-код в консоль для разработки
+    console.log(`🔐 Демо-код для ${phone}: ${newCode}`)
 
     setStep("code")
     setCountdown(60)
   }
 
-  const handleVerifyCode = (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (code === generatedCode) {
       const cleanPhone = getCleanPhone()
       localStorage.setItem(`user_${cleanPhone}`, JSON.stringify({ phone: cleanPhone }))
-      // onLogin может быть async, но мы не ждем его завершения
-      Promise.resolve(onLogin(cleanPhone)).catch(console.error)
+      
+      // Закрываем модальное окно СРАЗУ
+      onClose()
+      
+      // Выполняем вход (анимация будет на главной странице)
+      await Promise.resolve(onLogin(cleanPhone))
     } else {
-      alert("Неверный код")
+      console.log("❌ Неверный код")
+      setCode("")
     }
   }
 
@@ -138,6 +141,7 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
                   value={phone}
                   onChange={handlePhoneChange}
                   className="text-lg tracking-wide"
+                  data-testid="auth-phone-input"
                 />
               </div>
 
@@ -146,6 +150,7 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
                   onClick={() => handleSendCode("sms")}
                   className="w-full"
                   disabled={getCleanPhone().length !== 11}
+                  data-testid="auth-send-sms-btn"
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   СМС-код
@@ -155,6 +160,7 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
                   variant="outline"
                   className="w-full"
                   disabled={getCleanPhone().length !== 11}
+                  data-testid="auth-send-call-btn"
                 >
                   <Phone className="w-4 h-4 mr-2" />
                   Звонок
@@ -171,6 +177,12 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
             </div>
           ) : (
             <form onSubmit={handleVerifyCode} className="space-y-4 pt-2">
+              {/* Демо-код (пока СМС не подключены) */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+                <p className="text-xs text-yellow-800 mb-1">🔧 Режим разработки</p>
+                <p className="text-sm font-medium text-yellow-900">Демо-код: <span className="text-2xl font-bold tracking-wider">{generatedCode}</span></p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="code">{authMethod === "sms" ? "Код из СМС" : "Последние 4 цифры номера"}</Label>
                 <Input
@@ -183,10 +195,11 @@ export function AuthModal({ open, onClose, onLogin, redirectAfterLogin }: AuthMo
                   className="text-2xl text-center tracking-[0.5em] font-mono"
                   maxLength={4}
                   autoFocus
+                  data-testid="auth-code-input"
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={code.length !== 4}>
+              <Button type="submit" className="w-full" disabled={code.length !== 4} data-testid="auth-verify-btn">
                 Подтвердить
               </Button>
 

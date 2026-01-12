@@ -1,0 +1,3329 @@
+(globalThis.TURBOPACK || (globalThis.TURBOPACK = [])).push([typeof document === "object" ? document.currentScript : undefined,
+"[project]/app/page.tsx [app-client] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "default",
+    ()=>Home
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/image.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$calendar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/calendar.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$order$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/order-modal.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$order$2d$history$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/order-history.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$auth$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/auth-modal.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$app$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/app-menu.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$profile$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/profile-modal.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$payment$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/payment-modal.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$review$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/review-modal.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$warning$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/warning-dialog.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$preloader$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/preloader.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$daily$2d$status$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/daily-status.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$fresh$2d$section$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/fresh-section.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$dish$2d$smart$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/dish-smart-modal.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$order$2d$loading$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/order-loading-dialog.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$payment$2d$loading$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/payment-loading.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$cash$2d$payment$2d$animation$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/cash-payment-animation.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$success$2d$order$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/success-order-dialog.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$cancel$2d$order$2d$loading$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/cancel-order-loading.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$district$2d$selection$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/district-selection-modal.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$info$2d$banner$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/info-banner.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/button.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CalendarIcon$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/calendar.js [app-client] (ecmascript) <export default as CalendarIcon>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$history$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__History$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/history.js [app-client] (ecmascript) <export default as History>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$out$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogOut$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/log-out.js [app-client] (ecmascript) <export default as LogOut>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/user.js [app-client] (ecmascript) <export default as User>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$in$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogIn$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/log-in.js [app-client] (ecmascript) <export default as LogIn>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/meals-data.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$menu$2d$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/menu-utils.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$getDay$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/date-fns/getDay.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$addDays$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/date-fns/addDays.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$loading$2d$skeletons$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/loading-skeletons.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$debug$2f$DebugContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/debug/DebugContext.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$debug$2f$DebugFloatingButton$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/debug/DebugFloatingButton.tsx [app-client] (ecmascript)");
+;
+var _s = __turbopack_context__.k.signature(), _s1 = __turbopack_context__.k.signature();
+"use client";
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+const formatDateKey = (date)=>{
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+};
+const parseDateKey = (dateKey)=>{
+    const [year, month, day] = dateKey.split("-").map(Number);
+    return new Date(year, month - 1, day);
+};
+const toDate = (value)=>{
+    if (value instanceof Date) return value;
+    if (typeof value === "string") {
+        if (value.includes("T")) return new Date(value);
+        if (value.includes("-")) return parseDateKey(value);
+    }
+    return new Date(value);
+};
+const getDateTimestamp = (value)=>{
+    return toDate(value).getTime();
+};
+const serializeOrders = (orders)=>{
+    return JSON.stringify(orders.map((o)=>({
+            ...o,
+            startDate: formatDateKey(toDate(o.startDate))
+        })));
+};
+const deserializeOrders = (json)=>{
+    try {
+        const parsed = JSON.parse(json);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        // ✅ Для гостей: храним заказы за последние 30 дней (более разумный срок)
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return parsed.map((o)=>({
+                ...o,
+                startDate: toDate(o.startDate),
+                paid: o.paid ?? false
+            })).filter((o)=>{
+            const orderDate = toDate(o.startDate);
+            // Оставляем только заказы за последние 30 дней или будущие
+            return orderDate >= thirtyDaysAgo;
+        });
+    } catch  {
+        return [];
+    }
+};
+// Используем функцию из menu-utils.ts для получения доступных дат
+const getAvailableDates = ()=>{
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$menu$2d$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getAvailableDatesForOrdering"])().map((item)=>item.date);
+};
+const filterAvailableItems = (order)=>{
+    const filteredPersons = order.persons.map((person)=>{
+        const filterDayMeals = (meals)=>{
+            return {
+                breakfast: {
+                    dish: meals.breakfast?.dish && (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isMealAvailable"])(meals.breakfast.dish.name) ? meals.breakfast.dish : null
+                },
+                lunch: {
+                    salad: meals.lunch?.salad && (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isMealAvailable"])(meals.lunch.salad.name) ? meals.lunch.salad : null,
+                    soup: meals.lunch?.soup && (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isMealAvailable"])(meals.lunch.soup.name) ? meals.lunch.soup : null,
+                    main: meals.lunch?.main && (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isMealAvailable"])(meals.lunch.main.name) ? meals.lunch.main : null
+                },
+                dinner: {
+                    salad: meals.dinner?.salad && (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isMealAvailable"])(meals.dinner.salad.name) ? meals.dinner.salad : null,
+                    soup: meals.dinner?.soup && (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isMealAvailable"])(meals.dinner.soup.name) ? meals.dinner.soup : null,
+                    main: meals.dinner?.main && (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isMealAvailable"])(meals.dinner.main.name) ? meals.dinner.main : null
+                }
+            };
+        };
+        return {
+            ...person,
+            day1: filterDayMeals(person.day1),
+            day2: filterDayMeals(person.day2)
+        };
+    });
+    const filteredExtras = (order.extras || []).filter((extra)=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$meals$2d$data$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["isExtraAvailable"])(extra.name));
+    return {
+        ...order,
+        persons: filteredPersons,
+        extras: filteredExtras
+    };
+};
+const calculateOrderTotal = (order)=>{
+    let total = 0;
+    order.persons.forEach((person)=>{
+        ;
+        [
+            "day1",
+            "day2"
+        ].forEach((day)=>{
+            const dayMeals = person[day];
+            if (dayMeals.breakfast?.dish) {
+                const dish = dayMeals.breakfast.dish;
+                total += dish.price * (dish.portion || 1);
+                if (dish.garnish) {
+                    total += dish.garnish.price * (dish.garnish.portion || 1);
+                }
+            }
+            if (dayMeals.lunch) {
+                if (dayMeals.lunch.salad) {
+                    total += dayMeals.lunch.salad.price * (dayMeals.lunch.salad.portion || 1);
+                }
+                if (dayMeals.lunch.soup) {
+                    total += dayMeals.lunch.soup.price * (dayMeals.lunch.soup.portion || 1);
+                }
+                if (dayMeals.lunch.main) {
+                    const main = dayMeals.lunch.main;
+                    total += main.price * (main.portion || 1);
+                    if (main.garnish) {
+                        total += main.garnish.price * (main.garnish.portion || 1);
+                    }
+                }
+            }
+            if (dayMeals.dinner) {
+                if (dayMeals.dinner.salad) {
+                    total += dayMeals.dinner.salad.price * (dayMeals.dinner.salad.portion || 1);
+                }
+                if (dayMeals.dinner.soup) {
+                    total += dayMeals.dinner.soup.price * (dayMeals.dinner.soup.portion || 1);
+                }
+                if (dayMeals.dinner.main) {
+                    const main = dayMeals.dinner.main;
+                    total += main.price * (main.portion || 1);
+                    if (main.garnish) {
+                        total += main.garnish.price * (main.garnish.portion || 1);
+                    }
+                }
+            }
+        });
+    });
+    order.extras?.forEach((extra)=>{
+        total += extra.price * extra.quantity;
+    });
+    return total;
+};
+const calculateOrderTotalForHistory = (order)=>{
+    let total = 0;
+    order.persons.forEach((person)=>{
+        ;
+        [
+            "day1",
+            "day2"
+        ].forEach((day)=>{
+            const dayMeals = person[day];
+            if (dayMeals.breakfast?.dish) {
+                const dish = dayMeals.breakfast.dish;
+                total += dish.price * (dish.portion || 1);
+                if (dish.garnish) {
+                    total += dish.garnish.price * (dish.garnish.portion || 1);
+                }
+            }
+            if (dayMeals.lunch) {
+                if (dayMeals.lunch.salad) {
+                    total += dayMeals.lunch.salad.price * (dayMeals.lunch.salad.portion || 1);
+                }
+                if (dayMeals.lunch.soup) {
+                    total += dayMeals.lunch.soup.price * (dayMeals.lunch.soup.portion || 1);
+                }
+                if (dayMeals.lunch.main) {
+                    const main = dayMeals.lunch.main;
+                    total += main.price * (main.portion || 1);
+                    if (main.garnish) {
+                        total += main.garnish.price * (main.garnish.portion || 1);
+                    }
+                }
+            }
+            if (dayMeals.dinner) {
+                if (dayMeals.dinner.salad) {
+                    total += dayMeals.dinner.salad.price * (dayMeals.dinner.salad.portion || 1);
+                }
+                if (dayMeals.dinner.soup) {
+                    total += dayMeals.dinner.soup.price * (dayMeals.dinner.soup.portion || 1);
+                }
+                if (dayMeals.dinner.main) {
+                    const main = dayMeals.dinner.main;
+                    total += main.price * (main.portion || 1);
+                    if (main.garnish) {
+                        total += main.garnish.price * (main.garnish.portion || 1);
+                    }
+                }
+            }
+        });
+    });
+    order.extras?.forEach((extra)=>{
+        total += extra.price * extra.quantity;
+    });
+    return total;
+};
+function Home() {
+    _s();
+    const [userProfile, setUserProfile] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$debug$2f$DebugContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DebugProvider"], {
+        userId: userProfile?.id?.toString(),
+        userEmail: userProfile?.email,
+        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(HomeWithDebug, {
+            userProfile: userProfile,
+            setUserProfile: setUserProfile
+        }, void 0, false, {
+            fileName: "[project]/app/page.tsx",
+            lineNumber: 245,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "[project]/app/page.tsx",
+        lineNumber: 244,
+        columnNumber: 5
+    }, this);
+}
+_s(Home, "ET4wffPQXLqVxe2tRhKZ9u1WdFo=");
+_c = Home;
+function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setParentUserProfile }) {
+    _s1();
+    const debug = (0, __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$debug$2f$DebugContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useDebug"])() // ✅ Теперь можем использовать!
+    ;
+    const [selectedDate, setSelectedDate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [orders, setOrders] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [view, setView] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("calendar");
+    const [isAuthenticated, setIsAuthenticated] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [currentUser, setCurrentUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [showProfile, setShowProfile] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [userProfile, setUserProfile] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(initialUserProfile);
+    // Синхронизируем userProfile с родительским компонентом
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "HomeWithDebug.useEffect": ()=>{
+            setParentUserProfile(userProfile);
+        }
+    }["HomeWithDebug.useEffect"], [
+        userProfile,
+        setParentUserProfile
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "HomeWithDebug.useEffect": ()=>{
+            setUserProfile(initialUserProfile);
+        }
+    }["HomeWithDebug.useEffect"], [
+        initialUserProfile
+    ]);
+    // ✅ НЕ ИНИЦИАЛИЗИРУЕМ Debug здесь - будем получать из Provider
+    // const debug = useDebug() - нельзя использовать выше DebugProvider!
+    const [paymentOrder, setPaymentOrder] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [reviews, setReviews] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [reviewOrder, setReviewOrder] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [showAuthModal, setShowAuthModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [showDistrictModal, setShowDistrictModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [pendingCheckout, setPendingCheckout] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [shouldAutoCheckout, setShouldAutoCheckout] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [selectedDish, setSelectedDish] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    // ✅ SAFE DATA LOADING: Loading states для защиты от race condition
+    const [isUserLoading, setIsUserLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [isOrdersLoading, setIsOrdersLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [isPointsLoading, setIsPointsLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    // Animation states
+    const [showOrderLoading, setShowOrderLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [showPaymentLoading, setShowPaymentLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [showCashPaymentAnimation, setShowCashPaymentAnimation] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [showCancelLoading, setShowCancelLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [successDialog, setSuccessDialog] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
+        open: false,
+        loyaltyPointsEarned: 0,
+        loyaltyPointsStatus: undefined,
+        loyaltyPointsMessage: undefined
+    });
+    // Warning dialog state
+    const [warningDialog, setWarningDialog] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
+        open: false,
+        title: "",
+        description: "",
+        variant: "warning"
+    });
+    const showWarning = (title, description, variant = "warning", onConfirm)=>{
+        setWarningDialog({
+            open: true,
+            title,
+            description,
+            variant,
+            onConfirm
+        });
+    };
+    const closeWarning = ()=>{
+        setWarningDialog((prev)=>{
+            if (prev.onConfirm) {
+                prev.onConfirm();
+            }
+            return {
+                ...prev,
+                open: false
+            };
+        });
+    };
+    // ✅ ДОБАВЛЕНО 10.01.2026: Диалог подтверждения отмены заказа при закрытии PaymentModal
+    const [cancelPaymentDialog, setCancelPaymentDialog] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
+        open: false,
+        orderId: null
+    });
+    // ✅ Состояния для новой логики оформления заказа
+    const [selectedDistrict, setSelectedDistrict] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [showInfoBanner, setShowInfoBanner] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    // ✅ ИЗМЕНЕНО 10.01.2026: Убираем автоматическое открытие модалки района для гостей
+    // Теперь гости выбирают район в процессе оформления заказа
+    // Оставляем только проверку для загрузки сохраненного района из localStorage
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "HomeWithDebug.useEffect": ()=>{
+            const isAuth = localStorage.getItem("currentUser");
+            const guestDistrict = localStorage.getItem("guest_district");
+            if (!isAuth && guestDistrict) {
+                console.log("📍 Загружен сохранённый район гостя:", guestDistrict);
+                setSelectedDistrict(guestDistrict);
+            }
+        }
+    }["HomeWithDebug.useEffect"], []);
+    // Проверка заполненности профиля после авторизации
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "HomeWithDebug.useEffect": ()=>{
+            console.log("🔍 [useEffect] Проверка профиля сработала:", {
+                isAuthenticated,
+                hasUserProfile: !!userProfile,
+                shouldAutoCheckout,
+                hasPendingCheckout: !!pendingCheckout,
+                userName: userProfile?.name,
+                userStreet: userProfile?.street,
+                userBuilding: userProfile?.building,
+                userDistrict: userProfile?.district
+            });
+            console.log("🔍 [useEffect] ДЕТАЛЬНЫЕ ЗНАЧЕНИЯ:", {
+                "isAuthenticated (ожидается true)": isAuthenticated,
+                "userProfile (ожидается объект)": userProfile,
+                "shouldAutoCheckout (ожидается true)": shouldAutoCheckout,
+                "pendingCheckout (ожидается объект)": pendingCheckout
+            });
+            if (!isAuthenticated) {
+                console.log("❌ isAuthenticated = false");
+            }
+            if (!userProfile) {
+                console.log("❌ userProfile = null");
+            }
+            if (!shouldAutoCheckout) {
+                console.log("❌ shouldAutoCheckout = false ← ПРОБЛЕМА ЗДЕСЬ!");
+            }
+            if (!pendingCheckout) {
+                console.log("❌ pendingCheckout = null");
+            }
+            if (isAuthenticated && userProfile && shouldAutoCheckout && pendingCheckout) {
+                console.log("✅ ВСЕ УСЛОВИЯ ВЫПОЛНЕНЫ! Проверяем профиль...");
+                console.log("🔍 Проверяем заполненность профиля после авторизации:", {
+                    name: userProfile.name,
+                    street: userProfile.street,
+                    building: userProfile.building,
+                    district: userProfile.district
+                });
+                const isProfileComplete = userProfile.name && userProfile.street && userProfile.building;
+                if (!isProfileComplete) {
+                    console.log("⚠️ Профиль не заполнен, открываем ProfileModal");
+                    setShowProfile(true);
+                } else {
+                    console.log("✅ Профиль заполнен, запускаем автооформление");
+                    handleAutoCheckout();
+                }
+            } else {
+                console.log("⚠️ [useEffect] Условия не выполнены, ProfileModal не открывается");
+            }
+        }
+    }["HomeWithDebug.useEffect"], [
+        isAuthenticated,
+        userProfile,
+        shouldAutoCheckout,
+        pendingCheckout
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "HomeWithDebug.useEffect": ()=>{
+            // ✅ НОВОЕ: Проверяем URL параметр для очистки localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('clear') === '1') {
+                console.log('🧹 Очистка localStorage по URL параметру...');
+                localStorage.clear();
+                // Убираем параметр из URL и перезагружаем
+                window.history.replaceState({}, '', window.location.pathname);
+                window.location.reload();
+                return;
+            }
+            const user = localStorage.getItem("currentUser");
+            console.log('🚀 useEffect mount: currentUser =', user);
+            if (user) {
+                setIsAuthenticated(true);
+                setCurrentUser(user);
+                // 🔒 SAFE DATA LOADING: Включаем все лоадеры для авторизованных пользователей
+                setIsUserLoading(true);
+                setIsOrdersLoading(true);
+                setIsPointsLoading(true);
+                // ✅ КРИТИЧНО: Очищаем ВСЕ кэшированные данные для авторизованного пользователя
+                // Правило: "Единственный источник правды - NocoDB"
+                const oldOrdersKey = `orders_${user}`;
+                const oldProfileKey = `profile_${user}`;
+                console.log('🧹 Очистка кэшированных данных для авторизованного пользователя');
+                localStorage.removeItem(oldOrdersKey); // Удаляем старые заказы
+                // Не удаляем профиль полностью, но будем игнорировать баллы из него
+                const savedProfile = localStorage.getItem(oldProfileKey);
+                let tempProfile = null;
+                if (savedProfile) {
+                    tempProfile = JSON.parse(savedProfile);
+                    // ⚠️ Временно устанавливаем профиль БЕЗ баллов (они загрузятся из API)
+                    setUserProfile({
+                        ...tempProfile,
+                        loyaltyPoints: 0,
+                        totalSpent: 0
+                    });
+                    console.log('⏳ Профиль загружен локально (без баллов), ожидаем API...');
+                }
+                // 📡 ГЛАВНАЯ ЗАГРУЗКА: Только API, никакого localStorage!
+                if (tempProfile?.id) {
+                    console.log('📡 Загрузка ВСЕХ данных из API для userId:', tempProfile.id);
+                    fetch(`/api/orders?userId=${tempProfile.id}`).then({
+                        "HomeWithDebug.useEffect": (res)=>{
+                            console.log('📥 Ответ API:', res.status);
+                            if (!res.ok) throw new Error(`API error: ${res.status}`);
+                            return res.json();
+                        }
+                    }["HomeWithDebug.useEffect"]).then({
+                        "HomeWithDebug.useEffect": (data)=>{
+                            console.log('📦 Данные из API получены:', {
+                                заказов: data.orders?.length || 0,
+                                баллы: data.userProfile?.loyaltyPoints,
+                                потрачено: data.userProfile?.totalSpent
+                            });
+                            // ✅ Обновляем профиль с актуальными данными из БД
+                            if (data.userProfile) {
+                                const updatedProfile = {
+                                    ...tempProfile,
+                                    loyaltyPoints: data.userProfile.loyaltyPoints ?? 0,
+                                    totalSpent: data.userProfile.totalSpent ?? 0
+                                };
+                                setUserProfile(updatedProfile);
+                                localStorage.setItem(oldProfileKey, JSON.stringify(updatedProfile));
+                                console.log('✅ Профиль синхронизирован с БД:', {
+                                    id: updatedProfile.id,
+                                    name: updatedProfile.name,
+                                    loyaltyPoints: updatedProfile.loyaltyPoints,
+                                    totalSpent: updatedProfile.totalSpent,
+                                    district: updatedProfile.district
+                                });
+                            }
+                            // ✅ Загружаем заказы из API
+                            if (data.orders && Array.isArray(data.orders)) {
+                                const mappedOrders = data.orders.filter({
+                                    "HomeWithDebug.useEffect.mappedOrders": (db)=>{
+                                        const status = db.orderStatus || db.order_status || db["Order Status"];
+                                        return status !== 'cancelled';
+                                    }
+                                }["HomeWithDebug.useEffect.mappedOrders"]).map({
+                                    "HomeWithDebug.useEffect.mappedOrders": (db)=>({
+                                            id: db.id ?? db.Id,
+                                            orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
+                                            startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
+                                            deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
+                                            paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
+                                            paid: db.paid ?? db.Paid ?? false,
+                                            paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
+                                            paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
+                                            orderStatus: db.orderStatus ?? db.order_status ?? db["Order Status"] ?? "pending",
+                                            total: db.total ?? db.Total ?? 0,
+                                            subtotal: db.subtotal ?? db.Subtotal ?? 0,
+                                            deliveryFee: db.deliveryFee ?? db.delivery_fee ?? db["Delivery Fee"] ?? 0,
+                                            deliveryDistrict: db.deliveryDistrict ?? db.delivery_district ?? db["Delivery District"],
+                                            deliveryAddress: db.deliveryAddress ?? db.delivery_address ?? db["Delivery Address"],
+                                            loyaltyPointsUsed: db.loyaltyPointsUsed ?? db.loyalty_points_used ?? db["Loyalty Points Used"] ?? 0,
+                                            loyaltyPointsEarned: db.loyaltyPointsEarned ?? db.loyalty_points_earned ?? db["Loyalty Points Earned"] ?? 0,
+                                            persons: db.persons ?? [],
+                                            extras: db.extras ?? []
+                                        })
+                                }["HomeWithDebug.useEffect.mappedOrders"]);
+                                console.log('✅ Заказы установлены в state:', mappedOrders.length);
+                                setOrders(mappedOrders);
+                            }
+                        }
+                    }["HomeWithDebug.useEffect"]).catch({
+                        "HomeWithDebug.useEffect": (error)=>{
+                            console.error('❌ Ошибка загрузки данных из API:', error);
+                            // В случае ошибки показываем предупреждение
+                            setUserProfile(tempProfile); // Возвращаем базовый профиль
+                        }
+                    }["HomeWithDebug.useEffect"]).finally({
+                        "HomeWithDebug.useEffect": ()=>{
+                            // ✅ Снимаем все лоадеры после завершения
+                            setIsUserLoading(false);
+                            setIsOrdersLoading(false);
+                            setIsPointsLoading(false);
+                            console.log('✅ Загрузка данных завершена');
+                        }
+                    }["HomeWithDebug.useEffect"]);
+                } else {
+                    // Если нет профиля с id, снимаем лоадеры
+                    setIsUserLoading(false);
+                    setIsOrdersLoading(false);
+                    setIsPointsLoading(false);
+                }
+                const savedReviews = localStorage.getItem(`reviews_${user}`);
+                if (savedReviews) {
+                    setReviews(JSON.parse(savedReviews));
+                }
+            } else {
+                // ✅ Для гостей: загружаем заказы из localStorage и очищаем фантомные/старые
+                const guestOrders = localStorage.getItem("guest_orders");
+                if (guestOrders) {
+                    const deserializedOrders = deserializeOrders(guestOrders);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const threeDaysAgo = new Date(today);
+                    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+                    // ✅ КРИТИЧНО: Удаляем:
+                    // 1. Заказы с ID (уже в базе, больше не "гостевые")
+                    // 2. Заказы старше 3 дней в прошлом (устаревшие)
+                    const actualGuestOrders = deserializedOrders.filter({
+                        "HomeWithDebug.useEffect.actualGuestOrders": (order)=>{
+                            // Если есть ID - это не гостевой заказ, удаляем
+                            if (order.id) return false;
+                            // Если дата доставки старше 3 дней - удаляем
+                            const orderDate = new Date(order.startDate);
+                            orderDate.setHours(0, 0, 0, 0);
+                            if (orderDate < threeDaysAgo) return false;
+                            return true;
+                        }
+                    }["HomeWithDebug.useEffect.actualGuestOrders"]);
+                    setOrders(actualGuestOrders);
+                    // Обновляем localStorage, удаляя старые и фантомные заказы
+                    if (actualGuestOrders.length !== deserializedOrders.length || actualGuestOrders.length > 0) {
+                        const updatedCache = serializeOrders(actualGuestOrders);
+                        localStorage.setItem("guest_orders", updatedCache);
+                        const removed = deserializedOrders.length - actualGuestOrders.length;
+                        if (removed > 0) {
+                            console.log(`🧹 Удалено фантомных/старых заказов: ${removed}`);
+                        }
+                        console.log(`✅ Осталось гостевых заказов: ${actualGuestOrders.length}`);
+                    }
+                    // Если все заказы были удалены, очищаем localStorage
+                    if (actualGuestOrders.length === 0) {
+                        localStorage.removeItem("guest_orders");
+                        console.log('🧹 Очищен localStorage от гостевых заказов');
+                    }
+                }
+            }
+        }
+    }["HomeWithDebug.useEffect"], []);
+    // Helper: Check if there's a delivery (order start date) on this date
+    const hasDeliveryForDate = (date)=>{
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+        return orders.some((order)=>{
+            const deliveryDate = new Date(order.startDate);
+            deliveryDate.setHours(0, 0, 0, 0);
+            return checkDate.getTime() === deliveryDate.getTime();
+        });
+    };
+    // Helper: Check if there's food (eating days: day1 and day2 after delivery)
+    const hasFoodForDate = (date)=>{
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+        return orders.some((order)=>{
+            const deliveryDate = new Date(order.startDate);
+            deliveryDate.setHours(0, 0, 0, 0);
+            const day1 = new Date(deliveryDate);
+            day1.setDate(day1.getDate() + 1);
+            const day2 = new Date(deliveryDate);
+            day2.setDate(day2.getDate() + 2);
+            return checkDate.getTime() === day1.getTime() || checkDate.getTime() === day2.getTime();
+        });
+    };
+    // Helper: Check if this date is the last day of food (day2) for any order
+    const isLastDayOfAnyOrder = (date)=>{
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+        return orders.some((order)=>{
+            const deliveryDate = new Date(order.startDate);
+            deliveryDate.setHours(0, 0, 0, 0);
+            // day2 is the last eating day for this order
+            const day2 = new Date(deliveryDate);
+            day2.setDate(day2.getDate() + 2);
+            day2.setHours(0, 0, 0, 0);
+            return checkDate.getTime() === day2.getTime();
+        });
+    };
+    // Helper: Check if there's food on the next day (chain continues without gap)
+    // Plus button should show if there's NO food on next day (gap exists)
+    const hasNextOrder = (date)=>{
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+        // PRIORITY 1: Check if there's delivery on this day (new order continues chain)
+        if (hasDeliveryForDate(date)) {
+            return true;
+        }
+        // PRIORITY 2: Check if there's FOOD on the next day (no gap - chain continues)
+        // If there's food on next day, the chain continues. If no food, there's a gap and plus should show
+        const nextDay = new Date(checkDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        nextDay.setHours(0, 0, 0, 0);
+        return hasFoodForDate(nextDay);
+    };
+    // Helper: Check if yellow plus button should be shown (last day of any order with food, no delivery, no next order)
+    const shouldShowYellowPlus = (date)=>{
+        const hasFood = hasFoodForDate(date);
+        const isLastDayOfOrder = isLastDayOfAnyOrder(date);
+        const hasDelivery = hasDeliveryForDate(date);
+        const hasNextOrderForLastDay = hasNextOrder(date);
+        return hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay;
+    };
+    const handleDateClick = (date)=>{
+        const isSaturday = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$getDay$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getDay"])(date) === 6;
+        // Проверяем, есть ли заказ на эту дату
+        const order = orders.find((order)=>{
+            const orderDate = new Date(order.startDate);
+            return orderDate.getDate() === date.getDate() && orderDate.getMonth() === date.getMonth() && orderDate.getFullYear() === date.getFullYear();
+        });
+        // Обработка субботы
+        if (isSaturday) {
+            const hasYellowPlus = shouldShowYellowPlus(date);
+            if (hasYellowPlus) {
+                // Суббота + есть желтый плюс → показать предупреждение и переключить на воскресенье
+                const sunday = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$addDays$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["addDays"])(date, 1);
+                showWarning("Доставка в воскресенье", "Доставка ближайшая возможна только в воскресенье, потому что кухня отдыхает по субботам. Заказ будет оформлен на воскресенье.", "warning", ()=>{
+                    setSelectedDate(sunday);
+                });
+                return;
+            } else {
+                // Суббота + нет желтого плюса → показать ошибку про кухню
+                showWarning("Кухня отдыхает", "На субботу заказ невозможен, потому что кухня отдыхает. Выберите другую дату.", "error");
+                return;
+            }
+        }
+        // Проверяем, есть ли еда на эту дату (от предыдущего заказа)
+        const hasFood = hasFoodForDate(date);
+        // Если есть еда от предыдущего заказа, но нет заказа на эту дату
+        // И дата недоступна для заказа (прошла или вне диапазона) - показать сообщение
+        if (hasFood && !order && !(0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$menu$2d$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["canOrderForDate"])(date)) {
+            showWarning("Меню еще не обновлено", "На эту дату есть еда от предыдущего заказа, но пока нельзя оформить новый заказ. Пожалуйста, дождитесь обновления меню.", "info");
+            return;
+        }
+        // Открываем модальное окно если:
+        // 1. Есть существующий заказ на эту дату (можно просмотреть/изменить)
+        // 2. Можно заказать на эту дату (даже если есть еда от предыдущего заказа - можно перезаказать)
+        if (order || (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$menu$2d$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["canOrderForDate"])(date)) {
+            setSelectedDate(date);
+        } else {
+            showWarning("Дата недоступна", "На эту дату нельзя оформить заказ. Выберите другую дату.", "error");
+        }
+    };
+    const handleCloseModal = ()=>{
+        setSelectedDate(null);
+    };
+    const handleSaveOrder = async (order)=>{
+        // ✅ НОВОЕ: Закрываем OrderModal сразу при нажатии "Заказать"
+        // Это улучшает UX - пользователь видит, что действие выполнено
+        setSelectedDate(null);
+        const user = localStorage.getItem("currentUser");
+        const orderTimestamp = getDateTimestamp(order.startDate);
+        const existingOrder = orders.find((o)=>getDateTimestamp(o.startDate) === orderTimestamp);
+        console.log("🔵 handleSaveOrder вызван:", {
+            isAuthenticated,
+            hasUserProfile: !!userProfile,
+            userId: userProfile?.id,
+            hasExistingOrder: !!existingOrder?.id
+        });
+        // Если заказ существует и имеет id, и пользователь авторизован, обновляем через API
+        if (existingOrder?.id && isAuthenticated && userProfile?.id) {
+            try {
+                // ✅ ИСПРАВЛЕНО: Для существующего заказа НЕ пересчитываем total на клиенте!
+                // Используем существующие значения из базы данных, т.к. цены хранятся только в Order_Meals
+                const updatedOrder = {
+                    ...order,
+                    id: existingOrder.id,
+                    orderNumber: existingOrder.orderNumber,
+                    subtotal: existingOrder.subtotal,
+                    total: existingOrder.total
+                };
+                const response = await fetch(`/api/orders/${existingOrder.id}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        order: updatedOrder
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error("Failed to update order");
+                }
+                const result = await response.json();
+                console.log('📦 [handleSaveOrder] API вернул result:', result);
+                console.log('📦 [handleSaveOrder] result.order:', result.order);
+                console.log('📦 [handleSaveOrder] result.loyaltyPointsEarned:', result.loyaltyPointsEarned);
+                // ✅ ИСПРАВЛЕНО: Обновляем заказ данными из API
+                if (result.order) {
+                    const updatedOrderFromAPI = result.order;
+                    console.log('📦 [handleSaveOrder] updatedOrderFromAPI fields:', {
+                        Id: updatedOrderFromAPI.Id,
+                        id: updatedOrderFromAPI.id,
+                        total: updatedOrderFromAPI.total,
+                        Total: updatedOrderFromAPI.Total,
+                        loyalty_points_earned: updatedOrderFromAPI.loyalty_points_earned,
+                        'Loyalty Points Earned': updatedOrderFromAPI["Loyalty Points Earned"]
+                    });
+                    setOrders((prev)=>{
+                        const filtered = prev.filter((o)=>getDateTimestamp(o.startDate) !== orderTimestamp);
+                        const newOrders = [
+                            ...filtered,
+                            {
+                                ...updatedOrder,
+                                id: updatedOrderFromAPI.Id || updatedOrderFromAPI.id || existingOrder.id,
+                                orderNumber: updatedOrderFromAPI.order_number || result.orderNumber || existingOrder.orderNumber,
+                                startDate: toDate(updatedOrder.startDate),
+                                paid: updatedOrderFromAPI.paid ?? updatedOrder.paid ?? false,
+                                paidAt: updatedOrderFromAPI.paid_at || updatedOrderFromAPI["Paid At"] || updatedOrder.paidAt,
+                                paymentStatus: updatedOrderFromAPI.payment_status || updatedOrder.paymentStatus,
+                                total: updatedOrderFromAPI.total || updatedOrderFromAPI.Total || updatedOrder.total,
+                                subtotal: updatedOrderFromAPI.subtotal || updatedOrderFromAPI.Subtotal || updatedOrder.subtotal,
+                                loyaltyPointsEarned: updatedOrderFromAPI.loyalty_points_earned || updatedOrderFromAPI["Loyalty Points Earned"] || result.loyaltyPointsEarned || 0,
+                                loyaltyPointsUsed: updatedOrderFromAPI.loyalty_points_used || updatedOrderFromAPI["Loyalty Points Used"] || updatedOrder.loyaltyPointsUsed || 0
+                            }
+                        ];
+                        // ✅ ИСПРАВЛЕНО: НЕ сохраняем заказы в localStorage для авторизованных
+                        // Авторизованные пользователи всегда загружают заказы из API
+                        // if (user) {
+                        //   localStorage.setItem(`orders_${user}`, serializeOrders(newOrders))
+                        // }
+                        // Логируем обновленный заказ для проверки
+                        const finalOrder = newOrders.find((o)=>o.id === existingOrder.id);
+                        console.log('✅ [handleSaveOrder] Заказ обновлен в состоянии:', {
+                            id: finalOrder?.id,
+                            total: finalOrder?.total,
+                            loyaltyPointsEarned: finalOrder?.loyaltyPointsEarned,
+                            paid: finalOrder?.paid
+                        });
+                        return newOrders;
+                    });
+                } else {
+                    // Fallback: если API не вернул order, используем старую логику
+                    setOrders((prev)=>{
+                        const filtered = prev.filter((o)=>getDateTimestamp(o.startDate) !== orderTimestamp);
+                        const newOrders = [
+                            ...filtered,
+                            {
+                                ...updatedOrder,
+                                orderNumber: result.orderNumber || existingOrder.orderNumber || updatedOrder.orderNumber,
+                                startDate: toDate(updatedOrder.startDate),
+                                paid: updatedOrder.paid ?? false
+                            }
+                        ];
+                        // ✅ ИСПРАВЛЕНО: НЕ сохраняем заказы в localStorage для авторизованных
+                        // if (user) {
+                        //   localStorage.setItem(`orders_${user}`, serializeOrders(newOrders))
+                        // }
+                        return newOrders;
+                    });
+                }
+                // ✅ НОВОЕ: Обновляем профиль пользователя из API
+                if (result.loyaltyPointsEarned && result.loyaltyPointsEarned > 0 && userProfile) {
+                    try {
+                        console.log('💰 Обновляю баллы после обновления заказа...');
+                        const profileResponse = await fetch(`/api/orders?userId=${userProfile.id}`);
+                        const profileData = await profileResponse.json();
+                        if (profileData.userProfile) {
+                            console.log('💰 Обновлены баллы из API:', {
+                                старые: userProfile.loyaltyPoints,
+                                новые: profileData.userProfile.loyaltyPoints
+                            });
+                            const updatedProfile = {
+                                ...userProfile,
+                                loyaltyPoints: profileData.userProfile.loyaltyPoints,
+                                totalSpent: profileData.userProfile.totalSpent
+                            };
+                            setUserProfile(updatedProfile);
+                            if (user) {
+                                localStorage.setItem(`profile_${user}`, JSON.stringify(updatedProfile));
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Ошибка обновления профиля:', error);
+                    }
+                }
+            // ✅ ИСПРАВЛЕНО 10.01.2026: Убрали toast "Заказ обновлен" (избыточное уведомление)
+            } catch (error) {
+                console.error("Failed to update order:", error);
+                // ✅ ИСПРАВЛЕНО 10.01.2026: Заменили toast на WarningDialog
+                setWarningDialog({
+                    open: true,
+                    title: "Ошибка обновления",
+                    description: "Не удалось обновить заказ. Попробуйте еще раз.",
+                    variant: "error"
+                });
+                return;
+            }
+        } else if (isAuthenticated && userProfile?.id) {
+            // Создаем новый заказ через API
+            console.log("✅ Условие для создания заказа выполнено:", {
+                isAuthenticated,
+                hasUserProfile: !!userProfile,
+                userId: userProfile?.id,
+                sendingToServer: true
+            });
+            // Показываем анимацию создания заказа
+            setShowOrderLoading(true);
+            try {
+                const total = calculateOrderTotal(order);
+                const newOrder = {
+                    ...order,
+                    subtotal: total,
+                    total: total
+                };
+                console.log("📤 Отправка заказа на сервер:", {
+                    personsCount: newOrder.persons?.length,
+                    extrasCount: newOrder.extras?.length,
+                    userId: userProfile.id
+                });
+                const response = await fetch("/api/orders", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        order: newOrder,
+                        userId: userProfile.id
+                    })
+                });
+                console.log("📥 Ответ сервера:", response.status, response.statusText);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(()=>({
+                            error: "Unknown error"
+                        }));
+                    console.error("❌ Ошибка при создании заказа:", errorData);
+                    throw new Error(errorData.error || "Failed to create order");
+                }
+                const result = await response.json();
+                console.log("✅ Результат создания заказа:", result);
+                // Проверяем, что номер заказа получен
+                console.log("Order creation result:", result);
+                if (!result.orderNumber) {
+                    console.warn("⚠️ Order number not received from API:", result);
+                    // Пытаемся получить номер заказа из базы данных
+                    if (result.orderId) {
+                        try {
+                            const fetchResponse = await fetch(`/api/orders?userId=${userProfile.id}`);
+                            const fetchData = await fetchResponse.json();
+                            const dbOrder = fetchData.orders?.find((o)=>o.Id === result.orderId);
+                            if (dbOrder?.order_number) {
+                                result.orderNumber = dbOrder.order_number;
+                                console.log("✅ Retrieved order number from DB:", result.orderNumber);
+                            }
+                        } catch (error) {
+                            console.error("Failed to fetch order number:", error);
+                        }
+                    }
+                }
+                // Обязательно проверяем наличие номера заказа
+                if (!result.orderNumber) {
+                    console.error("❌ CRITICAL: Order number is missing from API response!", result);
+                    // Генерируем номер заказа на клиенте как fallback
+                    const fallbackOrderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                    result.orderNumber = fallbackOrderNumber;
+                    console.warn("⚠️ Using fallback order number:", fallbackOrderNumber);
+                }
+                // Обновляем заказ в состоянии с id из API
+                const savedOrder = {
+                    ...newOrder,
+                    id: result.orderId,
+                    orderNumber: result.orderNumber,
+                    startDate: toDate(newOrder.startDate),
+                    paid: newOrder.paid ?? false,
+                    // ✅ НОВОЕ: Копируем важные поля из API ответа
+                    total: result.order?.total || newOrder.total,
+                    subtotal: result.order?.subtotal || newOrder.subtotal,
+                    deliveryFee: result.order?.deliveryFee ?? newOrder.deliveryFee ?? 0,
+                    loyaltyPointsEarned: result.loyaltyPointsEarned || 0,
+                    loyaltyPointsUsed: newOrder.loyaltyPointsUsed || 0
+                };
+                console.log("💾 Saving order to state:", {
+                    id: savedOrder.id,
+                    orderNumber: savedOrder.orderNumber,
+                    startDate: savedOrder.startDate,
+                    hasOrderNumber: !!savedOrder.orderNumber,
+                    orderNumberType: typeof savedOrder.orderNumber
+                });
+                if (!savedOrder.orderNumber) {
+                    console.error("❌ FATAL: Order number is still missing after all checks!", savedOrder);
+                }
+                setOrders((prev)=>{
+                    const filtered = prev.filter((o)=>getDateTimestamp(o.startDate) !== orderTimestamp);
+                    const newOrders = [
+                        ...filtered,
+                        savedOrder
+                    ];
+                    // Дополнительная проверка перед сохранением
+                    const orderToSave = newOrders.find((o)=>o.id === savedOrder.id);
+                    if (orderToSave && !orderToSave.orderNumber) {
+                        console.error("❌ Order number lost during state update!", orderToSave);
+                        orderToSave.orderNumber = result.orderNumber;
+                    }
+                    // ✅ ИСПРАВЛЕНО: Сохраняем в localStorage ТОЛЬКО для гостей
+                    if (!user) {
+                        const serialized = serializeOrders(newOrders);
+                        localStorage.setItem("guest_orders", serialized);
+                        // Проверяем после сериализации
+                        const deserialized = deserializeOrders(serialized);
+                        const checkOrder = deserialized.find((o)=>o.id === savedOrder.id);
+                        console.log("✅ Saved to localStorage, orders count:", newOrders.length);
+                        console.log("🔍 Verification - saved order after serialize/deserialize:", {
+                            id: checkOrder?.id,
+                            orderNumber: checkOrder?.orderNumber,
+                            hasOrderNumber: !!checkOrder?.orderNumber,
+                            allFields: Object.keys(checkOrder || {})
+                        });
+                        if (checkOrder && !checkOrder.orderNumber) {
+                            console.error("❌ Order number lost during serialization!", checkOrder);
+                            // Принудительно восстанавливаем номер заказа
+                            checkOrder.orderNumber = result.orderNumber;
+                            // Обновляем localStorage с исправленным заказом
+                            const fixedOrders = newOrders.map((o)=>o.id === checkOrder.id ? {
+                                    ...o,
+                                    orderNumber: result.orderNumber
+                                } : o);
+                            localStorage.setItem("guest_orders", serializeOrders(fixedOrders));
+                            // Обновляем состояние
+                            setTimeout(()=>{
+                                setOrders(fixedOrders);
+                            }, 100);
+                        }
+                    } else {
+                        // Для авторизованных пользователей просто логируем
+                        console.log("✅ Saved to localStorage, orders count:", newOrders.length);
+                        console.log("🔍 Verification - saved order after serialize/deserialize:", {
+                            id: savedOrder.id,
+                            orderNumber: savedOrder.orderNumber,
+                            hasOrderNumber: !!savedOrder.orderNumber
+                        });
+                    }
+                    // Финальная проверка - убеждаемся, что номер заказа есть
+                    const finalCheck = newOrders.find((o)=>o.id === savedOrder.id);
+                    if (finalCheck && !finalCheck.orderNumber && result.orderNumber) {
+                        console.warn("⚠️ Fixing missing order number in state...");
+                        finalCheck.orderNumber = result.orderNumber;
+                    // ✅ ИСПРАВЛЕНО: НЕ сохраняем в localStorage для авторизованных
+                    // if (user) {
+                    //   localStorage.setItem(`orders_${user}`, serializeOrders(newOrders.map(o => 
+                    //     o.id === finalCheck.id ? finalCheck : o
+                    //   )))
+                    // }
+                    }
+                    return newOrders;
+                });
+                // ✅ ИСПРАВЛЕНО 2026-01-11: Используем userProfile из ответа POST вместо дополнительного запроса
+                // Это быстрее и не создает race conditions
+                if (userProfile?.id && result.userProfile) {
+                    const newLoyaltyPoints = typeof result.userProfile.loyaltyPoints === 'number' ? result.userProfile.loyaltyPoints : parseInt(String(result.userProfile.loyaltyPoints)) || 0;
+                    const newTotalSpent = typeof result.userProfile.totalSpent === 'number' ? result.userProfile.totalSpent : parseFloat(String(result.userProfile.totalSpent)) || 0;
+                    console.log('💰 Обновлены данные из ответа POST:', {
+                        старые_баллы: userProfile.loyaltyPoints,
+                        новые_баллы: newLoyaltyPoints,
+                        старый_totalSpent: userProfile.totalSpent,
+                        новый_totalSpent: newTotalSpent
+                    });
+                    const updatedProfile = {
+                        ...userProfile,
+                        loyaltyPoints: newLoyaltyPoints,
+                        totalSpent: newTotalSpent
+                    };
+                    console.log('💾 Вызываем setUserProfile с обновленными данными:', {
+                        loyaltyPoints: updatedProfile.loyaltyPoints,
+                        totalSpent: updatedProfile.totalSpent
+                    });
+                    setUserProfile(updatedProfile);
+                    if (user) {
+                        localStorage.setItem(`profile_${user}`, JSON.stringify(updatedProfile));
+                        console.log('💾 Профиль сохранен в localStorage');
+                    }
+                }
+                // ✅ ИСПРАВЛЕНО 2026-01-11: Открываем PaymentModal после создания заказа
+                setShowOrderLoading(false);
+                console.log("🎯 Открываем PaymentModal для нового заказа: orderId =", savedOrder.id, "total =", savedOrder.total);
+                setPaymentOrder({
+                    order: savedOrder,
+                    total: savedOrder.total
+                });
+            } catch (error) {
+                console.error("❌ Ошибка при создании заказа:", error);
+                setShowOrderLoading(false); // Скрываем loading при ошибке
+                // ✅ ИСПРАВЛЕНО 10.01.2026: Заменили toast на WarningDialog
+                setWarningDialog({
+                    open: true,
+                    title: "Ошибка создания заказа",
+                    description: error instanceof Error ? error.message : "Не удалось создать заказ. Попробуйте еще раз.",
+                    variant: "error"
+                });
+            }
+        } else {
+            // Пользователь не авторизован или нет userProfile.id
+            const reason = !isAuthenticated ? "Пользователь не авторизован" : !userProfile ? "userProfile отсутствует" : !userProfile.id ? "userProfile.id отсутствует" : "Неизвестная причина";
+            console.warn("⚠️ Заказ не создается через API, причина:", {
+                isAuthenticated,
+                hasUserProfile: !!userProfile,
+                userId: userProfile?.id,
+                reason,
+                userProfileKeys: userProfile ? Object.keys(userProfile) : []
+            });
+            // Сохраняем только в localStorage (для гостей или если нет userId)
+            setOrders((prev)=>{
+                const filtered = prev.filter((o)=>getDateTimestamp(o.startDate) !== orderTimestamp);
+                const newOrders = [
+                    ...filtered,
+                    {
+                        ...order,
+                        startDate: toDate(order.startDate),
+                        paid: order.paid ?? false
+                    }
+                ];
+                // ✅ ИСПРАВЛЕНО: Сохраняем в localStorage ТОЛЬКО для гостей
+                if (!user) {
+                    localStorage.setItem("guest_orders", serializeOrders(newOrders));
+                }
+                // Авторизованные пользователи работают только с API
+                return newOrders;
+            });
+        // ✅ ИСПРАВЛЕНО 10.01.2026: Убрали toast "Заказ сохранен локально" (избыточное)
+        }
+    // ✅ УДАЛЕНО: setSelectedDate(null) - теперь выполняется в начале функции
+    };
+    // Удаляем дублирующий код - больше не нужен
+    /*
+  const handleSaveOrderOld = async (order: Order) => {
+    const user = localStorage.getItem("currentUser")
+    const orderTimestamp = getDateTimestamp(order.startDate)
+    const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+    
+    if (existingOrder?.id && isAuthenticated && userProfile?.id) {
+      // ... existing code ...
+    } else if (isAuthenticated && userProfile?.id) {
+      // ... existing code ...
+    } else {
+      // Сохраняем локально для неавторизованных пользователей
+      const updatedOrders = [...orders]
+      const index = updatedOrders.findIndex((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+      
+      if (index >= 0) {
+        updatedOrders[index] = { ...order, startDate: toDate(order.startDate) }
+      } else {
+        updatedOrders.push({ ...order, startDate: toDate(order.startDate) })
+      }
+      
+      setOrders(updatedOrders)
+      
+      const guestOrders = localStorage.getItem("guest_orders")
+      if (guestOrders) {
+        const parsed = deserializeOrders(guestOrders)
+        const filtered = parsed.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
+        localStorage.setItem("guest_orders", serializeOrders([...filtered, { ...order, startDate: toDate(order.startDate) }]))
+      } else {
+        localStorage.setItem("guest_orders", serializeOrders([{ ...order, startDate: toDate(order.startDate) }]))
+      }
+      
+      // ✅ ИСПРАВЛЕНО 10.01.2026: Убрали toast "Заказ сохранен" (избыточное)
+    }
+  }
+  
+  // Временная заглушка - удалить после проверки
+  const handleSaveOrderBackup = async (order: Order) => {
+    console.log("🔵 handleSaveOrder вызван:", {
+      isAuthenticated,
+      hasUserProfile: !!userProfile,
+      userId: userProfile?.id,
+    })
+    
+    const user = localStorage.getItem("currentUser")
+    const orderTimestamp = getDateTimestamp(order.startDate)
+    const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
+    
+    if (existingOrder?.id && isAuthenticated && userProfile?.id) {
+      try {
+        // ✅ ИСПРАВЛЕНО: Для существующего заказа НЕ пересчитываем total на клиенте!
+        // Используем существующие значения из базы данных, т.к. цены хранятся только в Order_Meals
+        const updatedOrder: Order = {
+          ...order,
+          id: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          subtotal: existingOrder.subtotal,
+          total: existingOrder.total,
+        }
+        
+        const response = await fetch(`/api/orders/${existingOrder.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: updatedOrder }),
+        })
+        
+        if (!response.ok) {
+          throw new Error("Failed to update order")
+        }
+        
+        const result = await response.json()
+        
+        setOrders((prev) => {
+          const filtered = prev.filter((o) => getDateTimestamp(o.startDate) !== orderTimestamp)
+          const newOrders = [
+            ...filtered,
+            {
+              ...updatedOrder,
+              orderNumber: result.orderNumber || existingOrder.orderNumber || updatedOrder.orderNumber,
+              startDate: toDate(updatedOrder.startDate),
+              paid: updatedOrder.paid ?? false,
+            },
+          ]
+          // ✅ ИСПРАВЛЕНО: НЕ сохраняем в localStorage для авторизованных
+          // if (user) {
+          //   localStorage.setItem(`orders_${user}`, serializeOrders(newOrders))
+          // }
+          return newOrders
+        })
+        
+        // ✅ ИСПРАВЛЕНО 10.01.2026: Убрали toast "Заказ обновлен" (избыточное)
+      } catch (error) {
+        console.error("Failed to update order:", error)
+        // ✅ ИСПРАВЛЕНО 10.01.2026: Заменили toast на WarningDialog
+        setWarningDialog({
+          open: true,
+          title: "Ошибка обновления",
+          description: "Не удалось обновить заказ. Попробуйте еще раз.",
+          variant: "error",
+        })
+        return
+      }
+    } else if (isAuthenticated && userProfile?.id) {
+      try {
+        const total = calculateOrderTotal(order)
+        const newOrder: Order = {
+          ...order,
+          subtotal: total,
+          total: total,
+        }
+        
+        console.log("📤 Отправка заказа на сервер:", {
+          personsCount: newOrder.persons?.length,
+          extrasCount: newOrder.extras?.length,
+          userId: userProfile.id,
+        })
+        
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: newOrder, userId: userProfile.id }),
+        })
+        
+        console.log("📥 Ответ сервера:", response.status, response.statusText)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+          console.error("❌ Ошибка при создании заказа:", errorData)
+          throw new Error(errorData.error || "Failed to create order")
+        }
+        
+        const result = await response.json()
+        console.log("✅ Результат создания заказа:", result)
+        
+        // Проверяем, что номер заказа получен
+        console.log("Order creation result:", result)
+        if (!result.orderNumber) {
+          console.warn("⚠️ Order number not received from API:", result)
+          // Пытаемся получить номер заказа из базы данных
+          if (result.orderId) {
+            try {
+              const fetchResponse = await fetch(`/api/orders?userId=${userProfile.id}`)
+              const fetchData = await fetchResponse.json()
+              const dbOrder = fetchData.orders?.find((o: any) => o.Id === result.orderId)
+              if (dbOrder?.order_number) {
+                result.orderNumber = dbOrder.order_number
+                console.log("✅ Retrieved order number from DB:", result.orderNumber)
+              }
+            } catch (error) {
+              console.error("Failed to fetch order number:", error)
+            }
+          }
+        }
+        
+        // Обязательно проверяем наличие номера заказа
+        if (!result.orderNumber) {
+          console.error("❌ CRITICAL: Order number is missing from API response!", result)
+          // Генерируем номер заказа на клиенте как fallback
+          const fallbackOrderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+          result.orderNumber = fallbackOrderNumber
+          console.warn("⚠️ Using fallback order number:", fallbackOrderNumber)
+        }
+        
+        // Обновляем заказ в состоянии с id из API
+        const savedOrder: Order = {
+          ...newOrder,
+          id: result.orderId,
+          orderNumber: result.orderNumber, // Гарантируем, что номер заказа есть
+          startDate: toDate(newOrder.startDate),
+          paid: newOrder.paid ?? false,
+        }
+        
+  */ const handleCancelOrder = async (order)=>{
+        console.log('🗑️ handleCancelOrder вызван для заказа:', order);
+        if (!order) {
+            console.error('❌ Попытка удалить пустой заказ!');
+            showWarning("Ошибка", "Не удалось удалить заказ: заказ не найден", "error");
+            return;
+        }
+        // ✅ ИСПРАВЛЕНО 2026-01-11: Если заказ БЕЗ ID - это новый несохраненный заказ
+        // Просто удаляем его из локального state
+        if (!order.id) {
+            console.log('🗑️ Удаление несохраненного заказа из локального state');
+            const orderTimestamp = getDateTimestamp(order.startDate);
+            setOrders((prev)=>{
+                const filtered = prev.filter((o)=>getDateTimestamp(o.startDate) !== orderTimestamp);
+                console.log(`✅ Удалено из локального state: было ${prev.length}, стало ${filtered.length}`);
+                return filtered;
+            });
+            setSelectedDate(null);
+            showWarning("Заказ отменен", "Несохраненный заказ успешно удален", "success");
+            return;
+        }
+        const wasPaid = order.paid && order.paymentMethod !== "cash";
+        // Показываем анимацию отмены заказа
+        setShowCancelLoading(true);
+        // 1. ОПТИМИСТИЧНОЕ обновление UI (сразу удаляем из списка)
+        console.log('⚡ Оптимистично удаляю заказ ID=' + order.id + ' из UI...');
+        const previousOrders = [
+            ...orders
+        ];
+        setOrders((prev)=>{
+            const filtered = prev.filter((o)=>o.id !== order.id);
+            console.log(`✅ Оптимистично удалено: было ${prev.length}, стало ${filtered.length}`);
+            return filtered;
+        });
+        setSelectedDate(null);
+        // 2. Вызов API для удаления в БД
+        try {
+            console.log(`📡 Отправляю DELETE /api/orders/${order.id}`);
+            const res = await fetch(`/api/orders/${order.id}`, {
+                method: 'DELETE'
+            });
+            console.log(`📥 Ответ DELETE API: ${res.status}`);
+            if (!res.ok) {
+                throw new Error(`Ошибка API: ${res.status}`);
+            }
+            const result = await res.json();
+            // ✅ НОВОЕ: Обновляем баллы напрямую из ответа API
+            if (result.updatedLoyaltyPoints !== undefined && userProfile && isAuthenticated) {
+                console.log('💰 Обновлены баллы после отмены заказа:', {
+                    старые: userProfile.loyaltyPoints,
+                    новые: result.updatedLoyaltyPoints
+                });
+                const updatedProfile = {
+                    ...userProfile,
+                    loyaltyPoints: result.updatedLoyaltyPoints
+                };
+                setUserProfile(updatedProfile);
+                if (currentUser) {
+                    localStorage.setItem(`profile_${currentUser}`, JSON.stringify(updatedProfile));
+                }
+            }
+            // 3. Для авторизованных пользователей - перезагрузить из БД
+            if (isAuthenticated && userProfile?.id) {
+                console.log('🔄 Перезагружаю заказы из БД для синхронизации...');
+                const ordersRes = await fetch(`/api/orders?userId=${userProfile.id}`);
+                if (ordersRes.ok) {
+                    const data = await ordersRes.json();
+                    console.log(`📦 Получено ${data.orders?.length || 0} заказов из БД после удаления`);
+                    if (data.orders && Array.isArray(data.orders)) {
+                        const dbOrders = data.orders.filter((db)=>{
+                            const status = db.orderStatus || db.order_status || db["Order Status"];
+                            return status !== 'cancelled';
+                        }).map((db)=>({
+                                id: db.id ?? db.Id,
+                                orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
+                                startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
+                                deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
+                                paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
+                                paid: db.paid ?? db.Paid ?? false,
+                                paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
+                                paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
+                                orderStatus: db.orderStatus ?? db.order_status ?? db["Order Status"] ?? "pending",
+                                total: db.total ?? db.Total ?? 0,
+                                subtotal: db.subtotal ?? db.Subtotal ?? 0,
+                                loyaltyPointsUsed: db.loyaltyPointsUsed ?? db.loyalty_points_used ?? db["Loyalty Points Used"] ?? 0,
+                                loyaltyPointsEarned: db.loyaltyPointsEarned ?? db.loyalty_points_earned ?? db["Loyalty Points Earned"] ?? 0,
+                                persons: db.persons ?? [],
+                                extras: db.extras ?? []
+                            }));
+                        console.log(`✅ Установлено ${dbOrders.length} заказов из БД`);
+                        setOrders(dbOrders);
+                    }
+                }
+            // ❌ УДАЛЕНО: дополнительный запрос профиля (баллы уже обновлены выше)
+            // const profileRes = await fetch(`/api/users/${userProfile.id}`)
+            // if (profileRes.ok) {
+            //   const profileData = await profileRes.json()
+            //   setUserProfile(profileData)
+            //   localStorage.setItem(`profile_${currentUser}`, JSON.stringify(profileData))
+            // }
+            } else {
+                // Для гостей - сохраняем в localStorage
+                const user = localStorage.getItem("currentUser");
+                if (!user) {
+                    setOrders((prev)=>{
+                        localStorage.setItem("guest_orders", serializeOrders(prev));
+                        return prev;
+                    });
+                }
+            }
+            // Имитируем минимальную задержку для плавной анимации
+            await new Promise((resolve)=>setTimeout(resolve, 800));
+            // Скрываем анимацию - заказ уже удален из UI
+            setShowCancelLoading(false);
+            // Опционально: показываем тихое уведомление только для оплаченных заказов
+            if (wasPaid) {
+                showWarning("Заказ отменен", "Деньги вернутся на карту в течение 3 рабочих дней.", "info");
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при удалении заказа:', error);
+            setShowCancelLoading(false); // Скрываем loading при ошибке
+            // Откатываем оптимистичное обновление
+            console.log('⏪ Откатываю оптимистичное удаление...');
+            setOrders(previousOrders);
+            showWarning("Ошибка", "Не удалось удалить заказ. Попробуйте позже.", "error");
+        }
+    };
+    const handleMoveOrder = (fromDate, toDateValue)=>{
+        const user = localStorage.getItem("currentUser");
+        const fromTimestamp = getDateTimestamp(fromDate);
+        const toTimestamp = getDateTimestamp(toDateValue);
+        setOrders((prev)=>{
+            const existingOrderOnTarget = prev.find((o)=>getDateTimestamp(o.startDate) === toTimestamp);
+            if (existingOrderOnTarget) {
+                alert("На эту дату уже есть заказ. Сначала отмените его.");
+                return prev;
+            }
+            const newOrders = prev.map((o)=>{
+                if (getDateTimestamp(o.startDate) === fromTimestamp) {
+                    return {
+                        ...o,
+                        startDate: toDateValue
+                    };
+                }
+                return o;
+            });
+            // ✅ ИСПРАВЛЕНО: НЕ сохраняем в localStorage для авторизованных
+            // if (user) {
+            //   localStorage.setItem(`orders_${user}`, serializeOrders(newOrders))
+            // }
+            return newOrders;
+        });
+    };
+    /**
+   * Функция "Повторить заказ" - создает новый заказ на основе исторического
+   * 
+   * АЛГОРИТМ:
+   * 1. Загружает актуальное меню из API
+   * 2. Проверяет каждый товар из старого заказа
+   * 3. Использует ТЕКУЩИЕ цены из меню (не исторические!)
+   * 4. Пропускает товары, которых больше нет в меню
+   * 5. Показывает Toast если были недоступные товары
+   * 6. Автоматически открывает OrderModal с заказом
+   */ const handleRepeatOrder = async (order, targetDate)=>{
+        try {
+            // ✅ Получаем неделю для целевой даты
+            const weekType = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$menu$2d$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getWeekTypeForDate"])(targetDate);
+            console.log('🔄 [Repeat Order] Начало повтора заказа:', {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                targetDate: targetDate.toISOString(),
+                weekType
+            });
+            // ✅ Загружаем актуальное меню из API
+            const response = await fetch(`/api/menu?week=${weekType}`);
+            if (!response.ok) {
+                throw new Error('Не удалось загрузить меню');
+            }
+            const menuData = await response.json();
+            console.log('📋 [Repeat Order] Меню загружено:', {
+                hasBreakfast: menuData.meals?.breakfast?.length > 0,
+                hasLunchSalad: menuData.meals?.lunch_salad?.length > 0,
+                hasExtras: menuData.extras ? Object.keys(menuData.extras).length : 0
+            });
+            // ✅ Валидируем товары заказа по актуальному меню
+            const { validateOrderItems } = await __turbopack_context__.A("[project]/lib/cart-utils.ts [app-client] (ecmascript, async loader)");
+            const { validatedOrder, unavailableItems, hasUnavailableItems } = validateOrderItems(order, menuData.meals || {}, menuData.extras || {});
+            console.log('✅ [Repeat Order] Валидация завершена:', {
+                unavailableCount: unavailableItems.length,
+                unavailableItems
+            });
+            // ⚠️ Если были недоступные товары - показываем предупреждение
+            if (hasUnavailableItems) {
+                showWarning('Некоторые товары недоступны', `Следующие позиции больше не в меню и будут пропущены: ${unavailableItems.join(', ')}`, 'warning');
+            }
+            // ✅ Создаем новый заказ с актуальными товарами и ценами
+            const newOrder = {
+                ...validatedOrder,
+                // Важно: очищаем поля старого заказа
+                id: undefined,
+                orderNumber: undefined,
+                startDate: targetDate,
+                delivered: false,
+                paid: false,
+                paidAt: undefined,
+                paymentMethod: undefined,
+                orderStatus: 'pending',
+                // Цены будут пересчитаны автоматически в OrderModal
+                total: undefined,
+                subtotal: undefined,
+                deliveryFee: undefined,
+                loyaltyPointsEarned: 0,
+                loyaltyPointsUsed: 0
+            };
+            console.log('🚀 [Repeat Order] Добавляем заказ в state через setOrders');
+            // ✅ ИСПРАВЛЕНО: Используем функциональное обновление для гарантии актуального state
+            setOrders((prevOrders)=>{
+                const orderTimestamp = getDateTimestamp(targetDate);
+                // Проверяем, есть ли уже заказ на эту дату
+                const existingIndex = prevOrders.findIndex((o)=>{
+                    const oTimestamp = getDateTimestamp(o.startDate);
+                    return oTimestamp === orderTimestamp;
+                });
+                if (existingIndex !== -1) {
+                    // ✅ Заменяем существующий заказ
+                    const updated = [
+                        ...prevOrders
+                    ];
+                    updated[existingIndex] = newOrder;
+                    console.log('📝 [Repeat Order] Заменен существующий заказ на дату:', {
+                        oldId: prevOrders[existingIndex].id,
+                        timestamp: orderTimestamp
+                    });
+                    return updated;
+                } else {
+                    // ✅ Добавляем новый заказ
+                    console.log('➕ [Repeat Order] Добавлен новый заказ для даты:', orderTimestamp);
+                    return [
+                        ...prevOrders,
+                        newOrder
+                    ];
+                }
+            });
+            // ✅ Открываем OrderModal - state уже обновлен синхронно
+            console.log('🎯 [Repeat Order] Открываем OrderModal для даты:', targetDate.toISOString());
+            setSelectedDate(targetDate);
+        } catch (error) {
+            console.error('❌ [Repeat Order] Ошибка при повторе заказа:', error);
+            showWarning('Ошибка', 'Не удалось повторить заказ. Попробуйте позже.', 'error');
+        }
+    };
+    const handlePayOrder = (order, total)=>{
+        if (!isAuthenticated) {
+            setPendingCheckout({
+                order,
+                total
+            });
+            setShowAuthModal(true);
+            return;
+        }
+        // Для заказов с наличными открываем модальное окно заказа для смены способа оплаты
+        if (order.paymentMethod === "cash" && !order.paid) {
+            const orderDate = toDate(order.startDate);
+            setSelectedDate(orderDate);
+            return;
+        }
+        // Для других заказов открываем модальное окно оплаты
+        setPaymentOrder({
+            order,
+            total
+        });
+    };
+    const handleMarkCashOrderAsPaid = async (order)=>{
+        if (!order.id || !isAuthenticated || !userProfile?.id) {
+            // ✅ ИСПРАВЛЕНО 10.01.2026: Заменили toast на WarningDialog
+            setWarningDialog({
+                open: true,
+                title: "Ошибка",
+                description: "Не удалось отметить заказ как оплаченный",
+                variant: "error"
+            });
+            return;
+        }
+        // Показываем анимацию оплаты
+        setShowPaymentLoading(true);
+        try {
+            const response = await fetch(`/api/orders/${order.id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    paid: true,
+                    paid_at: new Date().toISOString(),
+                    status: "paid"
+                })
+            });
+            if (!response.ok) {
+                throw new Error("Failed to mark order as paid");
+            }
+            // ✅ НОВОЕ: Получаем данные из ответа
+            const data = await response.json();
+            console.log('💰 Ответ от API после оплаты:', data);
+            // ✅ НОВОЕ: Используем обновленный заказ из API
+            if (data.order) {
+                const updatedOrderFromAPI = data.order;
+                const orderTimestamp = getDateTimestamp(order.startDate);
+                setOrders((prev)=>{
+                    return prev.map((o)=>{
+                        if (getDateTimestamp(o.startDate) === orderTimestamp) {
+                            // Используем ВСЕ поля из API ответа
+                            return {
+                                ...o,
+                                id: updatedOrderFromAPI.Id || updatedOrderFromAPI.id,
+                                paid: true,
+                                paidAt: updatedOrderFromAPI.paid_at || updatedOrderFromAPI["Paid At"],
+                                paymentStatus: updatedOrderFromAPI.payment_status || "paid",
+                                total: updatedOrderFromAPI.total || updatedOrderFromAPI.Total || 0,
+                                subtotal: updatedOrderFromAPI.subtotal || updatedOrderFromAPI.Subtotal || 0,
+                                loyaltyPointsEarned: updatedOrderFromAPI.loyalty_points_earned || updatedOrderFromAPI["Loyalty Points Earned"] || data.loyaltyPointsEarned || 0,
+                                loyaltyPointsUsed: updatedOrderFromAPI.loyalty_points_used || updatedOrderFromAPI["Loyalty Points Used"] || 0
+                            };
+                        }
+                        return o;
+                    });
+                });
+                console.log('✅ Заказ обновлен в состоянии с данными из API');
+            }
+            // ✅ НОВОЕ: Обновляем баллы пользователя, если начислены
+            if (data.loyaltyPointsEarned && data.loyaltyPointsEarned > 0 && userProfile) {
+                // Перезагружаем профиль из API для точных данных
+                try {
+                    console.log('💰 Перезагружаю баллы пользователя из API...');
+                    const profileResponse = await fetch(`/api/orders?userId=${userProfile.id}`);
+                    const profileData = await profileResponse.json();
+                    if (profileData.userProfile) {
+                        console.log('💰 Обновлены баллы из API:', {
+                            старые: userProfile.loyaltyPoints,
+                            новые: profileData.userProfile.loyaltyPoints
+                        });
+                        const updatedProfile = {
+                            ...userProfile,
+                            loyaltyPoints: profileData.userProfile.loyaltyPoints,
+                            totalSpent: profileData.userProfile.totalSpent
+                        };
+                        setUserProfile(updatedProfile);
+                        const user = localStorage.getItem("currentUser");
+                        if (user) {
+                            localStorage.setItem(`profile_${user}`, JSON.stringify(updatedProfile));
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка обновления профиля:', error);
+                }
+            }
+            // Имитируем задержку оплаты для реалистичности
+            await new Promise((resolve)=>setTimeout(resolve, 1500));
+            // Скрываем loading и показываем success
+            setShowPaymentLoading(false);
+            setSuccessDialog({
+                open: true,
+                loyaltyPointsEarned: data.loyaltyPointsEarned || 0,
+                loyaltyPointsStatus: "earned"
+            });
+        } catch (error) {
+            console.error("Failed to mark order as paid:", error);
+            setShowPaymentLoading(false); // Скрываем loading при ошибке
+            // ✅ ИСПРАВЛЕНО 10.01.2026: Заменили toast на WarningDialog
+            setWarningDialog({
+                open: true,
+                title: "Ошибка оплаты",
+                description: "Не удалось отметить заказ как оплаченный. Попробуйте еще раз.",
+                variant: "error"
+            });
+        }
+    };
+    // ✅ ДОБАВЛЕНО 10.01.2026: Обработка закрытия PaymentModal
+    const handlePaymentModalClose = ()=>{
+        // ✅ ИСПРАВЛЕНО 2026-01-11: Удаляем заказ ТОЛЬКО если это новый заказ из автооформления
+        if (paymentOrder?.order?.id && paymentOrder.isNewOrder) {
+            // Для новых заказов - показываем диалог подтверждения с удалением
+            console.log("⚠️ Закрытие PaymentModal для НОВОГО заказа - показываем диалог удаления");
+            setCancelPaymentDialog({
+                open: true,
+                orderId: paymentOrder.order.id
+            });
+        } else {
+            // Для существующих заказов или без ID - просто закрываем
+            console.log("✅ Закрытие PaymentModal для СУЩЕСТВУЮЩЕГО заказа - просто закрываем");
+            setPaymentOrder(null);
+        }
+    };
+    // ✅ ДОБАВЛЕНО 10.01.2026: Подтверждение отмены заказа
+    const handleConfirmCancelPayment = async ()=>{
+        if (cancelPaymentDialog.orderId) {
+            console.log("🗑️ Отменяем заказ при закрытии PaymentModal:", cancelPaymentDialog.orderId);
+            // Удаляем заказ из БД
+            try {
+                const response = await fetch(`/api/orders/${cancelPaymentDialog.orderId}`, {
+                    method: "DELETE"
+                });
+                if (response.ok) {
+                    // Удаляем заказ из локального состояния
+                    setOrders((prev)=>prev.filter((o)=>o.id !== cancelPaymentDialog.orderId));
+                    console.log("✅ Заказ успешно удален");
+                }
+            } catch (error) {
+                console.error("❌ Ошибка при удалении заказа:", error);
+            }
+        }
+        // Закрываем оба диалога
+        setCancelPaymentDialog({
+            open: false,
+            orderId: null
+        });
+        setPaymentOrder(null);
+    };
+    // ✅ ДОБАВЛЕНО 10.01.2026: Отмена отмены заказа (продолжить оформление)
+    const handleCancelPaymentDialogClose = async ()=>{
+        // Если закрываем диалог отмены - подтверждаем удаление
+        if (cancelPaymentDialog.orderId) {
+            await handleConfirmCancelPayment();
+        } else {
+            setCancelPaymentDialog({
+                open: false,
+                orderId: null
+            });
+        }
+    };
+    const handlePaymentComplete = async (order, pointsUsed, paymentMethod)=>{
+        const user = localStorage.getItem("currentUser");
+        const orderTimestamp = getDateTimestamp(order.startDate);
+        if (!order.id || !userProfile?.id) {
+            console.error('❌ Нет ID заказа или пользователя для оплаты');
+            return;
+        }
+        console.log(`💳 Обработка оплаты: метод=${paymentMethod}, баллы=${pointsUsed}`);
+        // ✅ ИСПРАВЛЕНО 10.01.2026: Показываем правильную анимацию в зависимости от метода оплаты
+        // Для card/sbp - анимация "Идет оплата..." с иконкой карты
+        // Для cash - анимация "Подтверждаем заказ..." с иконкой монет
+        if (paymentMethod === 'card' || paymentMethod === 'sbp') {
+            setShowPaymentLoading(true);
+        } else if (paymentMethod === 'cash') {
+            setShowCashPaymentAnimation(true);
+        }
+        // ✅ ИСПРАВЛЕНО 10.01.2026: Для наличных НЕ ставим paid=true!
+        // Оплата наличными подтверждается при получении заказа
+        const isPaid = paymentMethod === 'card' || paymentMethod === 'sbp';
+        const paymentStatus = isPaid ? 'paid' : 'pending';
+        try {
+            const response = await fetch(`/api/orders/${order.id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    paid: isPaid,
+                    paid_at: isPaid ? new Date().toISOString() : undefined,
+                    status: paymentStatus,
+                    payment_method: paymentMethod,
+                    loyaltyPointsUsed: pointsUsed
+                })
+            });
+            if (!response.ok) {
+                throw new Error("Failed to mark order as paid");
+            }
+            const data = await response.json();
+            console.log('💰 Ответ от API после оплаты:', data);
+            // ✅ Обновляем заказ в состоянии данными из API
+            if (data.order) {
+                const updatedOrderFromAPI = data.order;
+                setOrders((prev)=>{
+                    return prev.map((o)=>{
+                        if (getDateTimestamp(o.startDate) === orderTimestamp) {
+                            return {
+                                ...o,
+                                id: updatedOrderFromAPI.Id || updatedOrderFromAPI.id,
+                                paid: isPaid,
+                                paidAt: updatedOrderFromAPI.paid_at || updatedOrderFromAPI["Paid At"],
+                                paymentStatus: updatedOrderFromAPI.payment_status || paymentStatus,
+                                total: updatedOrderFromAPI.total || updatedOrderFromAPI.Total || 0,
+                                subtotal: updatedOrderFromAPI.subtotal || updatedOrderFromAPI.Subtotal || 0,
+                                loyaltyPointsEarned: updatedOrderFromAPI.loyalty_points_earned || updatedOrderFromAPI["Loyalty Points Earned"] || data.loyaltyPointsEarned || 0,
+                                loyaltyPointsUsed: updatedOrderFromAPI.loyalty_points_used || updatedOrderFromAPI["Loyalty Points Used"] || 0
+                            };
+                        }
+                        return o;
+                    });
+                });
+            }
+            // ✅ ИСПРАВЛЕНО: Обновляем профиль пользователя из API ВСЕГДА после оплаты
+            // Не зависим от loyaltyPointsEarned - баланс может измениться из-за транзакций
+            // ✅ НОВОЕ: Сначала пробуем использовать userProfile из ответа PATCH
+            console.log('🔍 [handlePayOrder] Ответ от PATCH API:', {
+                hasUserProfile: !!data.userProfile,
+                userProfile: data.userProfile,
+                fullData: data
+            });
+            // ✅ ИСПРАВЛЕНО 2026-01-11: Сохраняем старые баллы ДО обновления для расчета разницы
+            const oldLoyaltyPoints = userProfile.loyaltyPoints || 0;
+            if (data.userProfile) {
+                console.log('💰 Обновлены данные из ответа PATCH:', {
+                    старые_баллы: userProfile.loyaltyPoints,
+                    новые_баллы: data.userProfile.loyaltyPoints,
+                    старый_totalSpent: userProfile.totalSpent,
+                    новый_totalSpent: data.userProfile.totalSpent
+                });
+                const updatedProfile = {
+                    ...userProfile,
+                    loyaltyPoints: data.userProfile.loyaltyPoints,
+                    totalSpent: data.userProfile.totalSpent
+                };
+                setUserProfile(updatedProfile);
+                if (user) {
+                    localStorage.setItem(`profile_${user}`, JSON.stringify(updatedProfile));
+                }
+            } else {
+                // Fallback: если userProfile не пришел в ответе, делаем отдельный запрос
+                try {
+                    const profileResponse = await fetch(`/api/orders?userId=${userProfile.id}`);
+                    const profileData = await profileResponse.json();
+                    if (profileData.userProfile) {
+                        console.log('💰 Обновлены баллы из API после оплаты (fallback):', {
+                            старые: userProfile.loyaltyPoints,
+                            новые: profileData.userProfile.loyaltyPoints,
+                            loyaltyPointsEarnedFromResponse: data.loyaltyPointsEarned
+                        });
+                        const updatedProfile = {
+                            ...userProfile,
+                            loyaltyPoints: profileData.userProfile.loyaltyPoints,
+                            totalSpent: profileData.userProfile.totalSpent
+                        };
+                        setUserProfile(updatedProfile);
+                        if (user) {
+                            localStorage.setItem(`profile_${user}`, JSON.stringify(updatedProfile));
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка обновления профиля:', error);
+                }
+            }
+            // Имитируем задержку оплаты
+            await new Promise((resolve)=>setTimeout(resolve, 1500));
+            // ✅ ИСПРАВЛЕНО 2026-01-11: Рассчитываем фактическую разницу баллов
+            // Получаем актуальные баллы из обновленного профиля
+            const newLoyaltyPoints = data.userProfile?.loyaltyPoints || userProfile.loyaltyPoints || 0;
+            const pointsDifference = newLoyaltyPoints - oldLoyaltyPoints;
+            console.log('🎁 Расчет начисленных баллов:', {
+                oldLoyaltyPoints,
+                newLoyaltyPoints,
+                pointsDifference,
+                'data.loyaltyPointsEarned': data.loyaltyPointsEarned,
+                'используем': pointsDifference > 0 ? pointsDifference : data.loyaltyPointsEarned || 0
+            });
+            // Скрываем loading (любой) и показываем success
+            setShowPaymentLoading(false);
+            setShowCashPaymentAnimation(false);
+            setSuccessDialog({
+                open: true,
+                loyaltyPointsEarned: pointsDifference > 0 ? pointsDifference : data.loyaltyPointsEarned || 0,
+                // ✅ ИСПРАВЛЕНО 10.01.2026: Для наличных баллы pending, для карты - earned
+                loyaltyPointsStatus: paymentMethod === 'cash' ? 'pending' : 'earned'
+            });
+        } catch (error) {
+            console.error("❌ Ошибка при оплате заказа:", error);
+            // Скрываем обе анимации при ошибке
+            setShowPaymentLoading(false);
+            setShowCashPaymentAnimation(false);
+            // ✅ ИСПРАВЛЕНО 10.01.2026: Используем WarningDialog вместо toast
+            setWarningDialog({
+                open: true,
+                title: "Ошибка оплаты",
+                description: "Не удалось оплатить заказ. Попробуйте еще раз.",
+                variant: "error"
+            });
+        }
+        setPaymentOrder(null);
+    };
+    const handleReviewSubmit = (orderId, rating, text)=>{
+        const user = localStorage.getItem("currentUser");
+        const newReview = {
+            orderId,
+            rating,
+            text,
+            createdAt: new Date().toISOString()
+        };
+        setReviews((prev)=>{
+            const newReviews = [
+                ...prev,
+                newReview
+            ];
+            if (user) {
+                localStorage.setItem(`reviews_${user}`, JSON.stringify(newReviews));
+            }
+            return newReviews;
+        });
+    };
+    const handleLogin = async (phone)=>{
+        // 🔒 SAFE DATA LOADING: Очищаем все кэшированные данные для этого пользователя
+        // Правило: "Единственный источник правды - NocoDB"
+        console.log('🧹 Очистка кэшированных данных при входе для:', phone);
+        const oldOrdersKey = `orders_${phone}`;
+        const oldProfileKey = `profile_${phone}`;
+        // Удаляем старые заказы (они будут загружены из API)
+        localStorage.removeItem(oldOrdersKey);
+        console.log('✅ Очищены кэшированные заказы');
+        // Включаем лоадеры для свежих данных
+        setIsUserLoading(true);
+        setIsOrdersLoading(true);
+        setIsPointsLoading(true);
+        setIsAuthenticated(true);
+        setCurrentUser(phone);
+        localStorage.setItem("currentUser", phone);
+        const guestOrdersStr = localStorage.getItem("guest_orders");
+        const savedOrders = localStorage.getItem(`orders_${phone}`);
+        let userOrders = [];
+        if (savedOrders) {
+            userOrders = deserializeOrders(savedOrders);
+        }
+        let mergedCount = 0;
+        let conflictCount = 0;
+        if (guestOrdersStr) {
+            const guestOrdersList = deserializeOrders(guestOrdersStr);
+            guestOrdersList.forEach((guestOrder)=>{
+                const guestTimestamp = getDateTimestamp(guestOrder.startDate);
+                const existingOrder = userOrders.find((o)=>getDateTimestamp(o.startDate) === guestTimestamp);
+                if (existingOrder) {
+                    conflictCount++;
+                    if (!existingOrder.paid) {
+                        const index = userOrders.findIndex((o)=>getDateTimestamp(o.startDate) === guestTimestamp);
+                        userOrders[index] = guestOrder;
+                        mergedCount++;
+                    }
+                } else {
+                    userOrders.push(guestOrder);
+                    mergedCount++;
+                }
+            });
+            localStorage.removeItem("guest_orders");
+        }
+        setOrders(userOrders);
+        // ✅ ИСПРАВЛЕНО: НЕ сохраняем в localStorage для авторизованных
+        // Заказы будут загружены из API при следующей загрузке страницы
+        // localStorage.setItem(`orders_${phone}`, serializeOrders(userOrders))
+        // ✅ ИСПРАВЛЕНО 10.01.2026: Убрали toast "Добро пожаловать" (избыточное)
+        // Пользователь и так видит свой профиль и может начать работу
+        const savedReviews = localStorage.getItem(`reviews_${phone}`);
+        if (savedReviews) {
+            setReviews(JSON.parse(savedReviews));
+        }
+        const savedProfile = localStorage.getItem(`profile_${phone}`);
+        let profile;
+        if (savedProfile) {
+            try {
+                const parsed = JSON.parse(savedProfile);
+                if (parsed.address && !parsed.street) {
+                    parsed.street = parsed.address;
+                    delete parsed.address;
+                }
+                profile = parsed;
+            } catch  {
+                profile = {
+                    phone,
+                    name: "",
+                    street: "",
+                    building: "",
+                    loyaltyPoints: 0,
+                    totalSpent: 0
+                };
+                localStorage.setItem(`profile_${phone}`, JSON.stringify(profile));
+            }
+        } else {
+            profile = {
+                phone,
+                name: "",
+                street: "",
+                building: "",
+                loyaltyPoints: 0,
+                totalSpent: 0
+            };
+            localStorage.setItem(`profile_${phone}`, JSON.stringify(profile));
+        }
+        // Проверяем, есть ли гостевой район, и переносим его в профиль
+        const guestDistrict = localStorage.getItem("guest_district");
+        if (guestDistrict && !profile.district) {
+            console.log("🔄 Переносим гостевой район в профиль:", guestDistrict);
+            profile.district = guestDistrict;
+            // Удаляем гостевой район после переноса
+            localStorage.removeItem("guest_district");
+            localStorage.removeItem("district_modal_seen");
+        }
+        // Создаем или обновляем пользователя в NocoDB
+        console.log("🔄 Синхронизация пользователя с базой данных...", {
+            phone,
+            hasProfile: !!profile,
+            district: profile.district
+        });
+        let dbUser = null;
+        try {
+            const { fetchUserByPhone, createUser, updateUser } = await __turbopack_context__.A("[project]/lib/nocodb.ts [app-client] (ecmascript, async loader)");
+            console.log("📡 Ищем пользователя в базе по телефону:", phone);
+            dbUser = await fetchUserByPhone(phone);
+            if (dbUser) {
+                console.log("✅ Пользователь найден в базе:", dbUser.Id);
+                // Пользователь существует, обновляем профиль из базы
+                profile.id = dbUser.Id;
+                profile.name = dbUser.name || profile.name;
+                profile.street = dbUser.street || profile.street;
+                profile.building = dbUser.building || profile.building;
+                // Если есть район в профиле (из гостя), используем его, иначе из базы
+                profile.district = profile.district || dbUser.district || dbUser.District;
+                profile.loyaltyPoints = typeof dbUser.loyalty_points === 'number' ? dbUser.loyalty_points : parseInt(String(dbUser.loyalty_points)) || 0;
+                profile.totalSpent = typeof dbUser.total_spent === 'number' ? dbUser.total_spent : parseFloat(String(dbUser.total_spent)) || 0;
+                console.log("✅ Профиль обновлен из базы, userProfile.id:", profile.id, "district:", profile.district);
+                // Если у нас есть район из гостя, обновляем его в базе
+                if (guestDistrict && profile.district === guestDistrict) {
+                    console.log("💾 Сохраняем гостевой район в базу данных");
+                    await updateUser(profile.id, {
+                        district: profile.district,
+                        District: profile.district
+                    });
+                }
+            } else {
+                console.log("⚠️ Пользователя нет в базе, создаем нового...");
+                // Пользователя нет в базе, создаем
+                const newDbUser = await createUser({
+                    phone,
+                    name: profile.name || "",
+                    district: profile.district,
+                    loyalty_points: profile.loyaltyPoints || 0,
+                    total_spent: profile.totalSpent || 0
+                });
+                profile.id = newDbUser.Id;
+                dbUser = newDbUser;
+                console.log("✅ Пользователь создан в базе данных:", newDbUser.Id, "userProfile.id установлен:", profile.id, "с районом:", profile.district);
+                // ВАЖНО: Устанавливаем User ID равным Id
+                console.log("📝 Устанавливаем User ID =", newDbUser.Id);
+                await updateUser(newDbUser.Id, {
+                    user_id: newDbUser.Id
+                });
+            }
+            // Сохраняем обновленный профиль в localStorage
+            localStorage.setItem(`profile_${phone}`, JSON.stringify(profile));
+            console.log("💾 Профиль сохранен в localStorage с id:", profile.id);
+        } catch (error) {
+            console.error("❌ Ошибка при синхронизации пользователя с базой:", error);
+            console.error("Stack:", error instanceof Error ? error.stack : "No stack");
+        // Продолжаем работу даже если не удалось синхронизировать с базой
+        }
+        console.log("👤 Устанавливаем userProfile: ID =", profile.id, "тип =", typeof profile.id);
+        console.log("👤 userProfile =", JSON.stringify(profile, null, 2));
+        setUserProfile(profile);
+        // 🔒 SAFE DATA LOADING: Загружаем свежие данные из API
+        if (profile.id) {
+            console.log('📡 Загрузка данных из API после входа для userId:', profile.id);
+            try {
+                const response = await fetch(`/api/orders?userId=${profile.id}`);
+                const data = await response.json();
+                console.log('📦 Данные из API получены:', {
+                    заказов: data.orders?.length || 0,
+                    баллы: data.userProfile?.loyaltyPoints
+                });
+                // Обновляем профиль с актуальными баллами
+                if (data.userProfile) {
+                    const updatedProfile = {
+                        ...profile,
+                        loyaltyPoints: data.userProfile.loyaltyPoints ?? 0,
+                        totalSpent: data.userProfile.totalSpent ?? 0
+                    };
+                    setUserProfile(updatedProfile);
+                    localStorage.setItem(`profile_${phone}`, JSON.stringify(updatedProfile));
+                    console.log('✅ Профиль синхронизирован с БД после входа:', {
+                        id: updatedProfile.id,
+                        name: updatedProfile.name,
+                        loyaltyPoints: updatedProfile.loyaltyPoints,
+                        totalSpent: updatedProfile.totalSpent,
+                        district: updatedProfile.district
+                    });
+                }
+                // Загружаем заказы из API
+                if (data.orders && Array.isArray(data.orders)) {
+                    const mappedOrders = data.orders.filter((db)=>{
+                        const status = db.orderStatus || db.order_status || db["Order Status"];
+                        return status !== 'cancelled';
+                    }).map((db)=>({
+                            id: db.id ?? db.Id,
+                            orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
+                            startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
+                            deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
+                            paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
+                            paid: db.paid ?? db.Paid ?? false,
+                            paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
+                            paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
+                            orderStatus: db.orderStatus ?? db.order_status ?? db["Order Status"] ?? "pending",
+                            total: db.total ?? db.Total ?? 0,
+                            subtotal: db.subtotal ?? db.Subtotal ?? 0,
+                            deliveryFee: db.deliveryFee ?? db.delivery_fee ?? db["Delivery Fee"] ?? 0,
+                            deliveryDistrict: db.deliveryDistrict ?? db.delivery_district ?? db["Delivery District"],
+                            deliveryAddress: db.deliveryAddress ?? db.delivery_address ?? db["Delivery Address"],
+                            loyaltyPointsUsed: db.loyaltyPointsUsed ?? db.loyalty_points_used ?? db["Loyalty Points Used"] ?? 0,
+                            loyaltyPointsEarned: db.loyaltyPointsEarned ?? db.loyalty_points_earned ?? db["Loyalty Points Earned"] ?? 0,
+                            persons: db.persons ?? [],
+                            extras: db.extras ?? []
+                        }));
+                    setOrders(mappedOrders);
+                    console.log('✅ Заказы загружены из API после входа:', mappedOrders.length);
+                }
+            } catch (error) {
+                console.error('❌ Ошибка загрузки данных из API:', error);
+            } finally{
+                // Отключаем лоадеры после загрузки
+                setIsUserLoading(false);
+                setIsOrdersLoading(false);
+                setIsPointsLoading(false);
+                console.log('✅ Загрузка данных завершена после входа');
+            }
+        } else {
+            // Если нет id, просто отключаем лоадеры
+            setIsUserLoading(false);
+            setIsOrdersLoading(false);
+            setIsPointsLoading(false);
+        }
+        setShowAuthModal(false);
+        // ✅ ИСПРАВЛЕНО 2026-01-11: Если есть pendingCheckout, устанавливаем shouldAutoCheckout
+        if (pendingCheckout) {
+            console.log("✅ Есть pendingCheckout после авторизации → устанавливаем shouldAutoCheckout = true");
+            setShouldAutoCheckout(true);
+        }
+        // Проверяем, есть ли у пользователя район доставки
+        // Если пользователь из базы и у него есть район - используем его
+        // Если нет - показываем модалку выбора района
+        const userDistrict = profile.district;
+        // ✅ ИСПРАВЛЕНО: Не показываем модалку района если:
+        // 1. Идет процесс оформления заказа (pendingCheckout)
+        // 2. И район уже выбран (selectedDistrict)
+        if (!userDistrict) {
+            // Проверяем, не выбран ли район в процессе оформления
+            if (pendingCheckout && selectedDistrict) {
+                console.log("✅ Район уже выбран в процессе оформления:", selectedDistrict);
+            // Не показываем модалку, useEffect запустит автооформление
+            } else {
+                console.log("⚠️ У пользователя нет района доставки, показываем модалку выбора района");
+                setShowDistrictModal(true);
+            }
+        } else {
+            console.log("✅ У пользователя уже есть район:", userDistrict);
+        // Проверка профиля и автооформление теперь в useEffect
+        }
+    };
+    const handleLogout = ()=>{
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        setOrders([]);
+        setUserProfile(null);
+        setReviews([]);
+        localStorage.removeItem("currentUser");
+        setView("calendar");
+        const guestOrders = localStorage.getItem("guest_orders");
+        if (guestOrders) {
+            setOrders(deserializeOrders(guestOrders));
+        }
+    };
+    const handleAutoCheckout = async ()=>{
+        if (!pendingCheckout || !userProfile) {
+            console.log("❌ Нет данных для автооформления");
+            return;
+        }
+        // ✅ ДОБАВЛЕНО 11.01.2026: Проверяем, есть ли уже заказ на эту дату
+        const orderDate = pendingCheckout.order.startDate;
+        const existingOrderOnDate = orders.find((o)=>{
+            const oDate = typeof o.startDate === 'string' ? o.startDate : o.startDate.toISOString().split('T')[0];
+            const checkDate = typeof orderDate === 'string' ? orderDate : orderDate.toISOString().split('T')[0];
+            return oDate === checkDate;
+        });
+        if (existingOrderOnDate) {
+            console.warn(`⚠️ На дату ${orderDate} уже есть заказ (ID: ${existingOrderOnDate.id})`);
+            setWarningDialog({
+                open: true,
+                title: "Заказ уже существует",
+                description: `На эту дату (${typeof orderDate === 'string' ? new Date(orderDate).toLocaleDateString('ru-RU') : orderDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+                variant: "warning"
+            });
+            // Очищаем pendingCheckout и shouldAutoCheckout
+            setPendingCheckout(null);
+            setShouldAutoCheckout(false);
+            return;
+        }
+        // ✅ ДОБАВЛЕНО 10.01.2026: Показываем анимацию во время автооформления
+        setShowOrderLoading(true);
+        try {
+            console.log("🚀 Автооформление заказа после авторизации");
+            // ✅ DEBUG RECORDER: Логируем начало автооформления
+            debug.log("🚀 START handleAutoCheckout", {
+                userId: userProfile?.id,
+                userEmail: userProfile?.email,
+                hasPendingCheckout: !!pendingCheckout,
+                pendingCheckoutData: {
+                    orderPersonsCount: pendingCheckout?.order?.persons?.length || 0,
+                    orderSubtotal: pendingCheckout?.order?.subtotal,
+                    orderTotal: pendingCheckout?.order?.total,
+                    pendingTotal: pendingCheckout?.total
+                }
+            });
+            // ✅ ДОБАВЛЕНО 2026-01-11: КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ pendingCheckout
+            console.log("📦 [handleAutoCheckout] pendingCheckout:", {
+                hasPendingCheckout: !!pendingCheckout,
+                orderPersonsCount: pendingCheckout?.order?.persons?.length || 0,
+                orderPersons: pendingCheckout?.order?.persons?.map((p)=>({
+                        id: p.id,
+                        hasDay1: !!p.day1,
+                        hasDay2: !!p.day2
+                    })),
+                orderSubtotal: pendingCheckout?.order?.subtotal,
+                orderTotal: pendingCheckout?.order?.total,
+                pendingTotal: pendingCheckout?.total
+            });
+            // Получаем район для расчета доставки
+            const district = userProfile.district;
+            if (!district) {
+                console.error("❌ Район не указан");
+                // ✅ DEBUG RECORDER: Захватываем ошибку отсутствия района
+                await debug.captureError({
+                    errorMessage: "Район не указан при автооформлении",
+                    data: {
+                        userId: userProfile?.id,
+                        userEmail: userProfile?.email
+                    }
+                });
+                // ✅ ДОБАВЛЕНО 10.01.2026: Скрываем анимацию при ошибке
+                setShowOrderLoading(false);
+                // ✅ ИСПРАВЛЕНО 10.01.2026: Заменили toast на WarningDialog
+                setWarningDialog({
+                    open: true,
+                    title: "Ошибка",
+                    description: "Район доставки не указан. Укажите район в профиле.",
+                    variant: "error"
+                });
+                return;
+            }
+            // Загружаем зоны доставки для расчета стоимости
+            const { fetchDeliveryZones, calculateDeliveryFee } = await __turbopack_context__.A("[project]/lib/nocodb.ts [app-client] (ecmascript, async loader)");
+            const zones = await fetchDeliveryZones();
+            // Рассчитываем стоимость доставки
+            const deliveryFee = await calculateDeliveryFee(district, pendingCheckout.order.subtotal || pendingCheckout.total, zones);
+            console.log(`💰 Стоимость доставки: ${deliveryFee}₽ для района "${district}"`);
+            debug.log(`💰 Delivery fee calculated: ${deliveryFee}₽`, {
+                district,
+                subtotal: pendingCheckout.order.subtotal || pendingCheckout.total
+            });
+            // ВАЖНО: Заказ уже был создан в OrderModal, ищем его в списке orders
+            // Берем последний заказ пользователя (который только что был создан)
+            const lastOrder = orders.length > 0 ? orders[orders.length - 1] : null;
+            console.log("🔍 Последний заказ: id =", lastOrder?.id, "paid =", lastOrder?.paid, "тип =", typeof lastOrder?.id, "ordersLength =", orders.length);
+            // ✅ ИСПРАВЛЕНО 2026-01-12: Если последний заказ оплачен ИЛИ для другой даты, создаем НОВЫЙ заказ
+            const shouldCreateNewOrder = !lastOrder || lastOrder.paid || lastOrder.startDate !== pendingCheckout.order.startDate;
+            // Обновляем заказ с данными доставки и адреса
+            const updatedOrder = {
+                ...shouldCreateNewOrder ? pendingCheckout.order : lastOrder,
+                deliveryFee,
+                deliveryDistrict: district,
+                deliveryAddress: `${userProfile.street}, ${userProfile.building}${userProfile.apartment ? ', кв. ' + userProfile.apartment : ''}`,
+                subtotal: pendingCheckout.order.subtotal || pendingCheckout.total,
+                total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee
+            };
+            // ✅ ИСПРАВЛЕНО: Удаляем paymentMethod и ID при создании нового заказа
+            // Способ оплаты должен устанавливаться только при реальной оплате в PaymentModal
+            if (shouldCreateNewOrder) {
+                delete updatedOrder.id;
+                delete updatedOrder.paymentMethod;
+                delete updatedOrder.paid;
+                delete updatedOrder.paidAt;
+                console.log("🔧 Создаем НОВЫЙ заказ (предыдущий оплачен или не существует)");
+            }
+            console.log("📦 Обновленный заказ: id =", updatedOrder.id, "тип =", typeof updatedOrder.id, "total =", updatedOrder.total);
+            // ✅ ДОБАВЛЕНО 2026-01-11: Проверка persons перед отправкой в API
+            console.log("👥 Проверка persons:", {
+                personsCount: updatedOrder.persons?.length || 0,
+                personsEmpty: !updatedOrder.persons || updatedOrder.persons.length === 0,
+                personsData: updatedOrder.persons?.map((p)=>({
+                        id: p.id,
+                        hasDay1: !!p.day1,
+                        hasDay2: !!p.day2,
+                        day1Meals: p.day1 ? {
+                            hasBreakfast: !!p.day1.breakfast?.dish,
+                            hasLunch: !!(p.day1.lunch?.salad || p.day1.lunch?.soup || p.day1.lunch?.main),
+                            hasDinner: !!(p.day1.dinner?.salad || p.day1.dinner?.soup || p.day1.dinner?.main)
+                        } : null
+                    }))
+            });
+            if (!updatedOrder.persons || updatedOrder.persons.length === 0) {
+                console.error("❌ КРИТИЧЕСКАЯ ОШИБКА: persons пуст при автооформлении!");
+                // ✅ DEBUG RECORDER: Захватываем критическую ошибку с пустым persons
+                await debug.captureError({
+                    errorMessage: "CRITICAL: persons пуст при автооформлении",
+                    data: {
+                        updatedOrder,
+                        pendingCheckout,
+                        lastOrder,
+                        shouldCreateNewOrder
+                    }
+                });
+                setShowOrderLoading(false);
+                setWarningDialog({
+                    open: true,
+                    title: "Ошибка создания заказа",
+                    description: "Не удалось создать заказ: отсутствуют данные о блюдах. Пожалуйста, попробуйте снова.",
+                    variant: "error"
+                });
+                setPendingCheckout(null);
+                setShouldAutoCheckout(false);
+                return;
+            }
+            // ВАЖНО: Если у заказа НЕТ ID - это значит он был создан для неавторизованного пользователя
+            // Теперь пользователь авторизован, нужно СОЗДАТЬ заказ в БД!
+            if (!updatedOrder.id) {
+                console.log("🆕 Заказ без ID - создаем его в API для авторизованного пользователя");
+                // ✅ DEBUG RECORDER: Логируем payload перед отправкой
+                const createOrderPayload = {
+                    order: updatedOrder,
+                    userId: userProfile.id
+                };
+                debug.log("📤 POST /api/orders PAYLOAD:", createOrderPayload);
+                try {
+                    const response = await fetch("/api/orders", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(createOrderPayload)
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(()=>({
+                                error: "Unknown error"
+                            }));
+                        console.error("❌ Ошибка при создании заказа:", errorData);
+                        // ✅ DEBUG RECORDER: Захватываем ошибку API
+                        await debug.captureError({
+                            errorMessage: `API Error: POST /api/orders (${response.status})`,
+                            data: {
+                                status: response.status,
+                                errorData,
+                                payload: createOrderPayload
+                            }
+                        });
+                        throw new Error(errorData.error || "Failed to create order");
+                    }
+                    const result = await response.json();
+                    console.log("✅ Результат создания заказа в API:", result);
+                    debug.log("✅ Order created successfully", {
+                        orderId: result.orderId,
+                        orderNumber: result.orderNumber
+                    });
+                    // Обновляем заказ с ID из API
+                    updatedOrder.id = result.orderId;
+                    updatedOrder.orderNumber = result.orderNumber || `ORD-${Date.now()}`;
+                    console.log("✅ Заказ создан в БД с ID:", updatedOrder.id);
+                    // ✅ ДОБАВЛЯЕМ заказ в локальный стейт, чтобы он сразу отобразился в календаре
+                    setOrders((prev)=>[
+                            ...prev,
+                            updatedOrder
+                        ]);
+                    console.log("📅 Заказ добавлен в календарь");
+                } catch (error) {
+                    console.error("❌ Не удалось создать заказ в БД:", error);
+                    // ✅ DEBUG RECORDER: Захватываем общую ошибку создания заказа
+                    await debug.captureError({
+                        errorMessage: `Failed to create order: ${error.message}`,
+                        data: {
+                            error: error.toString(),
+                            payload: createOrderPayload,
+                            stack: error.stack
+                        }
+                    });
+                    // ✅ ДОБАВЛЕНО 10.01.2026: Скрываем анимацию при ошибке создания заказа
+                    setShowOrderLoading(false);
+                    throw error;
+                }
+            } else {
+                console.log("🔄 Заказ с ID - обновляем его в БД");
+                await handleSaveOrder(updatedOrder);
+            }
+            console.log("🎯 Открываем PaymentModal: orderId =", updatedOrder.id, "userId =", userProfile.id);
+            debug.log("🎯 Opening PaymentModal", {
+                orderId: updatedOrder.id,
+                total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee
+            });
+            // ✅ ДОБАВЛЕНО 10.01.2026: Скрываем анимацию загрузки перед открытием PaymentModal
+            setShowOrderLoading(false);
+            // Показываем модалку оплаты с обновленной суммой
+            setPaymentOrder({
+                order: updatedOrder,
+                total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee,
+                isNewOrder: true // ✅ Помечаем как новый заказ для удаления при отмене
+            });
+            // Очищаем pending checkout
+            setPendingCheckout(null);
+            setShouldAutoCheckout(false);
+        // ✅ ИСПРАВЛЕНО 10.01.2026: Убрали toast "Заказ оформлен" (избыточное)
+        // Пользователь сразу видит PaymentModal
+        } catch (error) {
+            console.error("❌ Ошибка при автооформлении заказа:", error);
+            // ✅ DEBUG RECORDER: Захватываем любую необработанную ошибку
+            await debug.captureError({
+                errorMessage: `Unhandled error in handleAutoCheckout: ${error.message || error}`,
+                data: {
+                    error: error.toString(),
+                    stack: error.stack,
+                    pendingCheckout,
+                    userProfile: {
+                        id: userProfile?.id,
+                        email: userProfile?.email,
+                        district: userProfile?.district
+                    }
+                }
+            });
+            // ✅ ДОБАВЛЕНО 10.01.2026: Скрываем анимацию при ошибке
+            setShowOrderLoading(false);
+            // ✅ ИСПРАВЛЕНО 10.01.2026: Заменили toast на WarningDialog
+            setWarningDialog({
+                open: true,
+                title: "Ошибка оформления",
+                description: "Не удалось оформить заказ. Попробуйте еще раз.",
+                variant: "error"
+            });
+        }
+    };
+    const handleProfileSave = async (profile)=>{
+        console.log("💾 handleProfileSave: ID =", profile.id, "тип =", typeof profile.id);
+        console.log("💾 handleProfileSave: profile =", JSON.stringify(profile, null, 2));
+        setUserProfile(profile);
+        // Сохраняем профиль в localStorage
+        if (currentUser) {
+            localStorage.setItem(`profile_${currentUser}`, JSON.stringify(profile));
+        }
+        // Обновляем профиль в базе данных
+        if (profile.id && typeof profile.id === 'number' && profile.id > 0) {
+            try {
+                const { updateUser } = await __turbopack_context__.A("[project]/lib/nocodb.ts [app-client] (ecmascript, async loader)");
+                await updateUser(profile.id, {
+                    name: profile.name,
+                    street: profile.street,
+                    building: profile.building,
+                    buildingSection: profile.buildingSection,
+                    apartment: profile.apartment,
+                    entrance: profile.entrance,
+                    floor: profile.floor,
+                    intercom: profile.intercom,
+                    district: profile.district,
+                    deliveryComment: profile.deliveryComment,
+                    additionalPhone: profile.additionalPhone
+                });
+                console.log("✅ Профиль обновлен в базе данных для пользователя ID:", profile.id);
+            } catch (error) {
+                console.error("❌ Ошибка при обновлении профиля в БД:", error);
+            // Не блокируем процесс, продолжаем работу
+            }
+        } else {
+            console.log("⚠️ У профиля нет валидного ID, пропускаем обновление в БД");
+        }
+        // Закрываем модалку профиля
+        // useEffect сам запустит handleAutoCheckout после обновления профиля
+        if (shouldAutoCheckout && pendingCheckout) {
+            console.log("✅ Профиль заполнен, закрываем модалку. useEffect запустит автооформление");
+            setShowProfile(false);
+        } else {
+            // Обычный режим - закрываем сразу
+            setShowProfile(false);
+        }
+    };
+    const handleDistrictSelected = async (district)=>{
+        try {
+            console.log("💾 Сохраняем выбранный район:", district);
+            setSelectedDistrict(district); // Сохраняем в локальном состоянии
+            // ✅ НОВОЕ: Если есть pendingCheckout, это процесс оформления
+            // Сохраняем район и возвращаемся в OrderModal для выбора времени и оплаты
+            if (pendingCheckout) {
+                console.log("✅ Район выбран в процессе оформления, возвращаемся в OrderModal");
+                // Обновляем заказ с районом
+                const updatedOrder = {
+                    ...pendingCheckout.order,
+                    deliveryDistrict: district
+                };
+                setPendingCheckout({
+                    order: updatedOrder,
+                    total: pendingCheckout.total
+                });
+                // Если авторизован - сохраняем район в профиль
+                if (currentUser && userProfile) {
+                    const updatedProfile = {
+                        ...userProfile,
+                        district: district
+                    };
+                    // Обновляем в базе данных
+                    if (userProfile.id && typeof userProfile.id === 'number' && userProfile.id > 0) {
+                        try {
+                            const { updateUser } = await __turbopack_context__.A("[project]/lib/nocodb.ts [app-client] (ecmascript, async loader)");
+                            await updateUser(userProfile.id, {
+                                district: district,
+                                District: district
+                            });
+                            console.log("✅ Район сохранен в БД для пользователя ID:", userProfile.id);
+                        } catch (error) {
+                            console.error("❌ Ошибка при обновлении района в БД:", error);
+                        }
+                    }
+                    localStorage.setItem(`profile_${currentUser}`, JSON.stringify(updatedProfile));
+                    setUserProfile(updatedProfile);
+                    console.log("✅ Район сохранен в профиле:", district);
+                } else {
+                    // Для гостей сохраняем в localStorage
+                    localStorage.setItem("guest_district", district);
+                    console.log("✅ Район сохранен для гостя:", district);
+                }
+                setShowDistrictModal(false);
+                // ✅ ИСПРАВЛЕНО 2026-01-11: Для гостя открываем AuthModal после выбора района
+                if (!currentUser) {
+                    console.log("👤 Гость выбрал район → открываем AuthModal");
+                    setShowAuthModal(true);
+                } else {
+                    // Для авторизованного - открываем обратно OrderModal
+                    console.log("✅ Авторизованный пользователь выбрал район → возвращаемся в OrderModal");
+                    setSelectedDate(toDate(pendingCheckout.order.startDate));
+                }
+                return;
+            }
+            // Если пользователь авторизован - тихо обновляем профиль (обычный режим, не checkout)
+            if (currentUser && userProfile) {
+                // ✅ ТИХОЕ обновление профиля (без уведомлений)
+                const updatedProfile = {
+                    ...userProfile,
+                    district: district
+                };
+                // Обновляем в базе данных
+                if (userProfile.id && typeof userProfile.id === 'number' && userProfile.id > 0) {
+                    try {
+                        const { updateUser } = await __turbopack_context__.A("[project]/lib/nocodb.ts [app-client] (ecmascript, async loader)");
+                        await updateUser(userProfile.id, {
+                            district: district,
+                            District: district
+                        });
+                        console.log("✅ Район тихо обновлен в БД для пользователя ID:", userProfile.id);
+                    } catch (error) {
+                        console.error("❌ Ошибка при обновлении района в БД:", error);
+                    }
+                }
+                localStorage.setItem(`profile_${currentUser}`, JSON.stringify(updatedProfile));
+                setUserProfile(updatedProfile);
+                console.log("✅ Район тихо сохранен в профиле:", district);
+            } else {
+                // Пользователь НЕ авторизован - сохраняем как гостевой район
+                localStorage.setItem("guest_district", district);
+                localStorage.setItem("district_modal_seen", "true");
+                console.log("✅ Район сохранен для гостя:", district);
+            }
+            setShowDistrictModal(false);
+        } catch (error) {
+            console.error("❌ Ошибка при сохранении района:", error);
+            setWarningDialog({
+                open: true,
+                title: "Ошибка сохранения",
+                description: "Не удалось сохранить район. Попробуйте еще раз.",
+                variant: "error"
+            });
+        }
+    };
+    const existingOrder = selectedDate ? orders.find((o)=>{
+        const orderStartDate = new Date(o.startDate);
+        orderStartDate.setHours(0, 0, 0, 0);
+        const checkDate = new Date(selectedDate);
+        checkDate.setHours(0, 0, 0, 0);
+        return orderStartDate.getTime() === checkDate.getTime();
+    }) : undefined;
+    const availableDates = getAvailableDates();
+    // Handler for dish click from FreshSection
+    const handleDishClick = (dish)=>{
+        // Get available dates and pick a random one (or first available)
+        const dates = (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$menu$2d$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getAvailableDatesForOrdering"])();
+        if (dates.length > 0) {
+            // Pick a random date from available dates
+            const randomIndex = Math.floor(Math.random() * dates.length);
+            const selectedDate = dates[randomIndex].date;
+            setSelectedDish({
+                dish,
+                availableDate: selectedDate
+            });
+        } else {
+            showWarning("Нет доступных дат", "К сожалению, сейчас нет доступных дат для заказа. Попробуйте позже.", "info");
+        }
+    };
+    // Handler for "Go to Order" button in DishSmartModal
+    const handleGoToOrder = (date)=>{
+        // Scroll to calendar section
+        const calendarElement = document.getElementById("calendar-section");
+        if (calendarElement) {
+            calendarElement.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+        // Set selected date and open order modal
+        setTimeout(()=>{
+            setSelectedDate(date);
+        }, 300); // Small delay for smooth scroll
+    };
+    // Handler for "Open Existing Order" button
+    const handleOpenExistingOrder = (date)=>{
+        setSelectedDate(date);
+    };
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "min-h-screen bg-background",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$preloader$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Preloader"], {}, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 2809,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "bg-white px-4 pt-12 pb-6 border-b-2 border-black safe-area-top",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex items-center justify-between mb-3",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-center gap-3",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "h-14 w-14 rounded-full border-2 border-black overflow-hidden flex items-center justify-center shrink-0",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                                            src: "/OGFooDY логотип.png",
+                                            alt: "OGFooDY Logo",
+                                            width: 56,
+                                            height: 56,
+                                            className: "rounded-full object-cover",
+                                            priority: true
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 2814,
+                                            columnNumber: 15
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2813,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
+                                                className: "text-2xl font-black text-black tracking-tight",
+                                                children: "OGFooDY"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/page.tsx",
+                                                lineNumber: 2824,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-black/80 text-xs font-bold",
+                                                children: "домашняя еда на каждый день"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/page.tsx",
+                                                lineNumber: 2825,
+                                                columnNumber: 15
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2823,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2812,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-center gap-1",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$app$2d$menu$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AppMenu"], {
+                                        userPhone: currentUser || ""
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2829,
+                                        columnNumber: 13
+                                    }, this),
+                                    isAuthenticated ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                        variant: "ghost",
+                                        size: "icon",
+                                        onClick: handleLogout,
+                                        className: "text-black hover:bg-muted border-0",
+                                        "data-testid": "logout-btn",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$out$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogOut$3e$__["LogOut"], {
+                                            className: "w-5 h-5"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 2832,
+                                            columnNumber: 17
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2831,
+                                        columnNumber: 15
+                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                        variant: "ghost",
+                                        size: "sm",
+                                        onClick: ()=>setShowAuthModal(true),
+                                        className: "text-black hover:bg-muted border-0",
+                                        "data-testid": "login-btn",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$in$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogIn$3e$__["LogIn"], {
+                                                className: "w-4 h-4 mr-2"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/page.tsx",
+                                                lineNumber: 2842,
+                                                columnNumber: 17
+                                            }, this),
+                                            "Войти"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2835,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2828,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 2811,
+                        columnNumber: 9
+                    }, this),
+                    isAuthenticated ? isUserLoading || isPointsLoading ? // ✅ SAFE DATA LOADING: Skeleton пока грузятся данные
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$loading$2d$skeletons$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["UserProfileHeaderSkeleton"], {}, void 0, false, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 2851,
+                        columnNumber: 13
+                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        onClick: ()=>setShowProfile(true),
+                        className: "flex items-center gap-2 text-black bg-muted rounded-xl px-3 py-2 w-full hover:bg-muted/80 transition-colors border-2 border-black",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__["User"], {
+                                className: "w-4 h-4"
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2857,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "text-sm font-bold flex-1 text-left",
+                                children: userProfile?.name || currentUser
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2858,
+                                columnNumber: 15
+                            }, this),
+                            userProfile && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "text-xs bg-[#9D00FF] text-white px-2 py-0.5 rounded-lg font-black border-2 border-black",
+                                children: [
+                                    userProfile.loyaltyPoints || 0,
+                                    " баллов"
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2860,
+                                columnNumber: 17
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 2853,
+                        columnNumber: 13
+                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex items-center gap-2 text-black bg-muted rounded-xl px-3 py-2 w-full border-2 border-black",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__["User"], {
+                                className: "w-4 h-4"
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2866,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "text-sm font-bold",
+                                children: "Гость"
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2867,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "text-xs text-black/70 ml-auto font-medium",
+                                children: "Войдите для оформления заказа"
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2868,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 2865,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 2810,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "px-4 py-4 -mt-4 bg-background rounded-t-3xl border-t-2 border-black relative z-10",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                        className: "text-muted-foreground text-sm mb-4",
+                        children: view === "calendar" ? "Выберите дату для заказа" : "История ваших заказов"
+                    }, void 0, false, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 2874,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "mb-4 flex gap-2",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                variant: view === "calendar" ? "default" : "outline",
+                                onClick: ()=>setView("calendar"),
+                                className: "flex-1",
+                                "data-testid": "view-calendar-btn",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CalendarIcon$3e$__["CalendarIcon"], {
+                                        className: "w-4 h-4 mr-2"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2885,
+                                        columnNumber: 13
+                                    }, this),
+                                    "Календарь"
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2879,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                variant: view === "history" ? "default" : "outline",
+                                onClick: ()=>setView("history"),
+                                className: "flex-1",
+                                disabled: !isAuthenticated,
+                                "data-testid": "view-history-btn",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$history$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__History$3e$__["History"], {
+                                        className: "w-4 h-4 mr-2"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2895,
+                                        columnNumber: 13
+                                    }, this),
+                                    "История"
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2888,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 2878,
+                        columnNumber: 9
+                    }, this),
+                    view === "calendar" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                        children: [
+                            showInfoBanner && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$info$2d$banner$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["InfoBanner"], {
+                                isAuthenticated: isAuthenticated,
+                                onAuthClick: ()=>setShowAuthModal(true),
+                                onClose: ()=>setShowInfoBanner(false)
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2904,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "mb-6",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$daily$2d$status$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DailyStatus"], {
+                                    orders: orders,
+                                    onOrderClick: ()=>{
+                                        // Find the next available date for ordering
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        const nextAvailable = availableDates.find((date)=>{
+                                            const checkDate = new Date(date);
+                                            checkDate.setHours(0, 0, 0, 0);
+                                            return checkDate.getTime() >= today.getTime();
+                                        });
+                                        if (nextAvailable) {
+                                            handleDateClick(nextAvailable);
+                                        } else {
+                                            showWarning("Нет доступных дат", "К сожалению, сейчас нет доступных дат для заказа. Попробуйте позже.", "info");
+                                        }
+                                    },
+                                    onFoodCardClick: ()=>{
+                                        // Open today's menu/order modal
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        // Check if there's an order for today (delivery day)
+                                        const todayOrder = orders.find((order)=>{
+                                            const orderDate = new Date(order.startDate);
+                                            orderDate.setHours(0, 0, 0, 0);
+                                            return orderDate.getTime() === today.getTime();
+                                        });
+                                        // If there's an order for today, open it directly
+                                        if (todayOrder) {
+                                            setSelectedDate(today);
+                                        } else {
+                                            // If there's food today but no order, we still want to show the modal
+                                            // Find the order that provides food for today
+                                            const foodOrder = orders.find((order)=>{
+                                                const deliveryDate = new Date(order.startDate);
+                                                deliveryDate.setHours(0, 0, 0, 0);
+                                                const day1 = new Date(deliveryDate);
+                                                day1.setDate(day1.getDate() + 1);
+                                                const day2 = new Date(deliveryDate);
+                                                day2.setDate(day2.getDate() + 2);
+                                                return today.getTime() === day1.getTime() || today.getTime() === day2.getTime();
+                                            });
+                                            // Open today's date - the modal should handle showing the food
+                                            setSelectedDate(today);
+                                        }
+                                    }
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 2913,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2912,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                id: "calendar-section",
+                                className: "mb-8 relative",
+                                children: [
+                                    !isAuthenticated && !selectedDate && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "absolute -top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "bg-[#FFEA00] border-2 border-black px-4 py-2 rounded-lg shadow-brutal animate-bounce",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex items-center gap-2",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CalendarIcon$3e$__["CalendarIcon"], {
+                                                        className: "h-5 w-5"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/page.tsx",
+                                                        lineNumber: 2979,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "font-black text-sm whitespace-nowrap",
+                                                        children: "Выберите дату здесь ↓"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/page.tsx",
+                                                        lineNumber: 2980,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/page.tsx",
+                                                lineNumber: 2978,
+                                                columnNumber: 21
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 2977,
+                                            columnNumber: 19
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2976,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$calendar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Calendar"], {
+                                        orders: orders,
+                                        selectedDate: selectedDate,
+                                        onSelectDate: setSelectedDate,
+                                        onDateClick: handleDateClick,
+                                        onMoveOrder: handleMoveOrder
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 2986,
+                                        columnNumber: 15
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2973,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$fresh$2d$section$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FreshSection"], {
+                                onDishClick: handleDishClick
+                            }, void 0, false, {
+                                fileName: "[project]/app/page.tsx",
+                                lineNumber: 2996,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true) : // ✅ SAFE DATA LOADING: Показываем skeleton пока грузятся заказы
+                    isOrdersLoading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$loading$2d$skeletons$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["OrderHistorySkeleton"], {}, void 0, false, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 3001,
+                        columnNumber: 13
+                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$order$2d$history$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["OrderHistory"], {
+                        orders: orders,
+                        onCancelOrder: handleCancelOrder,
+                        onRepeatOrder: handleRepeatOrder,
+                        onPayOrder: handlePayOrder,
+                        onReviewOrder: (order)=>setReviewOrder(order),
+                        availableDates: availableDates,
+                        userProfile: userProfile,
+                        reviews: reviews
+                    }, void 0, false, {
+                        fileName: "[project]/app/page.tsx",
+                        lineNumber: 3003,
+                        columnNumber: 13
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 2873,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$order$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["OrderModal"], {
+                date: selectedDate || new Date(),
+                existingOrder: existingOrder,
+                onClose: ()=>{
+                    setSelectedDate(null);
+                },
+                onSave: handleSaveOrder,
+                onCancel: handleCancelOrder,
+                allOrders: orders,
+                open: !!selectedDate,
+                isDataLoading: isUserLoading || isOrdersLoading || isPointsLoading,
+                onPaymentSuccess: async (order)=>{
+                    // ❌ УДАЛЕНО: клиентский расчет баллов
+                    // ✅ НОВОЕ: Обновляем данные из API
+                    if (userProfile?.id) {
+                        try {
+                            console.log('💰 Обновляю данные после успешной оплаты...');
+                            const response = await fetch(`/api/orders?userId=${userProfile.id}`);
+                            const data = await response.json();
+                            if (data.userProfile) {
+                                const newLoyaltyPoints = typeof data.userProfile.loyaltyPoints === 'number' ? data.userProfile.loyaltyPoints : parseInt(String(data.userProfile.loyaltyPoints)) || 0;
+                                console.log('💰 Обновлены баллы из API:', {
+                                    старые: userProfile.loyaltyPoints,
+                                    новые: newLoyaltyPoints,
+                                    тип: typeof newLoyaltyPoints
+                                });
+                                const updatedProfile = {
+                                    ...userProfile,
+                                    loyaltyPoints: newLoyaltyPoints,
+                                    totalSpent: data.userProfile.totalSpent
+                                };
+                                console.log('💾 Вызываем setUserProfile с новыми баллами:', updatedProfile.loyaltyPoints);
+                                setUserProfile(updatedProfile);
+                                console.log('✅ setUserProfile вызван успешно');
+                                const user = localStorage.getItem("currentUser");
+                                if (user) {
+                                    localStorage.setItem(`profile_${user}`, JSON.stringify(updatedProfile));
+                                    console.log('💾 Профиль сохранен в localStorage');
+                                }
+                            }
+                            // Обновляем список заказов
+                            if (data.orders) {
+                                const mappedOrders = data.orders.filter((db)=>{
+                                    const status = db.orderStatus || db.order_status || db["Order Status"];
+                                    return status !== 'cancelled';
+                                }).map((db)=>({
+                                        id: db.id ?? db.Id,
+                                        orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
+                                        startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
+                                        deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
+                                        paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
+                                        paid: db.paid ?? db.Paid ?? false,
+                                        paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
+                                        paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
+                                        orderStatus: db.orderStatus ?? db.order_status ?? db["Order Status"] ?? "pending",
+                                        total: db.total ?? db.Total ?? 0,
+                                        subtotal: db.subtotal ?? db.Subtotal ?? 0,
+                                        loyaltyPointsUsed: db.loyaltyPointsUsed ?? db.loyalty_points_used ?? db["Loyalty Points Used"] ?? 0,
+                                        loyaltyPointsEarned: db.loyaltyPointsEarned ?? db.loyalty_points_earned ?? db["Loyalty Points Earned"] ?? 0,
+                                        persons: db.persons ?? [],
+                                        extras: db.extras ?? []
+                                    }));
+                                setOrders(mappedOrders);
+                                console.log('✅ Заказы обновлены из API');
+                            }
+                        } catch (error) {
+                            console.error('❌ Ошибка обновления данных после оплаты:', error);
+                        }
+                    }
+                    const deliveryDate = new Date(order.startDate).toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "short"
+                    });
+                    const description = order.paymentMethod === "cash" ? `Доставка ${deliveryDate} в ${order.deliveryTime}. Оплата наличными курьеру.` : `Оплата прошла успешно. Доставка ${deliveryDate} в ${order.deliveryTime}.`;
+                    showWarning("Заказ оформлен", description, "info");
+                },
+                userLoyaltyPoints: userProfile?.loyaltyPoints || 0,
+                isAuthenticated: isAuthenticated,
+                onRequestAuth: (order, total)=>{
+                    const hasDistrict = userProfile?.district || localStorage.getItem("guest_district");
+                    console.log("🔐 Запрос оформления заказа:", {
+                        isAuthenticated,
+                        hasDistrict: !!hasDistrict,
+                        userDistrict: userProfile?.district,
+                        guestDistrict: localStorage.getItem("guest_district")
+                    });
+                    // ✅ ДОБАВЛЕНО 2026-01-11: КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ
+                    console.log("🔍 [onRequestAuth] Получен order:", {
+                        hasOrder: !!order,
+                        orderType: typeof order,
+                        personsCount: order?.persons?.length || 0,
+                        persons: order?.persons?.map((p)=>({
+                                id: p.id,
+                                hasDay1: !!p.day1,
+                                hasDay2: !!p.day2
+                            })) || [],
+                        subtotal: order?.subtotal,
+                        total: order?.total,
+                        receivedTotal: total
+                    });
+                    if (!order) {
+                        console.error("❌ [onRequestAuth] order is undefined!");
+                        return;
+                    }
+                    setPendingCheckout({
+                        order,
+                        total
+                    });
+                    console.log("💾 [onRequestAuth] Сохранен pendingCheckout с persons:", order.persons?.length || 0);
+                    setSelectedDate(null); // Закрываем OrderModal
+                    // ✅ ИСПРАВЛЕНО 2026-01-11: Для гостей ВСЕГДА показываем выбор района
+                    // (даже если район сохранен - пусть подтвердят)
+                    // Для авторизованных - только если района нет
+                    if (!isAuthenticated) {
+                        console.log("👤 Гость → открываем выбор района");
+                        setSelectedDistrict(hasDistrict || "");
+                        setShowDistrictModal(true);
+                    } else if (!hasDistrict) {
+                        // Авторизован, но района нет
+                        console.log("⚠️ Авторизован, но район не выбран → открываем DistrictSelectionModal");
+                        setShowDistrictModal(true);
+                    } else {
+                        // Авторизован И район есть → проверяем профиль
+                        console.log("✅ Авторизован И район есть - проверяем профиль");
+                        setSelectedDistrict(hasDistrict);
+                        const isProfileComplete = userProfile.district && userProfile.name && userProfile.street && userProfile.building;
+                        if (!isProfileComplete) {
+                            console.log("⚠️ Профиль неполный, открываем ProfileModal");
+                            setShouldAutoCheckout(true);
+                            setShowProfile(true);
+                        } else {
+                            console.log("✅ Профиль полный, запускаем автооформление");
+                            // Устанавливаем флаг для запуска автооформления
+                            setShouldAutoCheckout(true);
+                        }
+                    }
+                },
+                onRequestPayment: (order, total)=>{
+                    // ✅ НОВОЕ 2026-01-11: Открываем PaymentModal для оплаты существующего заказа
+                    console.log("💳 Запрос оплаты заказа:", order.id, "total:", total);
+                    setSelectedDate(null); // ✅ Закрываем OrderModal
+                    setPaymentOrder({
+                        order,
+                        total
+                    });
+                },
+                userAddress: userProfile?.street,
+                userCity: "Санкт-Петербург",
+                userProfile: userProfile
+            }, `order-${selectedDate?.getTime()}-${existingOrder?.id}-${existingOrder?.paid}-${existingOrder?.total}-${existingOrder?.loyaltyPointsEarned}`, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3017,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$auth$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AuthModal"], {
+                open: showAuthModal,
+                onClose: ()=>{
+                    setShowAuthModal(false);
+                // НЕ сбрасываем pendingCheckout здесь - он нужен для автооформления!
+                },
+                onLogin: handleLogin,
+                redirectAfterLogin: pendingCheckout ? "checkout" : null
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3187,
+                columnNumber: 7
+            }, this),
+            showProfile && currentUser && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$profile$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ProfileModal"], {
+                phone: currentUser,
+                onClose: ()=>setShowProfile(false),
+                onSave: handleProfileSave,
+                userProfile: userProfile,
+                isCheckoutFlow: shouldAutoCheckout
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3198,
+                columnNumber: 9
+            }, this),
+            paymentOrder && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$payment$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["PaymentModal"], {
+                order: paymentOrder.order,
+                total: paymentOrder.total,
+                userProfile: userProfile,
+                onClose: handlePaymentModalClose,
+                onPaymentComplete: handlePaymentComplete,
+                allowCash: paymentOrder.isNewOrder === true
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3208,
+                columnNumber: 9
+            }, this),
+            reviewOrder && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$review$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ReviewModal"], {
+                order: reviewOrder,
+                onClose: ()=>setReviewOrder(null),
+                onSubmit: handleReviewSubmit
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3219,
+                columnNumber: 9
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$warning$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["WarningDialog"], {
+                open: warningDialog.open,
+                onClose: closeWarning,
+                title: warningDialog.title,
+                description: warningDialog.description,
+                variant: warningDialog.variant
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3222,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$warning$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["WarningDialog"], {
+                open: cancelPaymentDialog.open,
+                onClose: handleCancelPaymentDialogClose,
+                title: "Прекратить оформление заказа?",
+                description: "Заказ будет удален без возможности восстановления. Вы уверены?",
+                variant: "warning"
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3231,
+                columnNumber: 7
+            }, this),
+            selectedDish && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$dish$2d$smart$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DishSmartModal"], {
+                open: !!selectedDish,
+                onClose: ()=>setSelectedDish(null),
+                dish: selectedDish.dish,
+                availableDate: selectedDish.availableDate,
+                orders: orders,
+                onGoToOrder: handleGoToOrder,
+                onOpenExistingOrder: handleOpenExistingOrder
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3241,
+                columnNumber: 9
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$order$2d$loading$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["OrderLoadingDialog"], {
+                open: showOrderLoading
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3253,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$payment$2d$loading$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["PaymentLoading"], {
+                open: showPaymentLoading
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3254,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$cash$2d$payment$2d$animation$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CashPaymentAnimation"], {
+                open: showCashPaymentAnimation
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3255,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$cancel$2d$order$2d$loading$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CancelOrderLoading"], {
+                open: showCancelLoading
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3256,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$success$2d$order$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SuccessOrderDialog"], {
+                open: successDialog.open,
+                onClose: ()=>setSuccessDialog({
+                        open: false
+                    }),
+                loyaltyPointsEarned: successDialog.loyaltyPointsEarned,
+                loyaltyPointsStatus: successDialog.loyaltyPointsStatus,
+                loyaltyPointsMessage: successDialog.loyaltyPointsMessage
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3257,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$district$2d$selection$2d$modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DistrictSelectionModal"], {
+                open: showDistrictModal,
+                onDistrictSelected: handleDistrictSelected,
+                userName: userProfile?.name,
+                isGuest: !isAuthenticated,
+                onLoginClick: ()=>{
+                    console.log("🔐 Пользователь кликнул 'Войти' в модалке выбора района");
+                    setShowDistrictModal(false);
+                    setShowAuthModal(true);
+                },
+                onCancel: ()=>{
+                    console.log("❌ Пользователь отменил оформление заказа");
+                    setShowDistrictModal(false);
+                    setPendingCheckout(null);
+                    setShouldAutoCheckout(false);
+                }
+            }, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3266,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$debug$2f$DebugFloatingButton$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DebugFloatingButton"], {}, void 0, false, {
+                fileName: "[project]/app/page.tsx",
+                lineNumber: 3285,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/page.tsx",
+        lineNumber: 2808,
+        columnNumber: 5
+    }, this);
+}
+_s1(HomeWithDebug, "lL/kMaIhiV/0NsBjdnCx4wBw01M=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$debug$2f$DebugContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useDebug"]
+    ];
+});
+_c1 = HomeWithDebug;
+var _c, _c1;
+__turbopack_context__.k.register(_c, "Home");
+__turbopack_context__.k.register(_c1, "HomeWithDebug");
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
+}
+}),
+]);
+
+//# sourceMappingURL=app_page_tsx_dda9881a._.js.map

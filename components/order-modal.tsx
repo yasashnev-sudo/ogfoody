@@ -28,7 +28,9 @@ import {
   Moon,
   Wand2,
   ArrowDown,
-  ArrowRight
+  ArrowRight,
+  Receipt,
+  Coins
 } from "lucide-react"
 import { MealSelector } from "@/components/meal-selector"
 import { ExtrasSelector } from "@/components/extras-selector"
@@ -71,15 +73,18 @@ interface OrderModalProps {
   existingOrder?: Order
   onClose: () => void
   onSave: (order: Order) => void
-  onCancel?: (startDate: Date) => void
+  onCancel?: (order: Order) => void
   allOrders: Order[]
   onPaymentSuccess?: (order: Order) => void
   userLoyaltyPoints?: number
   isAuthenticated?: boolean
-  onRequestAuth?: () => void
+  onRequestAuth?: (order: Order, total: number) => void
+  onRequestPayment?: (order: Order, total: number) => void
   userAddress?: string
   userCity?: string
-  open: boolean // Added prop for Dialog
+  open: boolean
+  isDataLoading?: boolean
+  userProfile?: any
 }
 
 const formatDateKey = (date: Date): string => {
@@ -159,10 +164,24 @@ export function OrderModal({
   userLoyaltyPoints = 0,
   isAuthenticated = false,
   onRequestAuth,
+  onRequestPayment,
   userAddress,
   userCity,
-  open, // Added prop for Dialog
+  open,
+  isDataLoading = false,
+  userProfile,
 }: OrderModalProps) {
+  // ✅ ДОБАВЛЕНО 2026-01-11: Логирование props для отладки
+  useEffect(() => {
+    if (open) {
+      console.log('🪟 OrderModal открыт:', {
+        date: date.toISOString().split('T')[0],
+        existingOrderId: existingOrder?.id,
+        existingOrderDate: existingOrder?.startDate,
+      })
+    }
+  }, [open, date, existingOrder])
+  
   const cityLower = (userCity || "").toLowerCase()
   const isInDeliveryZone = cityLower.includes("санкт-петербург") || cityLower.includes("спб") || !userCity
 
@@ -193,12 +212,9 @@ export function OrderModal({
     }
   }, [deliveryTimes.length, deliveryTimes.join(","), existingOrder?.deliveryTime, deliveryTime])
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card")
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [promoCode, setPromoCode] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null)
-  const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false)
-  const [loyaltyPointsToUse, setLoyaltyPointsToUse] = useState(0)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [fillTimestamp, setFillTimestamp] = useState(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
@@ -230,6 +246,29 @@ export function OrderModal({
       variant,
     })
   }
+
+  // Функция для показа предупреждения при попытке выбрать блюдо в заблокированном заказе
+  const showBlockedWarning = () => {
+    if (isPaid) {
+      showWarning(
+        "Заказ оплачен",
+        "Редактирование оплаченного заказа недоступно. Вы можете просматривать блюда, но не можете их изменять.",
+        "info"
+      )
+    } else if (isToday) {
+      showWarning(
+        "Доставка сегодня",
+        "Редактирование заказа в день доставки недоступно. Вы можете просматривать блюда, но не можете их изменять.",
+        "warning"
+      )
+    } else if (isPastDate) {
+      showWarning(
+        "Прошедшая дата",
+        "Редактирование заказа на прошедшую дату недоступно. Вы можете просматривать блюда, но не можете их изменять.",
+        "warning"
+      )
+    }
+  }
   
   const closeWarning = () => {
     setWarningDialog((prev) => ({ ...prev, open: false }))
@@ -249,17 +288,8 @@ export function OrderModal({
       setPersons(newPersons)
       setDeliveryTime(existingOrder?.deliveryTime || deliveryTimes[0] || "")
       setExtras(existingOrder?.extras || [])
-      // Если это существующий заказ с наличными и не оплачен, предустанавливаем карту для оплаты
-      // Иначе используем текущий способ оплаты заказа или карту по умолчанию
-      if (existingOrder?.paymentMethod === "cash" && !existingOrder?.paid) {
-        setPaymentMethod("card")
-      } else {
-        setPaymentMethod(existingOrder?.paymentMethod || "card")
-      }
       setPromoCode("")
       setAppliedPromo(null)
-      setUseLoyaltyPoints(false)
-      setLoyaltyPointsToUse(0)
       setConfirmFillPersonId(null)
       setShowCancelConfirm(false)
       setIsProcessingPayment(false)
@@ -353,22 +383,57 @@ export function OrderModal({
 
   const totalBeforeDiscount = calculateTotal()
   const maxPointsDiscount = Math.min(userLoyaltyPoints, Math.floor(totalBeforeDiscount * 0.5))
-  const pointsDiscount = useLoyaltyPoints ? Math.min(loyaltyPointsToUse, maxPointsDiscount) : 0
+  const pointsDiscount = 0 // ✅ Баллы теперь только в PaymentModal
   const finalTotal = Math.max(0, totalBeforeDiscount - pointsDiscount - (appliedPromo?.discount || 0))
-
-  const applyAllPoints = () => {
-    setLoyaltyPointsToUse(maxPointsDiscount)
-    setUseLoyaltyPoints(true)
-  }
 
   const handlePayAndOrder = async () => {
     if (!hasContent) {
       return
     }
 
+    // Проверяем, можно ли редактировать заказ
+    if (!canEdit && existingOrder) {
+      showBlockedWarning()
+      return
+    }
+
     if (!isAuthenticated) {
       if (onRequestAuth) {
-        onRequestAuth()
+        // ✅ ИСПРАВЛЕНО 2026-01-11: НЕ используем existingOrder для нового заказа!
+        // existingOrder может быть "старым" из-за асинхронного обновления props
+        const order: Order = {
+          startDate: formatDateKey(date),
+          persons,
+          delivered: false,
+          deliveryTime,
+          extras,
+          subtotal: totalBeforeDiscount,
+          total: finalTotal,
+          paid: false,
+          cancelled: false,
+        }
+        console.log('🔍 [OrderModal] Вызываем onRequestAuth с order:', {
+          subtotal: order.subtotal,
+          total: order.total,
+          personsCount: order.persons?.length,
+          // ✅ ДОБАВЛЕНО 2026-01-11: Детальная информация о persons
+          persons: order.persons?.map(p => ({
+            id: p.id,
+            hasDay1: !!p.day1,
+            hasDay2: !!p.day2,
+            day1Meals: p.day1 ? {
+              hasBreakfast: !!p.day1.breakfast?.dish,
+              hasLunch: !!(p.day1.lunch?.salad || p.day1.lunch?.soup || p.day1.lunch?.main),
+              hasDinner: !!(p.day1.dinner?.salad || p.day1.dinner?.soup || p.day1.dinner?.main),
+            } : null,
+            day2Meals: p.day2 ? {
+              hasBreakfast: !!p.day2.breakfast?.dish,
+              hasLunch: !!(p.day2.lunch?.salad || p.day2.lunch?.soup || p.day2.lunch?.main),
+              hasDinner: !!(p.day2.dinner?.salad || p.day2.dinner?.soup || p.day2.dinner?.main),
+            } : null
+          }))
+        })
+        onRequestAuth(order, finalTotal)
       }
       return
     }
@@ -382,27 +447,48 @@ export function OrderModal({
       return
     }
 
-    setIsProcessingPayment(true)
-
-    if (paymentMethod !== "cash") {
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-    } else {
-      await new Promise((resolve) => setTimeout(resolve, 500))
+    // ✅ Для нового заказа → вызываем onRequestAuth или onRequestPayment
+    if (!existingOrder) {
+      const order: Order = {
+        startDate: formatDateKey(date), // ✅ ИСПРАВЛЕНО 2026-01-11: используем date напрямую
+        persons,
+        delivered: false,
+        deliveryTime,
+        extras,
+        subtotal: totalBeforeDiscount,
+        total: finalTotal,
+        paid: false,
+        cancelled: false,
+      }
+      
+      // onRequestAuth внутри app/page.tsx сам разберется:
+      // - проверит профиль
+      // - откроет ProfileModal если нужно
+      // - или откроет PaymentModal если профиль полный
+      if (onRequestAuth) {
+        onRequestAuth(order, finalTotal)
+      } else if (onRequestPayment) {
+        // Если onRequestAuth нет, пытаемся вызвать onRequestPayment
+        onRequestPayment(order, finalTotal)
+      }
+      return
     }
+
+    // ✅ Для существующего заказа - сохраняем изменения
+    setIsProcessingPayment(true)
 
     const order: Order = {
       ...(existingOrder?.id ? { id: existingOrder.id } : {}),
       ...(existingOrder?.orderNumber ? { orderNumber: existingOrder.orderNumber } : {}),
-      startDate: dateKey,
+      startDate: formatDateKey(date), // ✅ ИСПРАВЛЕНО 2026-01-11: используем date напрямую
       persons,
       delivered: existingOrder?.delivered ?? false,
       deliveryTime,
       extras,
-      paid: paymentMethod !== "cash" ? true : (existingOrder?.paid ?? false),
-      paidAt: paymentMethod !== "cash" ? new Date().toISOString() : existingOrder?.paidAt,
+      subtotal: totalBeforeDiscount,
+      total: finalTotal,
+      paid: existingOrder?.paid ?? false,
       cancelled: existingOrder?.cancelled ?? false,
-      paymentMethod,
       promoCode: appliedPromo?.code,
       promoDiscount: appliedPromo?.discount,
       loyaltyPointsUsed: pointsDiscount > 0 ? pointsDiscount : undefined,
@@ -453,9 +539,7 @@ export function OrderModal({
 
   const handleConfirmCancel = () => {
     if (existingOrder && onCancel) {
-      const orderDate = getDateObject(existingOrder.startDate)
-
-      onCancel(orderDate)
+      onCancel(existingOrder)
       setShowCancelConfirm(false)
       onClose()
       // Warning dialog will be shown by handleCancelOrder in parent component
@@ -472,34 +556,45 @@ export function OrderModal({
 
   // Можно отменить заказ, если:
   // 1. Заказ существует
-  // 2. Заказ еще не доставлен
-  // 3. Дата доставки >= сегодня (включая сегодня)
+  // 2. Дата доставки >= сегодня (включая сегодня)
   const canCancel = !!(
     existingOrder &&
-    !existingOrder.delivered &&
     orderStartDate &&
     orderStartDate.getTime() >= today.getTime()
   )
 
-  // Режим только просмотра для прошедших дат
+  // Режим только просмотра для прошедших дат и дня доставки
   const selectedDateNormalized = new Date(date)
   selectedDateNormalized.setHours(0, 0, 0, 0)
-  const isViewOnly = selectedDateNormalized < today
+  
+  // Для существующих заказов проверяем дату начала заказа (startDate)
+  // Для новых заказов проверяем выбранную дату (date)
+  const orderDate = existingOrder?.startDate 
+    ? getDateObject(existingOrder.startDate)
+    : selectedDateNormalized
+  orderDate.setHours(0, 0, 0, 0)
+  
+  // Блокируем редактирование для заказов на прошедшие даты и на сегодняшний день
+  const isPastDate = orderDate < today
+  const isToday = orderDate.getTime() === today.getTime()
+  const isViewOnly = isPastDate || isToday
 
-  const isPaidWithCard = existingOrder?.paid && existingOrder?.paymentMethod !== "cash"
-  const canEdit = !isViewOnly && !isPaidWithCard
+  // Блокируем редактирование для ВСЕХ оплаченных заказов, независимо от способа оплаты
+  const isPaid = existingOrder?.paid === true || existingOrder?.paymentStatus === "paid"
+  const isPaidWithCard = isPaid && existingOrder?.paymentMethod !== "cash"
+  const canEdit = !isViewOnly && !isPaid
   const isExistingOrder = !!existingOrder
-  const originalPaymentMethod = existingOrder?.paymentMethod || "card"
 
   const fillRandomMeals = (personId: number) => {
     const getRandom = <T,>(arr: T[]): T | null => {
-      const available = (arr as any[]).filter((x) => x.available !== false)
-      return available.length > 0 ? available[Math.floor(Math.random() * available.length)] : null
+      // Блюда уже отфильтрованы по неделе в API, просто берем случайное
+      return arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null
     }
 
     const createMeal = (d: Meal | null): Meal | null => {
       if (!d) return null
-      const garnishes = menuData.garnish?.filter((g) => g.available !== false) || []
+      // Гарниры уже отфильтрованы по неделе в API
+      const garnishes = menuData.garnish || []
       const selectedGarnish = garnishes.length > 0 ? garnishes[Math.floor(Math.random() * garnishes.length)] : null
 
       const garnish: Garnish | null =
@@ -767,10 +862,10 @@ export function OrderModal({
                   {existingOrder && !canEdit && (
                     <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground flex items-center gap-1">
                       <Eye className="w-3 h-3" />
-                      просмотр
+                      {isToday ? "сегодня доставка" : isPastDate ? "просмотр" : "недоступно"}
                     </div>
                   )}
-                  {existingOrder && isPaidWithCard && (
+                  {existingOrder && isPaid && (
                     <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-600 flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
                       оплачен
@@ -801,7 +896,7 @@ export function OrderModal({
                   </div>
                 )}
 
-                {isPaidWithCard && (
+                {isPaid && (
                   <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                     <p className="text-sm text-green-700 dark:text-green-400 font-medium flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" />
@@ -810,6 +905,92 @@ export function OrderModal({
                     <p className="text-xs text-green-600 dark:text-green-400/80 mt-1">
                       Редактирование оплаченного заказа недоступно
                     </p>
+                  </div>
+                )}
+                
+                {!isPaid && isToday && existingOrder && (
+                  <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                    <p className="text-sm text-orange-700 dark:text-orange-400 font-medium flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Доставка сегодня
+                    </p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400/80 mt-1">
+                      Редактирование заказа в день доставки недоступно
+                    </p>
+                  </div>
+                )}
+                
+                {!isPaid && isPastDate && existingOrder && (
+                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg">
+                    <p className="text-sm text-gray-700 dark:text-gray-400 font-medium flex items-center gap-2">
+                      <Eye className="w-4 h-4" />
+                      Прошедшая дата
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400/80 mt-1">
+                      Редактирование заказа на прошедшую дату недоступно
+                    </p>
+                  </div>
+                )}
+
+                {/* Информация о заказе */}
+                {existingOrder && (existingOrder.paid || existingOrder.total !== undefined) && (
+                  <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
+                    <h3 className="font-bold text-purple-900 dark:text-purple-300 mb-3 flex items-center gap-2">
+                      <Receipt className="w-5 h-5" />
+                      Информация о заказе
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {existingOrder.subtotal !== undefined && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-purple-700 dark:text-purple-400">Сумма заказа:</span>
+                          <span className="font-bold text-purple-900 dark:text-purple-300">
+                            {existingOrder.subtotal.toLocaleString()} ₽
+                          </span>
+                        </div>
+                      )}
+                      
+                      {existingOrder.deliveryFee !== undefined && existingOrder.deliveryFee !== null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-orange-700 dark:text-orange-400 flex items-center gap-1">
+                            <Truck className="w-4 h-4" />
+                            Доставка:
+                          </span>
+                          <span className="font-bold text-orange-700 dark:text-orange-400">
+                            {existingOrder.deliveryFee > 0 ? `+${existingOrder.deliveryFee.toLocaleString()} ₽` : 'Бесплатно'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {existingOrder.loyaltyPointsUsed !== undefined && existingOrder.loyaltyPointsUsed > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-purple-700 dark:text-purple-400">Списано баллов:</span>
+                          <span className="font-bold text-purple-700 dark:text-purple-400">
+                            -{existingOrder.loyaltyPointsUsed} ₽
+                          </span>
+                        </div>
+                      )}
+                      
+                      {existingOrder.total !== undefined && (
+                        <div className="flex items-center justify-between pt-2 border-t border-purple-200 dark:border-purple-800">
+                          <span className="font-bold text-purple-900 dark:text-purple-300">ИТОГО:</span>
+                          <span className="font-black text-xl text-purple-900 dark:text-purple-300">
+                            {existingOrder.total.toLocaleString()} ₽
+                          </span>
+                        </div>
+                      )}
+                      
+                      {existingOrder.loyaltyPointsEarned !== undefined && existingOrder.loyaltyPointsEarned > 0 && (
+                        <div className="flex items-center justify-between pt-2 bg-purple-100 dark:bg-purple-900/30 -mx-4 -mb-4 px-4 py-2 rounded-b-lg mt-2">
+                          <span className="text-purple-700 dark:text-purple-400 flex items-center gap-1">
+                            <Coins className="w-4 h-4" />
+                            Начислено баллов:
+                          </span>
+                          <span className="font-black text-purple-900 dark:text-purple-300">
+                            +{existingOrder.loyaltyPointsEarned}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -868,6 +1049,8 @@ export function OrderModal({
                         <MealSelector
                           key={`day1-breakfast-${person.id}-${fillTimestamp}`}
                           headerPrefix={day1Prefix}
+                          disabled={!canEdit}
+                          onBlockedAction={showBlockedWarning}
                           personNumber={index + 1}
                           dayNumber={1}
                             mealsData={{ breakfast: menuData.breakfast }}
@@ -889,6 +1072,8 @@ export function OrderModal({
                           <MealSelector
                             key={`day1-lunch-${person.id}-${fillTimestamp}`}
                             personNumber={index + 1}
+                            disabled={!canEdit}
+                            onBlockedAction={showBlockedWarning}
                             dayNumber={1}
                             mealsData={{
                               salad: menuData.lunch_salad,
@@ -923,6 +1108,8 @@ export function OrderModal({
                           <MealSelector
                             key={`day1-dinner-${person.id}-${fillTimestamp}`}
                             personNumber={index + 1}
+                            disabled={!canEdit}
+                            onBlockedAction={showBlockedWarning}
                             dayNumber={1}
                             mealsData={{
                               salad: menuData.dinner_salad,
@@ -968,6 +1155,8 @@ export function OrderModal({
                         <MealSelector
                           key={`day2-breakfast-${person.id}-${fillTimestamp}`}
                           headerPrefix={day2Prefix}
+                          disabled={!canEdit}
+                          onBlockedAction={showBlockedWarning}
                           personNumber={index + 1}
                           dayNumber={2}
                             mealsData={{ breakfast: menuData.breakfast }}
@@ -989,6 +1178,8 @@ export function OrderModal({
                           <MealSelector
                             key={`day2-lunch-${person.id}-${fillTimestamp}`}
                             personNumber={index + 1}
+                            disabled={!canEdit}
+                            onBlockedAction={showBlockedWarning}
                             dayNumber={2}
                             mealsData={{
                               salad: menuData.lunch_salad,
@@ -1023,6 +1214,8 @@ export function OrderModal({
                           <MealSelector
                             key={`day2-dinner-${person.id}-${fillTimestamp}`}
                             personNumber={index + 1}
+                            disabled={!canEdit}
+                            onBlockedAction={showBlockedWarning}
                             dayNumber={2}
                             mealsData={{
                               salad: menuData.dinner_salad,
@@ -1158,163 +1351,6 @@ export function OrderModal({
                           </div>
                         )}
 
-                        {userLoyaltyPoints > 0 && (
-                          <div className="py-3 px-4 bg-white border-2 border-black rounded-lg shadow-brutal mb-2">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
-                                  <span className="text-[#9D00FF] text-xs font-black">₽</span>
-                                </div>
-                                <div>
-                                  <p className="font-black text-black">Баллы лояльности</p>
-                                  <p className="text-sm text-black/70 font-medium">
-                                    Доступно {userLoyaltyPoints} баллов (макс. {maxPointsDiscount} ₽)
-                                  </p>
-                                </div>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={useLoyaltyPoints}
-                                  onChange={(e) => {
-                                    setUseLoyaltyPoints(e.target.checked)
-                                    if (!e.target.checked) {
-                                      setLoyaltyPointsToUse(0)
-                                    }
-                                  }}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-white border-2 border-black rounded-full peer peer-checked:bg-[#9D00FF] transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-black after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-white shadow-brutal"></div>
-                              </label>
-                            </div>
-
-                            {useLoyaltyPoints && (
-                              <div className="flex gap-2 mt-3">
-                                <div className="flex-1 relative">
-                                  <input
-                                    type="number"
-                                    value={loyaltyPointsToUse}
-                                    onChange={(e) => {
-                                      const value = Number.parseInt(e.target.value) || 0
-                                      const clampedValue = Math.min(Math.max(0, value), maxPointsDiscount)
-                                      setLoyaltyPointsToUse(clampedValue)
-                                    }}
-                                    placeholder="Сколько списать"
-                                    min={0}
-                                    max={maxPointsDiscount}
-                                    className="w-full px-3 py-2 border-2 border-black rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black font-medium"
-                                  />
-                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-black/70 font-medium">
-                                    ₽
-                                  </span>
-                                </div>
-                                <Button
-                                  onClick={applyAllPoints}
-                                  size="sm"
-                                  className="bg-white border-2 border-black hover:bg-[#FFEA00] whitespace-nowrap shadow-brutal font-black text-black"
-                                >
-                                  Списать все
-                                </Button>
-                              </div>
-                            )}
-
-                            {pointsDiscount > 0 && (
-                              <p className="text-sm text-[#9D00FF] mt-2 font-medium">
-                                Будет списано: {pointsDiscount} баллов (-{pointsDiscount} ₽)
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Способ оплаты */}
-                        <div className="py-4">
-                          <p className="font-black mb-3 text-black">Способ оплаты</p>
-                          <div className="space-y-2">
-                            <button
-                              onClick={() => setPaymentMethod("card")}
-                              className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 border-black transition-colors shadow-brutal ${
-                                paymentMethod === "card" ? "bg-[#9D00FF] text-white" : "bg-white text-black hover:bg-[#FFEA00]"
-                              }`}
-                            >
-                              <div className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center shadow-brutal ${
-                                paymentMethod === "card" ? "bg-white" : "bg-white"
-                              }`}>
-                                <CreditCard
-                                  className={`w-4 h-4 ${paymentMethod === "card" ? "text-[#9D00FF]" : "text-black"} stroke-[2.5px]`}
-                                />
-                              </div>
-                              <span className="flex-1 text-left font-black">Банковская карта</span>
-                              <div className="flex items-center gap-2">
-                                {isExistingOrder && originalPaymentMethod === "card" && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-black bg-black text-white border border-black">
-                                    ТЕКУЩИЙ
-                                  </span>
-                                )}
-                                {paymentMethod === "card" && (
-                                  <div className="w-6 h-6 rounded-lg bg-white border-2 border-black flex items-center justify-center shadow-brutal">
-                                    <CheckCircle2 className="w-4 h-4 text-[#9D00FF] stroke-[2.5px]" />
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-
-                            <button
-                              onClick={() => setPaymentMethod("sbp")}
-                              className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 border-black transition-colors shadow-brutal ${
-                                paymentMethod === "sbp" ? "bg-[#9D00FF] text-white" : "bg-white text-black hover:bg-[#FFEA00]"
-                              }`}
-                            >
-                              <div className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center shadow-brutal ${
-                                paymentMethod === "sbp" ? "bg-white" : "bg-white"
-                              }`}>
-                                <Smartphone
-                                  className={`w-4 h-4 ${paymentMethod === "sbp" ? "text-[#9D00FF]" : "text-black"} stroke-[2.5px]`}
-                                />
-                              </div>
-                              <span className="flex-1 text-left font-black">СБП (Быстрее)</span>
-                              <div className="flex items-center gap-2">
-                                {isExistingOrder && originalPaymentMethod === "sbp" && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-black bg-black text-white border border-black">
-                                    ТЕКУЩИЙ
-                                  </span>
-                                )}
-                                {paymentMethod === "sbp" && (
-                                  <div className="w-6 h-6 rounded-lg bg-white border-2 border-black flex items-center justify-center shadow-brutal">
-                                    <CheckCircle2 className="w-4 h-4 text-[#9D00FF] stroke-[2.5px]" />
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-
-                            <button
-                              onClick={() => setPaymentMethod("cash")}
-                              className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 border-black transition-colors shadow-brutal ${
-                                paymentMethod === "cash" ? "bg-[#9D00FF] text-white" : "bg-white text-black hover:bg-[#FFEA00]"
-                              }`}
-                            >
-                              <div className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center shadow-brutal ${
-                                paymentMethod === "cash" ? "bg-white" : "bg-white"
-                              }`}>
-                                <Banknote
-                                  className={`w-4 h-4 ${paymentMethod === "cash" ? "text-[#9D00FF]" : "text-black"} stroke-[2.5px]`}
-                                />
-                              </div>
-                              <span className="flex-1 text-left font-black">Наличными курьеру</span>
-                              <div className="flex items-center gap-2">
-                                {isExistingOrder && originalPaymentMethod === "cash" && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-black bg-black text-white border border-black">
-                                    ТЕКУЩИЙ
-                                  </span>
-                                )}
-                                {paymentMethod === "cash" && (
-                                  <div className="w-6 h-6 rounded-lg bg-white border-2 border-black flex items-center justify-center shadow-brutal">
-                                    <CheckCircle2 className="w-4 h-4 text-[#9D00FF] stroke-[2.5px]" />
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          </div>
-                        </div>
                       </>
                     ) : (
                       <div className="bg-primary/5 rounded-xl p-4 border border-primary/10 mb-6">
@@ -1328,7 +1364,21 @@ export function OrderModal({
                     <div ref={footerRef} className="pt-2 pb-12">
                       {!isAuthenticated ? (
                         <Button
-                          onClick={() => onRequestAuth?.()}
+                          onClick={() => {
+                            // ✅ ИСПРАВЛЕНО 2026-01-11: Передаем order и total в onRequestAuth
+                            const order: Order = {
+                              startDate: formatDateKey(date), // ✅ ИСПРАВЛЕНО 2026-01-11: используем date напрямую
+                              persons,
+                              delivered: false,
+                              deliveryTime,
+                              extras,
+                              subtotal: totalBeforeDiscount,
+                              total: finalTotal,
+                              paid: false,
+                              cancelled: false,
+                            }
+                            onRequestAuth?.(order, finalTotal)
+                          }}
                           disabled={!hasContent}
                           className="w-full h-16 text-lg bg-[#ff4d6d] hover:bg-[#e8445f] rounded-2xl flex items-center justify-center shadow-lg shadow-[#ff4d6d]/20 active:scale-[0.98] transition-transform relative overflow-hidden group"
                         >
@@ -1342,49 +1392,45 @@ export function OrderModal({
                           Доставка недоступна
                         </Button>
                       ) : (
-                        (() => {
-                          // Определяем текст и стиль кнопки в зависимости от контекста
-                          const isPaymentAction = isExistingOrder && (paymentMethod === "card" || paymentMethod === "sbp")
-                          const isSaveAction = isExistingOrder && paymentMethod === "cash" && paymentMethod === originalPaymentMethod
-                          const isNewOrder = !isExistingOrder
-                          
-                          let buttonText = "Заказать"
-                          let buttonClass = "w-full h-16 text-lg bg-[#ff4d6d] hover:bg-[#e8445f] rounded-2xl shadow-lg shadow-[#ff4d6d]/20 active:scale-[0.98] transition-transform"
-                          let textClass = "font-bold text-white"
-                          
-                          if (isPaymentAction) {
-                            buttonText = `ОПЛАТИТЬ — ${finalTotal} ₽`
-                            buttonClass = "w-full h-16 text-lg bg-[#FFEA00] hover:bg-[#FFF033] border-2 border-black rounded-2xl shadow-brutal active:scale-[0.98] transition-transform"
-                            textClass = "font-black text-black"
-                          } else if (isSaveAction) {
-                            buttonText = "СОХРАНИТЬ"
-                            buttonClass = "w-full h-16 text-lg bg-white hover:bg-gray-50 border-2 border-black rounded-2xl shadow-brutal active:scale-[0.98] transition-transform"
-                            textClass = "font-black text-black"
-                          } else if (isNewOrder) {
-                            buttonText = `Заказать · ${finalTotal} ₽`
-                            buttonClass = "w-full h-16 text-lg bg-[#ff4d6d] hover:bg-[#e8445f] rounded-2xl shadow-lg shadow-[#ff4d6d]/20 active:scale-[0.98] transition-transform"
-                            textClass = "font-bold text-white"
-                          }
-                          
-                          return (
+                        <>
+                          {/* Кнопка для нового заказа */}
+                          {!isExistingOrder && (
                             <Button
                               onClick={handlePayAndOrder}
                               disabled={!hasContent || isProcessingPayment}
-                              className={buttonClass}
+                              className="w-full h-16 text-lg bg-[#ff4d6d] hover:bg-[#e8445f] rounded-2xl shadow-lg shadow-[#ff4d6d]/20 active:scale-[0.98] transition-transform"
                             >
                               {isProcessingPayment ? (
                                 <div className="flex items-center gap-2">
                                   <Loader2 className="w-5 h-5 animate-spin" />
-                                  <span>Оформляем...</span>
+                                  <span className="font-bold text-white">Оформляем...</span>
                                 </div>
                               ) : (
-                                <span className={textClass}>
-                                  {buttonText}
+                                <span className="font-bold text-white">
+                                  Продолжить · {finalTotal} ₽
                                 </span>
                               )}
                             </Button>
-                          )
-                        })()
+                          )}
+
+                          {/* Кнопка "Оплатить заказ" для существующего неоплаченного заказа */}
+                          {isExistingOrder && !isPaid && existingOrder && (
+                            <Button
+                              onClick={() => onRequestPayment?.(existingOrder, finalTotal)}
+                              disabled={isProcessingPayment || isDataLoading}
+                              className="w-full h-16 text-lg bg-[#FFEA00] hover:bg-[#FFF033] border-2 border-black rounded-2xl shadow-brutal active:scale-[0.98] transition-transform"
+                            >
+                              {isDataLoading ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                  <span className="font-black text-black">Загрузка данных...</span>
+                                </div>
+                              ) : (
+                                <span className="font-black text-black">Оплатить заказ · {finalTotal} ₽</span>
+                              )}
+                            </Button>
+                          )}
+                        </>
                       )}
 
                       {canCancel && existingOrder && (
@@ -1466,8 +1512,10 @@ export function OrderModal({
           <AlertDialogHeader>
             <AlertDialogTitle>Отменить заказ?</AlertDialogTitle>
             <AlertDialogDescription>
-              {isPaidWithCard
-                ? "Вы уверены, что хотите отменить заказ? Деньги вернутся на карту в течение 3 рабочих дней."
+              {isPaid
+                ? isPaidWithCard
+                  ? "Вы уверены, что хотите отменить заказ? Деньги вернутся на карту в течение 3 рабочих дней."
+                  : "Вы уверены, что хотите отменить оплаченный заказ?"
                 : "Вы уверены, что хотите отменить заказ?"}
             </AlertDialogDescription>
           </AlertDialogHeader>

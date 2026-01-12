@@ -62,3 +62,8 @@ curl -X POST http://localhost:3000/api/db/test-real-order
 4. Проверьте логи сервера в терминале
 5. Сообщите, что видите в логах
 
+
+
+
+
+

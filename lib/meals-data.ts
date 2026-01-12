@@ -584,19 +584,26 @@ export function isMealAvailable(mealName: string, weekType?: "current" | "next")
   const allMeals = Object.values(MEALS).flat()
   const meal = allMeals.find((m) => m.name === mealName)
 
-  if (!meal || !meal.available) return false
+  if (!meal) return false
 
+  // Доступность определяется только через weekType
   if (weekType) {
     return meal.weekType === "both" || meal.weekType === weekType
   }
 
-  return true
+  // Если weekType не указан, блюдо доступно если есть weekType
+  return !!meal.weekType
 }
 
-export function isExtraAvailable(extraName: string): boolean {
+export function isExtraAvailable(extraName: string, weekType?: "current" | "next"): boolean {
   const allExtras = Object.values(EXTRAS).flat()
   const extra = allExtras.find((e) => e.name === extraName)
-  return extra?.available ?? false
+  if (!extra) return false
+  
+  // Для статических данных (fallback) считаем доступными, если есть
+  // В реальности доступность определяется через isCurrentWeek/isNextWeek из NocoDB
+  // Но для статических данных просто проверяем наличие
+  return true
 }
 
 export function getGarnishes(): Meal[] {

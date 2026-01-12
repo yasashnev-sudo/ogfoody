@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Очистка кэша</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 32px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .success {
+            background: #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .emoji {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="emoji">🔄</div>
+        <h1>Очистка кэша</h1>
+        <p>Нажмите кнопку, чтобы очистить устаревшие данные</p>
+        
+        <button onclick="clearAndReload()">✨ Очистить и перезагрузить</button>
+        
+        <div id="success" class="success">
+            <strong>✅ Готово!</strong><br>
+            Перенаправляем на главную страницу...
+        </div>
+    </div>
+
+    <script>
+        function clearAndReload() {
+            let clearedCount = 0;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                // ⚠️ НЕ удаляем orders_* - они содержат детали заказов (блюда), которые сложно загрузить из БД
+                // Удаляем только профили, которые нужно пересинхронизировать
+                if (key && (key.startsWith('profile_') || key === 'currentUser')) {
+                    localStorage.removeItem(key);
+                    clearedCount++;
+                }
+            }
+            
+            console.log(`✅ Очищено ${clearedCount} ключей из localStorage`);
+            document.getElementById('success').innerHTML = `
+                <strong>✅ Готово!</strong><br>
+                Очищено ${clearedCount} ключей (профили)<br>
+                Заказы сохранены<br>
+                Перенаправляем на главную страницу...
+            `;
+            document.getElementById('success').style.display = 'block';
+            
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

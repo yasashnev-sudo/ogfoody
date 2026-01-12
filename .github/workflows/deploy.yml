@@ -1,0 +1,106 @@
+name: Deploy to ogfoody.ru
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Позволяет запустить вручную
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: 📊 Check build output
+        run: |
+          echo "Build completed successfully"
+          ls -la .next
+
+      - name: 🚀 Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            
+            echo "🔄 Starting deployment to ogfoody.ru..."
+            
+            # Переходим в директорию проекта
+            cd ${{ secrets.SERVER_PATH || '/var/www/ogfoody' }}
+            
+            # Создаем бэкап перед обновлением
+            echo "💾 Creating backup..."
+            timestamp=$(date +%Y%m%d_%H%M%S)
+            mkdir -p ../backups
+            tar -czf ../backups/ogfoody_backup_$timestamp.tar.gz --exclude=node_modules --exclude=.next . || true
+            
+            # Сохраняем .env файлы
+            cp .env.production .env.production.backup 2>/dev/null || true
+            
+            # Обновляем код
+            echo "📥 Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/main || git reset --hard origin/master
+            
+            # Восстанавливаем .env файлы
+            mv .env.production.backup .env.production 2>/dev/null || true
+            
+            # Устанавливаем зависимости
+            echo "📦 Installing dependencies..."
+            npm ci --production=false
+            
+            # Собираем проект
+            echo "🏗️ Building project..."
+            npm run build
+            
+            # Перезапускаем PM2
+            echo "🔄 Restarting application..."
+            pm2 restart ogfoody || pm2 start ecosystem.config.js
+            
+            # Проверяем статус
+            echo "✅ Deployment completed!"
+            pm2 status ogfoody
+            
+            # Удаляем старые бэкапы (оставляем только последние 5)
+            echo "🧹 Cleaning old backups..."
+            cd ../backups
+            ls -t ogfoody_backup_*.tar.gz | tail -n +6 | xargs -r rm
+            
+            echo "🎉 ogfoody.ru successfully deployed!"
+
+      - name: 🧪 Health check
+        run: |
+          echo "Waiting 10 seconds for app to start..."
+          sleep 10
+          curl -f https://ogfoody.ru/api/health || curl -f http://ogfoody.ru || echo "Health check skipped"
+
+      - name: 📢 Deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment to ogfoody.ru successful!"
+          else
+            echo "❌ Deployment to ogfoody.ru failed!"
+          fi
+

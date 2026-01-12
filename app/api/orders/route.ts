@@ -2,10 +2,17 @@ import { NextResponse } from "next/server"
 import {
   fetchOrdersByUser,
   createOrder,
+  updateOrder,
   createOrderPerson,
   createOrderMeal,
   createOrderExtra,
   generateOrderNumber,
+  calculateEarnedPoints,
+  calculateDeliveryFee,
+  awardLoyaltyPoints,
+  createPendingLoyaltyPoints,
+  fetchUserById,
+  calculateUserBalance, // ✅ ДОБАВЛЕНО
 } from "@/lib/nocodb"
 import type { Order, Meal, PortionSize } from "@/lib/types"
 
@@ -13,14 +20,49 @@ import type { Order, Meal, PortionSize } from "@/lib/types"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get("userId")
-
-  if (!userId) {
-    return NextResponse.json({ error: "userId is required" }, { status: 400 })
-  }
+  const orderNumber = searchParams.get("orderNumber")
 
   try {
-    const orders = await fetchOrdersByUser(Number(userId))
-    return NextResponse.json({ orders })
+    // Если указан номер заказа, ищем по номеру
+    if (orderNumber) {
+      const { fetchOrderByNumber } = await import("@/lib/nocodb")
+      const order = await fetchOrderByNumber(orderNumber)
+      if (order) {
+        return NextResponse.json({ orders: [order] })
+      } else {
+        return NextResponse.json({ orders: [], message: `Order with number ${orderNumber} not found` })
+      }
+    }
+
+    // Если указан userId, возвращаем заказы пользователя С ПОЛНЫМИ ДЕТАЛЯМИ
+    if (userId) {
+      // Проверяем, существует ли пользователь (БЕЗ кэша для актуального баланса!)
+      const user = await fetchUserById(Number(userId), true)
+      if (!user) {
+        console.warn(`⚠️ GET /api/orders - пользователь с User ID=${userId} не найден, возвращаем пустой массив`)
+        return NextResponse.json({ orders: [] })
+      }
+      
+      // ✅ ВСЕГДА загружаем детали заказов (persons, meals, extras) из БД
+      console.log(`📦 Загрузка заказов С ДЕТАЛЯМИ для userId=${userId}...`)
+      const { fetchOrdersWithDetails } = await import("@/lib/nocodb")
+      const orders = await fetchOrdersWithDetails(Number(userId))
+      
+      // Возвращаем заказы вместе с профилем пользователя (включая актуальный баланс)
+      return NextResponse.json({ 
+        orders,
+        userProfile: {
+          id: user.Id,
+          phone: user.phone,
+          name: user.name,
+          loyaltyPoints: user.loyalty_points, // Уже вычислен из транзакций в fetchUserById
+          totalSpent: user.total_spent,
+        }
+      })
+    }
+
+    // Если ничего не указано, возвращаем ошибку
+    return NextResponse.json({ error: "userId or orderNumber is required" }, { status: 400 })
   } catch (error) {
     console.error("Failed to fetch orders:", error)
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
@@ -53,7 +95,54 @@ export async function POST(request: Request) {
       startDate: order.startDate,
       deliveryTime: order.deliveryTime,
       userId,
+      userIdType: typeof userId,
+      hasUserId: !!userId,
+      orderTotal: order.total,
+      orderSubtotal: order.subtotal,
+      paid: order.paid,
+      paymentStatus: order.paymentStatus,
+      loyaltyPointsUsed: order.loyaltyPointsUsed,
+      loyaltyPointsUsedType: typeof order.loyaltyPointsUsed,
+      promoCode: order.promoCode,
+      promoDiscount: order.promoDiscount,
     })
+    
+    // ВАЖНО: Проверяем, что userId передан и является числом
+    if (userId && (typeof userId !== 'number' || isNaN(userId))) {
+      console.error(`❌ ОШИБКА: userId должен быть числом, получено: ${userId} (тип: ${typeof userId})`)
+    }
+
+    // ✅ ВАЛИДАЦИЯ: Проверяем баланс баллов перед созданием заказа
+    if (userId && order.loyaltyPointsUsed && order.loyaltyPointsUsed > 0) {
+      try {
+        // ✅ КРИТИЧНО: Используем noCache=true для получения СВЕЖЕГО баланса
+        // Это учитывает все транзакции в реальном времени
+        const currentBalance = await calculateUserBalance(userId, true)
+        
+        if (order.loyaltyPointsUsed > currentBalance) {
+          console.error(`❌ ВАЛИДАЦИЯ: Недостаточно баллов!`, {
+            requested: order.loyaltyPointsUsed,
+            available: currentBalance,
+            userId
+          })
+          return NextResponse.json({ 
+            error: "Insufficient loyalty points",
+            details: `Вы пытаетесь использовать ${order.loyaltyPointsUsed} баллов, но у вас только ${currentBalance}`,
+            requested: order.loyaltyPointsUsed,
+            available: currentBalance
+          }, { status: 400 })
+        }
+        
+        console.log(`✅ ВАЛИДАЦИЯ: Баланс баллов достаточен`, {
+          requested: order.loyaltyPointsUsed,
+          available: currentBalance,
+          remaining: currentBalance - order.loyaltyPointsUsed
+        })
+      } catch (error) {
+        console.error(`❌ Ошибка при валидации баллов:`, error)
+        // Не прерываем процесс создания заказа, но логируем ошибку
+      }
+    }
 
     // Генерация номера заказа
     const orderNumber = generateOrderNumber()
@@ -61,23 +150,36 @@ export async function POST(request: Request) {
 
     // Создание заказа в NocoDB
     // Если userId передан, но пользователя нет в базе, создаем заказ без user_id
+    const now = new Date().toISOString()
     const orderData = {
-      user_id: userId || null, // Разрешаем null для user_id
+      user_id: userId ?? undefined, // Используем ?? вместо || чтобы 0 не превращался в undefined
       order_number: orderNumber,
       start_date: typeof order.startDate === "string" ? order.startDate : order.startDate.toISOString().split("T")[0],
       delivery_time: order.deliveryTime,
-      status: order.paid ? "paid" : "pending",
+      
+      // Новые статусы оплаты
+      // Определяем статус оплаты: если явно указан paymentStatus, используем его, иначе на основе paid
+      payment_status: order.paymentStatus || (order.paid ? "paid" : "pending"),
       payment_method: order.paymentMethod || "cash",
-      paid: order.paid,
-      paid_at: order.paidAt,
-      delivered: order.delivered,
-      cancelled: order.cancelled || false,
+      paid: order.paid || false,
+      paid_at: order.paidAt || (order.paid ? now : undefined),
+      payment_id: order.paymentId || undefined,
+      
+      // Новый статус заказа
+      order_status: "pending" as const, // По умолчанию "в обработке"
+      
+      // УДАЛЕНО: delivered, cancelled, status - статусы доставки убраны
+      
       promo_code: order.promoCode,
       promo_discount: order.promoDiscount,
       loyalty_points_used: order.loyaltyPointsUsed || 0,
       loyalty_points_earned: order.loyaltyPointsEarned || 0,
       subtotal: order.subtotal || 0,
       total: order.total || 0,
+      guest_phone: order.guestPhone,
+      guest_address: order.guestAddress,
+      created_at: now,
+      updated_at: now,
     }
     console.log("Creating order with data:", orderData)
     
@@ -92,22 +194,38 @@ export async function POST(request: Request) {
     
     // createOrder теперь автоматически получает полный объект с order_number
     // Используем номер из ответа NocoDB, если есть, иначе используем сгенерированный
-    let finalOrderNumber = nocoOrder?.order_number || orderNumber
+    // Поддерживаем оба варианта названий колонок (snake_case и title)
+    const orderNumberFromResponse = (nocoOrder as any)?.order_number ?? (nocoOrder as any)?.["Order Number"]
+    let finalOrderNumber = orderNumberFromResponse || orderNumber
     
-    if (!nocoOrder?.order_number) {
+    if (!orderNumberFromResponse) {
       console.warn(`⚠️ Order number missing in response, using generated: ${orderNumber}`)
       console.log("Order response keys:", nocoOrder ? Object.keys(nocoOrder) : [])
       console.log("Full order response:", JSON.stringify(nocoOrder, null, 2))
     } else {
-      console.log(`✅ Order created successfully with order_number: ${nocoOrder.order_number}`)
+      console.log(`✅ Order created successfully with order_number: ${orderNumberFromResponse}`)
     }
 
     // Создание персон и блюд
     if (!order.persons || order.persons.length === 0) {
-      console.warn("⚠️ Заказ создан, но нет персон для сохранения")
+      // ✅ ДОБАВЛЕНО 2026-01-11: Улучшенная проверка наличия persons
+      console.error("❌ КРИТИЧЕСКАЯ ОШИБКА: Заказ не содержит персон!")
+      return NextResponse.json(
+        {
+          error: "Invalid order data",
+          message: "Заказ не содержит данных о блюдах",
+          details: "Пожалуйста, добавьте хотя бы одно блюдо в заказ"
+        },
+        { status: 400 }
+      )
     } else {
       console.log(`📝 Creating ${order.persons.length} persons for order ${nocoOrder.Id}`)
     }
+    
+    // Подсчет общей стоимости заказа
+    let calculatedTotal = 0
+    
+    console.log(`📊 Начинаем подсчет стоимости заказа, персон: ${order.persons?.length || 0}`)
     
     for (const person of order.persons || []) {
       console.log(`  Creating person ${person.id} for order ${nocoOrder.Id}`)
@@ -133,7 +251,8 @@ export async function POST(request: Request) {
         // Завтрак
         if (dayMeals.breakfast?.dish) {
           try {
-            await saveMeal(nocoOrderPerson.Id, day, "breakfast", "dish", dayMeals.breakfast.dish)
+            const mealCost = await saveMeal(nocoOrderPerson.Id, day, "breakfast", "dish", dayMeals.breakfast.dish)
+            calculatedTotal += mealCost
           } catch (error) {
             console.error(`  ❌ Failed to save breakfast meal:`, error)
             // Продолжаем, не прерываем весь процесс
@@ -144,21 +263,24 @@ export async function POST(request: Request) {
         if (dayMeals.lunch) {
           if (dayMeals.lunch.salad) {
             try {
-              await saveMeal(nocoOrderPerson.Id, day, "lunch", "salad", dayMeals.lunch.salad)
+              const mealCost = await saveMeal(nocoOrderPerson.Id, day, "lunch", "salad", dayMeals.lunch.salad)
+              calculatedTotal += mealCost
             } catch (error) {
               console.error(`  ❌ Failed to save lunch salad:`, error)
             }
           }
           if (dayMeals.lunch.soup) {
             try {
-              await saveMeal(nocoOrderPerson.Id, day, "lunch", "soup", dayMeals.lunch.soup)
+              const mealCost = await saveMeal(nocoOrderPerson.Id, day, "lunch", "soup", dayMeals.lunch.soup)
+              calculatedTotal += mealCost
             } catch (error) {
               console.error(`  ❌ Failed to save lunch soup:`, error)
             }
           }
           if (dayMeals.lunch.main) {
             try {
-              await saveMeal(nocoOrderPerson.Id, day, "lunch", "main", dayMeals.lunch.main)
+              const mealCost = await saveMeal(nocoOrderPerson.Id, day, "lunch", "main", dayMeals.lunch.main)
+              calculatedTotal += mealCost
             } catch (error) {
               console.error(`  ❌ Failed to save lunch main:`, error)
             }
@@ -169,21 +291,24 @@ export async function POST(request: Request) {
         if (dayMeals.dinner) {
           if (dayMeals.dinner.salad) {
             try {
-              await saveMeal(nocoOrderPerson.Id, day, "dinner", "salad", dayMeals.dinner.salad)
+              const mealCost = await saveMeal(nocoOrderPerson.Id, day, "dinner", "salad", dayMeals.dinner.salad)
+              calculatedTotal += mealCost
             } catch (error) {
               console.error(`  ❌ Failed to save dinner salad:`, error)
             }
           }
           if (dayMeals.dinner.soup) {
             try {
-              await saveMeal(nocoOrderPerson.Id, day, "dinner", "soup", dayMeals.dinner.soup)
+              const mealCost = await saveMeal(nocoOrderPerson.Id, day, "dinner", "soup", dayMeals.dinner.soup)
+              calculatedTotal += mealCost
             } catch (error) {
               console.error(`  ❌ Failed to save dinner soup:`, error)
             }
           }
           if (dayMeals.dinner.main) {
             try {
-              await saveMeal(nocoOrderPerson.Id, day, "dinner", "main", dayMeals.dinner.main)
+              const mealCost = await saveMeal(nocoOrderPerson.Id, day, "dinner", "main", dayMeals.dinner.main)
+              calculatedTotal += mealCost
             } catch (error) {
               console.error(`  ❌ Failed to save dinner main:`, error)
             }
@@ -205,6 +330,7 @@ export async function POST(request: Request) {
             price: extra.price,
           })
           console.log(`  ✅ Created OrderExtra:`, JSON.stringify(result, null, 2))
+          calculatedTotal += (extra.quantity * extra.price)
         } catch (error) {
           console.error(`  ❌ Failed to create OrderExtra:`, error)
           // Продолжаем, не прерываем весь процесс
@@ -212,6 +338,358 @@ export async function POST(request: Request) {
         }
       }
     }
+    
+    // Обновляем заказ с рассчитанной суммой
+    console.log(`💰 Calculated order total: ${calculatedTotal}`)
+    
+    // 🔴 КРИТИЧЕСКАЯ ЗАЩИТА: Минимальная сумма заказа 1000₽
+    const MIN_ORDER_AMOUNT = 1000
+    if (calculatedTotal < MIN_ORDER_AMOUNT) {
+      console.error(`❌ Попытка создать заказ на ${calculatedTotal}₽ (минимум: ${MIN_ORDER_AMOUNT}₽)`)
+      return NextResponse.json(
+        { 
+          error: "Order amount too low",
+          message: `Минимальная сумма заказа: ${MIN_ORDER_AMOUNT}₽`,
+          details: `Ваша сумма: ${calculatedTotal}₽. Добавьте еще блюд на ${MIN_ORDER_AMOUNT - calculatedTotal}₽`,
+          minimumAmount: MIN_ORDER_AMOUNT,
+          currentAmount: calculatedTotal,
+          shortfall: MIN_ORDER_AMOUNT - calculatedTotal
+        },
+        { status: 400 }
+      )
+    }
+    
+    // 🔴 КРИТИЧЕСКАЯ ЗАЩИТА: Начисление баллов только если total > 0
+    if (calculatedTotal <= 0) {
+      console.warn(`⚠️ Попытка создать заказ с нулевой/отрицательной суммой: ${calculatedTotal}₽`)
+      return NextResponse.json(
+        { 
+          error: "Invalid order amount",
+          message: "Сумма заказа должна быть больше 0₽",
+          currentAmount: calculatedTotal
+        },
+        { status: 400 }
+      )
+    }
+    
+    // 🆕 РАСЧЕТ СТОИМОСТИ ДОСТАВКИ
+    let deliveryFee = 0
+    let deliveryDistrict = ""
+    let deliveryAddress = ""
+    
+    if (userId) {
+      const user = await fetchUserById(userId)
+      if (user) {
+        // 🔍 ПОДРОБНОЕ ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ ДОСТАВКИ
+        console.log(`🔍 [DELIVERY DEBUG] User object keys:`, Object.keys(user))
+        console.log(`🔍 [DELIVERY DEBUG] District fields:`, {
+          'District': user.District,
+          'district': user.district,
+          'Street': user.Street,
+          'street': user.street,
+          'Building': user.Building,
+          'building': user.building,
+          'Apartment': user.Apartment,
+          'apartment': user.apartment,
+        })
+        
+        deliveryDistrict = user.District || user.district || ""
+        
+        // Формируем полный адрес
+        const street = user.Street || user.street || ""
+        const building = user.Building || user.building || ""
+        const apartment = user.Apartment || user.apartment || ""
+        deliveryAddress = `${street}, д. ${building}${apartment ? ', кв. ' + apartment : ''}`
+        
+        console.log(`🔍 [DELIVERY DEBUG] Extracted values:`, {
+          deliveryDistrict,
+          street,
+          building,
+          apartment,
+          deliveryAddress
+        })
+        
+        // Рассчитываем стоимость доставки
+        if (calculatedTotal < 2300) {
+          deliveryFee = await calculateDeliveryFee(deliveryDistrict, calculatedTotal)
+          console.log(`🚚 Доставка: ${deliveryFee}₽ (район: ${deliveryDistrict}, сумма: ${calculatedTotal}₽)`)
+        } else {
+          console.log(`✅ Бесплатная доставка: сумма заказа ${calculatedTotal}₽ >= 2300₽`)
+        }
+      } else {
+        console.log(`❌ [DELIVERY DEBUG] User not found for userId=${userId}`)
+      }
+    } else {
+      console.log(`❌ [DELIVERY DEBUG] No userId provided`)
+    }
+    
+    // Итоговая сумма с доставкой
+    const finalTotal = calculatedTotal + deliveryFee
+    console.log(`💰 Итоговая сумма: ${calculatedTotal}₽ + ${deliveryFee}₽ (доставка) = ${finalTotal}₽`)
+    
+    if (finalTotal > 0) {
+      try {
+        await updateOrder(nocoOrder.Id, {
+          subtotal: calculatedTotal,
+          total: finalTotal,
+          delivery_fee: deliveryFee,
+          delivery_district: deliveryDistrict,
+          delivery_address: deliveryAddress,
+        })
+        console.log(`✅ Updated order ${nocoOrder.Id} with total: ${finalTotal}₽ (subtotal: ${calculatedTotal}₽, delivery: ${deliveryFee}₽)`)
+        // Обновляем локальную копию заказа
+        nocoOrder.total = finalTotal
+        nocoOrder.subtotal = calculatedTotal
+        nocoOrder.delivery_fee = deliveryFee
+        nocoOrder.delivery_district = deliveryDistrict
+        nocoOrder.delivery_address = deliveryAddress
+      } catch (error) {
+        console.error(`❌ Failed to update order total:`, error)
+      }
+    }
+
+    // Начисление баллов лояльности при создании заказа
+    // Баллы начисляются сразу при создании заказа (независимо от способа оплаты)
+    // При отмене неоплаченного заказа баллы будут списаны
+    let actualPointsEarned = order.loyaltyPointsEarned || 0
+    
+    console.log(`\n🔍 ========== НАЧАЛО ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (POST) ==========`)
+    console.log(`🔍 [POST] 1️⃣ Входящий payload:`, {
+      'order.loyaltyPointsUsed': order.loyaltyPointsUsed,
+      'order.loyaltyPointsEarned': order.loyaltyPointsEarned,
+      'order.paymentMethod': order.paymentMethod,
+      'order.paid': order.paid,
+      'order.paymentStatus': order.paymentStatus,
+      'order.subtotal': order.subtotal,
+      'order.total': order.total,
+      userId,
+    })
+    
+    // ✅ ИСПРАВЛЕНО: Используем finalTotal (с доставкой) из обновленного заказа в БД
+    // nocoOrder.total был обновлен в строках 434-438 после расчета finalTotal
+    const orderTotal = nocoOrder.total || finalTotal || calculatedTotal
+    
+    console.log(`🔍 [POST] 2️⃣ Рассчитанные суммы:`, {
+      calculatedTotal: calculatedTotal,
+      deliveryFee: deliveryFee,
+      finalTotal: finalTotal,
+      'nocoOrder.total': nocoOrder.total,
+      orderTotal: orderTotal,
+    })
+    
+    console.log(`🔍 [POST] 3️⃣ Способ оплаты:`, {
+      paymentMethod: order.paymentMethod,
+      hasPaymentMethod: !!order.paymentMethod,
+    })
+    
+    console.log(`🔍 Проверка начисления баллов:`, {
+      hasUserId: !!userId,
+      userId: userId,
+      calculatedTotal,
+      deliveryFee,
+      finalTotal,
+      'nocoOrder.total': nocoOrder.total,
+      orderTotal,
+    })
+    
+    if (userId) {
+      try {
+        console.log(`🔍 Поиск пользователя с userId=${userId} для начисления баллов`)
+        // ✅ ИСПРАВЛЕНО: Всегда загружаем свежие данные без кэша
+        const user = await fetchUserById(userId, true)
+        if (user) {
+          console.log(`✅ Пользователь найден:`, {
+            userId: user.Id,
+            loyaltyPoints: user.loyalty_points,
+            totalSpent: user.total_spent,
+          })
+          
+          const pointsUsed = order.loyaltyPointsUsed || 0
+          const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
+          
+          // ✅ Приводим orderTotal к числу для избежания ошибок типов
+          const orderTotalNum = typeof orderTotal === 'number' ? orderTotal : parseFloat(String(orderTotal)) || 0
+          
+          console.log(`📊 Данные для расчета баллов:`, {
+            orderTotal: orderTotalNum,
+            pointsUsed,
+            currentTotalSpent,
+            loyaltyLevel: currentTotalSpent >= 50000 ? "gold" : currentTotalSpent >= 20000 ? "silver" : "bronze",
+          })
+          
+          // ✅ СПИСАНИЕ БАЛЛОВ: Создаем транзакцию на списание СРАЗУ, если баллы использованы
+          // Это должно происходить НЕЗАВИСИМО от того, будут ли начислены баллы
+          if (pointsUsed > 0) {
+            try {
+              const now = new Date().toISOString()
+              const { createLoyaltyPointsTransaction } = await import("@/lib/nocodb")
+              
+              await createLoyaltyPointsTransaction({
+                user_id: userId,
+                order_id: nocoOrder.Id,
+                transaction_type: "used",
+                transaction_status: "completed",
+                points: -pointsUsed,
+                description: `Использовано ${pointsUsed} баллов для оплаты заказа`,
+                created_at: now,
+                updated_at: now,
+                processed_at: now,
+              })
+              
+              console.log(`✅ СПИСАНИЕ: Создана транзакция на списание ${pointsUsed} баллов для заказа ${nocoOrder.Id}`)
+            } catch (error) {
+              console.error(`❌ Ошибка при создании транзакции на списание баллов:`, error)
+              // Не прерываем процесс, но логируем ошибку
+            }
+          }
+          
+          // Проверяем, что сумма заказа больше 0
+          if (orderTotalNum <= 0) {
+            console.warn(`⚠️ Сумма заказа равна 0 или отрицательная: ${orderTotalNum}. Баллы не будут начислены.`)
+            actualPointsEarned = 0
+          } else {
+            // Рассчитываем начисляемые баллы
+            // ВАЖНО: Используем currentTotalSpent БЕЗ учета текущего заказа для правильного расчета уровня
+            console.log(`🔍 [POST] 4️⃣ Вызов calculateEarnedPoints с параметрами:`, {
+              orderTotalNum,
+              pointsUsed,
+              currentTotalSpent,
+            })
+            actualPointsEarned = calculateEarnedPoints(orderTotalNum, pointsUsed, currentTotalSpent)
+            
+            console.log(`🔍 [POST] 5️⃣ Результат calculateEarnedPoints:`, {
+              actualPointsEarned,
+            })
+            
+            console.log(`💰 Рассчитано баллов: ${actualPointsEarned}`)
+            
+            // Проверяем, не были ли баллы уже начислены для этого заказа
+            const existingPointsEarned = typeof nocoOrder.loyalty_points_earned === 'number' 
+              ? nocoOrder.loyalty_points_earned 
+              : parseInt(String(nocoOrder.loyalty_points_earned)) || 0
+            
+            if (existingPointsEarned > 0) {
+              console.warn(`⚠️ Баллы уже начислены для заказа ${nocoOrder.Id}: ${existingPointsEarned}. Пропускаем начисление.`)
+              actualPointsEarned = existingPointsEarned
+            } else if (actualPointsEarned > 0) {
+              // ✅ ИСПРАВЛЕНО 2026-01-11: Начисляем баллы только если указан способ оплаты
+              console.log(`🔍 [POST] 6️⃣ Проверка условий начисления баллов:`, {
+                hasPaymentMethod: !!order.paymentMethod,
+                paymentMethod: order.paymentMethod,
+                actualPointsEarned,
+              })
+              
+              if (!order.paymentMethod) {
+                console.log(`🔍 [POST] ❌ Условие НЕ выполнено: Способ оплаты не указан - баллы будут начислены при оплате`)
+                console.log(`ℹ️ Способ оплаты не указан - баллы будут начислены при оплате`)
+                actualPointsEarned = 0 // Сбрасываем, чтобы не записать в БД
+              } else if (order.paymentMethod === 'card' || order.paymentMethod === 'sbp') {
+                // Онлайн-оплата - начисляем сразу
+                console.log(`🔍 [POST] ✅ Условие выполнено: Онлайн-оплата (${order.paymentMethod})`)
+                console.log(`💳 Онлайн-оплата: начисление баллов сразу`)
+                
+                console.log(`🔍 [POST] 7️⃣ Вызов awardLoyaltyPoints с параметрами:`, {
+                  userId,
+                  orderTotalNum,
+                  pointsUsed: 0,
+                  actualPointsEarned,
+                  orderId: nocoOrder.Id,
+                })
+                
+                // ✅ ИСПРАВЛЕНО: НЕ передаем pointsUsed, так как списание уже произошло выше
+                await awardLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id)
+                
+                console.log(`🔍 [POST] 8️⃣ Результат awardLoyaltyPoints: успешно`)
+                console.log(`✅ Начислено ${actualPointsEarned} баллов пользователю ${userId} за заказ ${nocoOrder.Id}`)
+                
+                // ✅ Проверяем обновленный профиль
+                const updatedUserAfterAward = await fetchUserById(userId, true)
+                console.log(`🔍 Проверка профиля после awardLoyaltyPoints:`, {
+                  userId: updatedUserAfterAward?.Id,
+                  loyaltyPoints: updatedUserAfterAward?.loyalty_points,
+                  totalSpent: updatedUserAfterAward?.total_spent,
+                })
+              } else if (order.paymentMethod === 'cash') {
+                // Наличные - создаем pending транзакцию
+                console.log(`🔍 [POST] ✅ Условие выполнено: Оплата наличными`)
+                console.log(`💵 Оплата наличными: создание pending транзакции`)
+                
+                console.log(`🔍 [POST] 7️⃣ Вызов createPendingLoyaltyPoints с параметрами:`, {
+                  userId,
+                  orderTotalNum,
+                  pointsUsed: 0,
+                  actualPointsEarned,
+                  orderId: nocoOrder.Id,
+                })
+                
+                // ✅ ИСПРАВЛЕНО: НЕ передаем pointsUsed, так как списание уже произошло выше
+                await createPendingLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id)
+                
+                console.log(`🔍 [POST] 8️⃣ Результат createPendingLoyaltyPoints: успешно`)
+                console.log(`⏳ Pending: ${actualPointsEarned} баллов будут начислены на следующий день после доставки`)
+              } else {
+                // Неизвестный способ оплаты - для безопасности делаем pending
+                console.log(`🔍 [POST] ⚠️ Условие: Неизвестный способ оплаты (${order.paymentMethod})`)
+                console.log(`❓ Неизвестный способ оплаты (${order.paymentMethod}): создание pending транзакции`)
+                
+                console.log(`🔍 [POST] 7️⃣ Вызов createPendingLoyaltyPoints с параметрами:`, {
+                  userId,
+                  orderTotalNum,
+                  pointsUsed: 0,
+                  actualPointsEarned,
+                  orderId: nocoOrder.Id,
+                })
+                
+                // ✅ ИСПРАВЛЕНО: НЕ передаем pointsUsed, так как списание уже произошло выше
+                await createPendingLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id)
+                
+                console.log(`🔍 [POST] 8️⃣ Результат createPendingLoyaltyPoints: успешно`)
+                console.log(`⏳ Pending: ${actualPointsEarned} баллов будут начислены на следующий день после доставки`)
+              }
+            } else {
+              console.log(`🔍 [POST] ❌ Баллы не начислены: actualPointsEarned = ${actualPointsEarned}`)
+              console.log(`ℹ️ Баллы не начислены: actualPointsEarned = ${actualPointsEarned}`)
+            }
+            
+            // ✅ ИСПРАВЛЕНО 2026-01-11: Обновляем заказ ТОЛЬКО если баллы были начислены
+            if (actualPointsEarned > 0) {
+              console.log(`📝 Проверка обновления loyalty_points_earned:`, {
+                actualPointsEarned,
+                orderLoyaltyPointsEarned: order.loyaltyPointsEarned || 0,
+                needsUpdate: actualPointsEarned !== (order.loyaltyPointsEarned || 0)
+              })
+              
+              if (actualPointsEarned !== (order.loyaltyPointsEarned || 0)) {
+                console.log(`🔍 [POST] 9️⃣ Обновление заказа в БД:`, {
+                  orderId: nocoOrder.Id,
+                  loyalty_points_earned: actualPointsEarned,
+                })
+                
+                console.log(`📝 Обновляем заказ ${nocoOrder.Id} с loyalty_points_earned: ${actualPointsEarned}`)
+                // Используем оба формата имен полей для совместимости
+                await updateOrder(nocoOrder.Id, {
+                  loyalty_points_earned: actualPointsEarned,
+                  "Loyalty Points Earned": actualPointsEarned,
+                } as any)
+                console.log(`✅ Заказ ${nocoOrder.Id} обновлен с loyalty_points_earned: ${actualPointsEarned}`)
+              }
+            } else {
+              console.log(`ℹ️ Баллы не начислены: рассчитано 0 баллов (сумма заказа: ${orderTotalNum}, использовано баллов: ${pointsUsed})`)
+            }
+          }
+        } else {
+          console.warn(`⚠️ Пользователь ${userId} не найден в базе данных`)
+        }
+      } catch (error) {
+        console.error(`❌ Ошибка при начислении баллов:`, error)
+        // Не прерываем процесс создания заказа из-за ошибки начисления баллов
+      }
+    } else {
+      console.log(`🔍 [POST] ❌ userId отсутствует - баллы не будут начислены`)
+      console.log(`ℹ️ Баллы не начислены: нет userId`)
+    }
+    
+    console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (POST) ==========\n`)
 
     // Убеждаемся, что номер заказа есть в ответе - это критично!
     // Используем сгенерированный номер, если finalOrderNumber пустой
@@ -221,11 +699,109 @@ export async function POST(request: Request) {
       console.error("❌ CRITICAL ERROR: No order number available! Using generated:", orderNumber)
     }
     
+    // Финальная проверка перед отправкой
+    if (!orderNumberToReturn) {
+      console.error("❌ FATAL: Order number is missing in response!")
+      throw new Error("Failed to generate order number")
+    }
+    
+    // ✅ НОВОЕ 2026-01-11: Загружаем userProfile с totalSpent, если userId передан
+    let userProfileData: any = undefined
+    console.log(`🔍 [POST /api/orders] Проверка userId для userProfile:`, {
+      userId,
+      hasUserId: !!userId,
+    })
+    
+    if (userId) {
+      try {
+        console.log(`🔍 [POST /api/orders] Загружаем пользователя ${userId} для userProfile`)
+        const updatedUser = await fetchUserById(userId, true) // noCache для свежих данных
+        console.log(`🔍 [POST /api/orders] Результат fetchUserById:`, {
+          hasUser: !!updatedUser,
+          userId: updatedUser?.Id,
+          totalSpent: updatedUser?.total_spent,
+        })
+        
+        if (updatedUser) {
+          userProfileData = {
+            id: updatedUser.Id,
+            phone: updatedUser.phone,
+            name: updatedUser.name,
+            loyaltyPoints: updatedUser.loyalty_points,
+            totalSpent: updatedUser.total_spent,
+          }
+          console.log('💰 Добавлен userProfile в ответ:', {
+            loyaltyPoints: updatedUser.loyalty_points,
+            totalSpent: updatedUser.total_spent,
+          })
+        } else {
+          console.warn(`⚠️ fetchUserById вернул null/undefined для userId=${userId}`)
+        }
+      } catch (error) {
+        console.error('⚠️ Не удалось загрузить обновленный профиль:', error)
+        // Не прерываем выполнение, просто не добавляем userProfile
+      }
+    } else {
+      console.log(`ℹ️ [POST /api/orders] userId не передан, userProfile не будет добавлен в ответ`)
+    }
+    
     const responseData = {
       success: true,
       orderId: nocoOrder.Id,
       orderNumber: orderNumberToReturn, // Гарантируем наличие номера заказа
+      order: {
+        id: nocoOrder.Id,
+        orderNumber: orderNumberToReturn,
+        startDate: order.startDate,
+        deliveryTime: order.deliveryTime,
+        paymentMethod: order.paymentMethod || "cash",
+        paid: order.paid || false,
+        paymentStatus: order.paymentStatus || "pending",
+        orderStatus: "pending",
+        total: finalTotal, // ✅ С доставкой
+        subtotal: calculatedTotal, // ✅ Без доставки
+        deliveryFee: deliveryFee, // 🆕
+        deliveryDistrict: deliveryDistrict, // 🆕
+        deliveryAddress: deliveryAddress, // 🆕
+        loyaltyPointsUsed: order.loyaltyPointsUsed || 0,
+        loyaltyPointsEarned: actualPointsEarned || 0,
+        persons: order.persons || [],
+        extras: order.extras || [],
+      },
+      loyaltyPointsEarned: actualPointsEarned || 0, // Количество начисленных баллов (всегда число, даже если 0)
+      loyaltyPointsUsed: order.loyaltyPointsUsed || 0, // Количество использованных баллов
+      loyaltyPointsStatus: order.paymentMethod === 'cash' ? 'pending' : 'earned',
+      loyaltyPointsMessage: order.paymentMethod === 'cash' && actualPointsEarned > 0
+        ? `При оплате наличными баллы (${actualPointsEarned}) будут начислены на следующий день после доставки`
+        : actualPointsEarned > 0 
+          ? `Начислено ${actualPointsEarned} баллов` 
+          : undefined,
+      orderTotal: calculatedTotal,
+      loyaltyPointsDiagnostics: {
+        userId: userId || null,
+        pointsAwarded: actualPointsEarned,
+        pointsAwardedReason: userId 
+          ? (actualPointsEarned > 0 
+            ? "Баллы успешно начислены" 
+            : actualPointsEarned === 0 
+              ? "Рассчитано 0 баллов (возможно, сумма заказа слишком мала или использованы все баллы)"
+              : "Баллы не были рассчитаны")
+          : "userId не передан",
+        orderTotal: calculatedTotal,
+        pointsUsed: order.loyaltyPointsUsed || 0,
+        hasUser: !!userId,
+      },
+      userProfile: userProfileData, // ✅ Загружено выше
     }
+    
+    console.log(`📤 Отправка ответа с данными заказа:`, {
+      orderId: responseData.orderId,
+      orderNumber: responseData.orderNumber,
+      loyaltyPointsEarned: responseData.loyaltyPointsEarned,
+      actualPointsEarned,
+      hasUserId: !!userId,
+      orderTotal: calculatedTotal,
+    })
     
     console.log("📦 Created order response:", { 
       id: nocoOrder.Id, 
@@ -265,19 +841,52 @@ async function saveMeal(
   mealTime: "breakfast" | "lunch" | "dinner",
   mealType: "dish" | "salad" | "soup" | "main",
   meal: Meal,
-) {
-  const price = getMealPriceForPortion(meal)
+): Promise<number> {
+  // Извлекаем числовую часть из meal_id (например, "1308_dinner" -> 1308)
+  const mealIdStr = String(meal.id)
+  const cleanMealId = mealIdStr.includes('_') 
+    ? parseInt(mealIdStr.split('_')[0]) 
+    : Number(meal.id)
+  
+  const cleanGarnishId = meal.garnish?.id 
+    ? (() => {
+        const garnishIdStr = String(meal.garnish.id)
+        return garnishIdStr.includes('_') 
+          ? parseInt(garnishIdStr.split('_')[0]) 
+          : Number(meal.garnish.id)
+      })()
+    : undefined
+  
+  // Получаем цену: приоритет prices > price > БД
+  const price = meal.prices 
+    ? getMealPriceForPortion(meal)
+    : (meal.price || await getMealPriceFromDB(cleanMealId, meal.portion || "single"))
+  
+  console.log(`  💰 Цена блюда ${meal.name} (ID=${meal.id}):`, {
+    hasPrices: !!meal.prices,
+    hasPrice: !!meal.price,
+    priceValue: meal.price,
+    pricesObject: meal.prices,
+    calculatedPrice: price,
+  })
+  
+  const garnishPrice = meal.garnish
+    ? (meal.garnish.prices 
+        ? getMealPriceForPortion(meal.garnish)
+        : (meal.garnish.price || await getMealPriceFromDB(cleanGarnishId!, meal.garnish.portion || "single")))
+    : undefined
+  
   const mealData = {
     order_person_id: orderPersonId,
     day,
     meal_time: mealTime,
     meal_type: mealType,
-    meal_id: meal.id,
+    meal_id: cleanMealId,
     portion_size: meal.portion || "single",
-    price,
-    garnish_id: meal.garnish?.id,
+    price: Math.round(price), // ✅ Округляем цену до целого числа
+    garnish_id: cleanGarnishId,
     garnish_portion_size: meal.garnish?.portion,
-    garnish_price: meal.garnish ? getMealPriceForPortion(meal.garnish) : undefined,
+    garnish_price: garnishPrice ? Math.round(garnishPrice) : undefined, // ✅ Округляем цену гарнира
   }
   
   console.log(`  🍽️  Creating OrderMeal:`, JSON.stringify(mealData, null, 2))
@@ -285,16 +894,42 @@ async function saveMeal(
   try {
     const result = await createOrderMeal(mealData)
     console.log(`  ✅ Created OrderMeal:`, JSON.stringify(result, null, 2))
+    
+    // Возвращаем общую стоимость (блюдо + гарнир)
+    return price + (garnishPrice || 0)
   } catch (error) {
     console.error(`  ❌ Failed to create OrderMeal:`, error)
     throw error
   }
 }
 
+async function getMealPriceFromDB(mealId: number, portion: PortionSize = 'single'): Promise<number> {
+  try {
+    const { fetchMealById } = await import("@/lib/nocodb")
+    const mealFromDB = await fetchMealById(mealId)
+    
+    if (!mealFromDB) {
+      console.warn(`⚠️ Meal ${mealId} not found in DB, using default price 0`)
+      return 0
+    }
+    
+    if (portion === "medium" && mealFromDB.prices?.medium) return mealFromDB.prices.medium
+    if (portion === "large" && mealFromDB.prices?.large) return mealFromDB.prices.large
+    return mealFromDB.prices?.single || 0
+  } catch (error) {
+    console.error(`❌ Error fetching meal ${mealId} from DB:`, error)
+    return 0
+  }
+}
+
 function getMealPriceForPortion(meal: {
-  prices: { single: number; medium?: number; large?: number }
+  prices?: { single: number; medium?: number; large?: number }
   portion?: PortionSize
 }): number {
+  if (!meal.prices) {
+    console.warn(`⚠️ Meal prices missing, returning 0`)
+    return 0
+  }
   const portion = meal.portion || "single"
   if (portion === "medium" && meal.prices.medium) return meal.prices.medium
   if (portion === "large" && meal.prices.large) return meal.prices.large

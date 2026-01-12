@@ -1,15 +1,7 @@
 {
   "/api/db/[...path]/route": "app/api/db/[...path]/route.js",
-  "/api/db/check-logs/route": "app/api/db/check-logs/route.js",
-  "/api/db/check-structure/route": "app/api/db/check-structure/route.js",
-  "/api/db/export-data/route": "app/api/db/export-data/route.js",
-  "/api/db/recent-orders/route": "app/api/db/recent-orders/route.js",
-  "/api/db/request-logs/route": "app/api/db/request-logs/route.js",
-  "/api/db/setup-relationships/route": "app/api/db/setup-relationships/route.js",
-  "/api/db/test-create/route": "app/api/db/test-create/route.js",
-  "/api/db/test-real-order/route": "app/api/db/test-real-order/route.js",
-  "/api/diagnose/route": "app/api/diagnose/route.js",
   "/api/menu/route": "app/api/menu/route.js",
+  "/api/orders/[id]/route": "app/api/orders/[id]/route.js",
   "/api/orders/route": "app/api/orders/route.js",
   "/page": "app/page.js"
 }

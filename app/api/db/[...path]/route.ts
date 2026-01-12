@@ -23,6 +23,8 @@ function getTableId(tableName: string): string {
     Order_Extras: process.env.NOCODB_TABLE_ORDER_EXTRAS,
     Promo_Codes: process.env.NOCODB_TABLE_PROMO_CODES,
     Reviews: process.env.NOCODB_TABLE_REVIEWS,
+    Loyalty_Points_Transactions: process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,
+    Fraud_Alerts: process.env.NOCODB_TABLE_FRAUD_ALERTS || "mr9txejs65nk1yi", // Хардкод фолбэк
   }
 
   return tableIds[tableName] || ""
@@ -40,6 +42,8 @@ const ALLOWED_TABLES = [
   "Order_Extras",
   "Promo_Codes",
   "Reviews",
+  "Loyalty_Points_Transactions",
+  "Fraud_Alerts",
 ]
 
 function isAllowedPath(path: string): boolean {

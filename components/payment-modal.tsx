@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, CreditCard, Coins, Check, Loader2 } from "lucide-react"
+import { X, CreditCard, Coins } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Order, UserProfile } from "@/lib/types"
 
@@ -10,14 +10,18 @@ interface PaymentModalProps {
   total: number
   userProfile: UserProfile | null
   onClose: () => void
-  onPaymentComplete: (order: Order, pointsUsed: number) => void
+  onPaymentComplete: (order: Order, pointsUsed: number, paymentMethod: "card" | "sbp" | "cash") => void
+  allowCash?: boolean // ✅ Разрешить выбор наличных (по умолчанию true)
 }
 
-export function PaymentModal({ order, total, userProfile, onClose, onPaymentComplete }: PaymentModalProps) {
+export function PaymentModal({ order, total, userProfile, onClose, onPaymentComplete, allowCash = true }: PaymentModalProps) {
   const [usePoints, setUsePoints] = useState(false)
   const [pointsToUse, setPointsToUse] = useState(0)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  
+  // ✅ ИСПРАВЛЕНО 10.01.2026: Если заказ уже с выбором "наличные", не показываем этот вариант повторно
+  // Это означает что пользователь хочет изменить способ оплаты на онлайн
+  const isChangingFromCash = order.paymentMethod === 'cash' && !order.paid
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "sbp" | "cash">("card")
 
   const availablePoints = userProfile?.loyaltyPoints || 0
   const maxPointsToUse = Math.min(availablePoints, Math.floor(total * 0.5))
@@ -28,32 +32,10 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
     setPointsToUse(clamped)
   }
 
-  const handlePayment = async () => {
-    setIsProcessing(true)
-
-    // Имитация обработки платежа
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    setIsProcessing(false)
-    setPaymentSuccess(true)
-
-    setTimeout(() => {
-      onPaymentComplete(order, pointsToUse)
-    }, 1500)
-  }
-
-  if (paymentSuccess) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-        <div className="bg-background w-full max-w-sm mx-4 rounded-xl p-8 text-center animate-slide-up-fade">
-          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-xl font-bold mb-2">Оплата прошла успешно!</h2>
-          <p className="text-muted-foreground">Ваш заказ подтвержден</p>
-        </div>
-      </div>
-    )
+  const handlePayment = () => {
+    // Вызываем callback, который покажет loading и закроет модал
+    // Loading и success будут показаны в родительском компоненте
+    onPaymentComplete(order, pointsToUse, paymentMethod)
   }
 
   return (
@@ -61,7 +43,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
       <div className="bg-background w-full md:max-w-md md:rounded-xl rounded-t-xl overflow-hidden animate-slide-up-fade">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-xl font-bold">Оплата заказа</h2>
-          <Button variant="ghost" size="icon" onClick={onClose} disabled={isProcessing}>
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -134,32 +116,78 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
               <CreditCard className="w-5 h-5 text-primary" />
               <span className="font-medium">Способ оплаты</span>
             </div>
+            
+            {/* ✅ ДОБАВЛЕНО 10.01.2026: Пояснение при изменении способа оплаты */}
+            {isChangingFromCash && (
+              <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  💳 Выберите онлайн-оплату для мгновенного подтверждения заказа
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-2">
-              <label className="flex items-center gap-3 p-3 bg-background rounded-lg border-2 border-primary cursor-pointer">
-                <div className="w-4 h-4 rounded-full border-4 border-primary" />
+              <label 
+                className={`flex items-center gap-3 p-3 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
+                  paymentMethod === "card" ? "border-primary" : "border-border hover:border-primary/50"
+                }`}
+                onClick={() => setPaymentMethod("card")}
+              >
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  paymentMethod === "card" ? "border-primary bg-primary" : "border-muted-foreground"
+                }`}>
+                  {paymentMethod === "card" && <div className="w-full h-full rounded-full bg-primary" />}
+                </div>
                 <span>Банковская карта</span>
               </label>
+              <label 
+                className={`flex items-center gap-3 p-3 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
+                  paymentMethod === "sbp" ? "border-primary" : "border-border hover:border-primary/50"
+                }`}
+                onClick={() => setPaymentMethod("sbp")}
+              >
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  paymentMethod === "sbp" ? "border-primary bg-primary" : "border-muted-foreground"
+                }`}>
+                  {paymentMethod === "sbp" && <div className="w-full h-full rounded-full bg-primary" />}
+                </div>
+                <span>СБП (Система быстрых платежей)</span>
+              </label>
+              
+              {/* ✅ ИСПРАВЛЕНО 2026-01-11: Показываем "наличные" только если allowCash === true */}
+              {allowCash && (
+                <label 
+                  className={`flex items-center gap-3 p-3 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
+                    paymentMethod === "cash" ? "border-primary" : "border-border hover:border-primary/50"
+                  }`}
+                  onClick={() => setPaymentMethod("cash")}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 ${
+                    paymentMethod === "cash" ? "border-primary bg-primary" : "border-muted-foreground"
+                  }`}>
+                    {paymentMethod === "cash" && <div className="w-full h-full rounded-full bg-primary" />}
+                  </div>
+                  <span>Наличные при получении</span>
+                </label>
+              )}
             </div>
           </div>
 
           <div className="text-xs text-muted-foreground text-center">
-            Нажимая "Оплатить", вы соглашаетесь с условиями оферты
+            {paymentMethod === "cash" 
+              ? "Нажимая кнопку, вы подтверждаете заказ и соглашаетесь с условиями оферты"
+              : 'Нажимая "Оплатить", вы соглашаетесь с условиями оферты'
+            }
           </div>
         </div>
 
         <div className="p-4 border-t border-border">
-          <Button onClick={handlePayment} className="w-full" disabled={isProcessing}>
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Обработка...
-              </>
-            ) : (
-              <>
-                <CreditCard className="w-4 h-4 mr-2" />
-                Оплатить {finalTotal} ₽
-              </>
-            )}
+          <Button 
+            onClick={handlePayment} 
+            className="w-full btn-press transition-all duration-200"
+          >
+            <CreditCard className="w-4 h-4 mr-2" />
+            {paymentMethod === "cash" ? `Подтвердить заказ — ${finalTotal} ₽` : `Оплатить — ${finalTotal} ₽`}
           </Button>
         </div>
       </div>

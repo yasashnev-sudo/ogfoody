@@ -83,9 +83,9 @@ export function FreshSection({ onDishClick }: FreshSectionProps) {
 
     categories.forEach((categoryMeals) => {
       if (categoryMeals && categoryMeals.length > 0) {
-        // Filter only available meals with images
+        // Filter only meals with images (availability is determined by weekType)
         const availableMeals = categoryMeals.filter(
-          (meal) => meal.available !== false && meal.image
+          (meal) => meal.image
         )
         allMeals.push(...availableMeals)
       }

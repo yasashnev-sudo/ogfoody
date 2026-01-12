@@ -1,0 +1,40 @@
+# ==========================================
+# Production Environment для ogfoody.ru
+# ==========================================
+# 
+# ИНСТРУКЦИЯ:
+# 1. Скопируйте этот файл на сервере в .env.production
+# 2. Замените все YOUR_*_HERE на реальные значения
+# 3. НЕ коммитьте .env.production в Git!
+#
+# Команды для создания на сервере:
+#   nano /var/www/ogfoody/.env.production
+#   # Вставьте содержимое этого файла
+#   # Замените YOUR_NOCODB_TOKEN_HERE на реальный токен
+#   # Сохраните: Ctrl+O, Enter, Ctrl+X
+
+NODE_ENV=production
+PORT=3000
+
+NOCODB_URL=https://noco.povarnakolesah.ru
+NOCODB_TOKEN=YOUR_NOCODB_TOKEN_HERE
+
+NOCODB_TABLE_MEALS=mmtctn4flssh2ua
+NOCODB_TABLE_EXTRAS=mksy21hmttmo855
+NOCODB_TABLE_DELIVERY_ZONES=mpoppulqhsz1der
+NOCODB_TABLE_USERS=mvrp4r9o3z69c45
+NOCODB_TABLE_ORDERS=meddiicl0gr0r8y
+NOCODB_TABLE_ORDER_PERSONS=mvr08d33zm5i8oi
+NOCODB_TABLE_ORDER_MEALS=mz9uw5by177ygug
+NOCODB_TABLE_ORDER_EXTRAS=mksy21hmttmo855
+NOCODB_TABLE_PROMO_CODES=mgov8ce836696fy
+NOCODB_TABLE_REVIEWS=mv8c69ib9muz9ki
+
+# ==========================================
+# Как получить NOCODB_TOKEN:
+# ==========================================
+# 1. Откройте: https://noco.povarnakolesah.ru
+# 2. Зайдите в: Account → API Tokens
+# 3. Создайте новый токен
+# 4. Скопируйте и вставьте выше
+

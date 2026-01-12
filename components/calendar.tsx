@@ -25,6 +25,18 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
   useEffect(() => {
     setIsMounted(true)
   }, [])
+  
+  useEffect(() => {
+    console.log("📅 Calendar: получено заказов:", orders.length)
+    if (orders.length > 0) {
+      console.log("📅 Список заказов в календаре:", orders.map(o => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        startDate: o.startDate,
+        orderStatus: o.orderStatus,
+      })))
+    }
+  }, [orders])
 
   // Avoid hydration mismatch by not rendering date-dependent content on server
   if (!isMounted) {
@@ -71,11 +83,21 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
     
-    return orders.find((order) => {
+    const order = orders.find((order) => {
       const orderDate = new Date(order.startDate)
       orderDate.setHours(0, 0, 0, 0)
-      return checkDate.getTime() === orderDate.getTime()
+      const match = checkDate.getTime() === orderDate.getTime()
+      if (match) {
+        console.log(`🔍 getOrderForDate: найден заказ #${order.id} на ${format(date, 'yyyy-MM-dd')}`, {
+          orderStartDate: order.startDate,
+          checkDate: format(checkDate, 'yyyy-MM-dd'),
+          orderDate: format(orderDate, 'yyyy-MM-dd'),
+        })
+      }
+      return match
     })
+    
+    return order
   }
   
   // Check if there's a delivery (order start date) on this date
@@ -83,11 +105,17 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
     
-    return orders.some(order => {
+    const result = orders.some(order => {
       const deliveryDate = new Date(order.startDate)
       deliveryDate.setHours(0, 0, 0, 0)
-      return checkDate.getTime() === deliveryDate.getTime()
+      const match = checkDate.getTime() === deliveryDate.getTime()
+      if (match) {
+        console.log(`🚚 Доставка найдена на ${format(date, 'yyyy-MM-dd')}: заказ #${order.id}`)
+      }
+      return match
     })
+    
+    return result
   }
 
   // Check if there's food (eating days: day1 and day2 after delivery)
@@ -147,6 +175,30 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
     return hasFoodForDate(nextDay)
   }
 
+  // Find the latest date where yellow plus should show (for wiggle animation)
+  const getLatestPlusDate = () => {
+    let latestDate: Date | null = null
+    
+    calendarDays.forEach(date => {
+      const isCurrentMonth = isSameMonth(date, currentMonth)
+      const hasFood = hasFoodForDate(date)
+      const isLastDayOfOrder = isLastDayOfAnyOrder(date)
+      const hasDelivery = hasDeliveryForDate(date)
+      const hasNextOrderForLastDay = hasNextOrder(date)
+      const shouldShowPlus = hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay && isCurrentMonth
+      
+      if (shouldShowPlus) {
+        if (!latestDate || date.getTime() > latestDate.getTime()) {
+          latestDate = date
+        }
+      }
+    })
+    
+    return latestDate
+  }
+  
+  const latestPlusDate = getLatestPlusDate()
+
   const renderDayCell = (date: Date, index: number) => {
     const isSelected = propSelectedDate ? isSameDay(date, propSelectedDate) : false
     const isCurrentMonth = isSameMonth(date, currentMonth)
@@ -159,6 +211,9 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
     // CRITICAL: Yellow + button shows ONLY on last day of any order WITH food, NO delivery, and NO next order (gap exists)
     // Must have: hasFood AND isLastDayOfOrder AND !hasDelivery AND !hasNextOrderForLastDay
     const shouldShowYellowPlus = hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay && isCurrentMonth
+    
+    // Check if this is the LATEST date with yellow plus (only this one should wiggle)
+    const isLatestPlus = latestPlusDate && isSameDay(date, latestPlusDate)
     
     const canOrder = canOrderForDate(date)
     const isSaturday = getDay(date) === 6
@@ -198,10 +253,16 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
         
         {/* Scenario A: Delivery Scheduled for Tonight */}
         {hasDelivery && isCurrentMonth && (
-          // Delivery icon in corner (same style for both cases) - matching legend style
-          <div className="absolute top-1 right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white border-2 border-black rounded-lg flex items-center justify-center z-20 shadow-brutal">
+          // Delivery icon in corner with brutal-hover animation
+          <button 
+            className="absolute top-1 right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white border-2 border-black rounded-lg flex items-center justify-center z-20 shadow-brutal brutal-hover cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDateClick(date)
+            }}
+          >
             <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black stroke-[2.5px]" />
-          </div>
+          </button>
         )}
 
         {/* Scenario B: No Delivery + Is Last Day of Food Streak + No Next Order */}
@@ -209,6 +270,7 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
         {/* CRITICAL: Double-check - if hasDelivery OR hasNextOrderForLastDay, do NOT show + */}
         {shouldShowYellowPlus && (
           // Yellow Round Button with "+" (top-right corner, doesn't cover date)
+          // Only the LATEST plus wiggles (last day before gap)
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -219,7 +281,10 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
                 // Don't call onSelectDate here - let handleDateClick handle it after showing warning
               }
             }}
-            className="absolute top-1 right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FFEA00] border-2 border-black flex items-center justify-center z-20 shadow-brutal hover:bg-[#FFF033] transition-colors font-black brutal-hover"
+            className={cn(
+              "absolute top-1 right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FFEA00] border-2 border-black flex items-center justify-center z-20 shadow-brutal hover:bg-[#FFF033] transition-colors font-black btn-press",
+              isLatestPlus && "animate-wiggle"
+            )}
             title={
               getDay(date) === 6 
                 ? "Заказать на воскресенье (доставка в воскресенье вечером, по субботам доставок нет)"

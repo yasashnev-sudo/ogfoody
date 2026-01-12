@@ -13,7 +13,6 @@ const adaptGarnishToMeal = (garnish: any): Meal => {
     ...garnish,
     ingredients: garnish.ingredients || "",
     description: garnish.description || "",
-    available: garnish.available ?? true,
     prices: garnish.prices,
     weights: garnish.weights,
   } as Meal
@@ -38,6 +37,8 @@ interface MealSelectorProps {
   onSectionChange?: (sectionId: string | null) => void
   instanceId?: string
   onMealSelected?: () => void
+  disabled?: boolean
+  onBlockedAction?: () => void
 }
 
 const PORTION_LABELS: Record<PortionSize, string> = {
@@ -55,6 +56,7 @@ const CompactMealCard = ({
   disabled = false,
   onImageClick,
   isHighlighted = false,
+  onBlockedAction,
 }: {
   meal: Meal
   isSelected: boolean
@@ -64,10 +66,11 @@ const CompactMealCard = ({
   disabled?: boolean
   onImageClick?: () => void
   isHighlighted?: boolean
+  onBlockedAction?: () => void
 }) => {
   const [showPortions, setShowPortions] = useState(false)
   const [currentPortion, setCurrentPortion] = useState<PortionSize>(selectedPortion)
-  const hasMultiplePortions = meal.prices?.medium || meal.prices?.large
+  const hasMultiplePortions = (meal.prices?.medium && meal.prices.medium > 0) || (meal.prices?.large && meal.prices.large > 0)
   const price = getMealPrice(meal, currentPortion)
   const weight = getMealWeight(meal, currentPortion)
 
@@ -87,7 +90,7 @@ const CompactMealCard = ({
         "relative bg-white rounded-xl transition-all flex flex-col h-full group overflow-hidden border-2 border-black shadow-[2px_2px_0px_0px_#000000] sm:shadow-brutal brutal-hover",
         isSelected ? "ring-4 ring-primary" : "",
         isHighlighted && "ring-4 ring-primary z-20",
-        disabled && "opacity-50 pointer-events-none",
+        disabled && "opacity-50",
       )}
       style={{ 
         scrollMarginTop: '100px',
@@ -140,7 +143,7 @@ const CompactMealCard = ({
         </div>
 
         <div className="mt-auto space-y-1.5 sm:space-y-3">
-          {hasMultiplePortions && (
+          {hasMultiplePortions ? (
             <div className="relative">
               <button
                 onClick={(e) => {
@@ -161,7 +164,7 @@ const CompactMealCard = ({
               {showPortions && (
                 <div className="absolute bottom-full left-0 mb-1 w-full bg-white border-2 border-black rounded-xl shadow-brutal z-50 p-1 animate-in fade-in zoom-in-95 duration-200">
                   {(["single", "medium", "large"] as PortionSize[]).map((p) => {
-                    if (p !== "single" && !meal.prices?.[p]) return null
+                    if (p !== "single" && (!meal.prices?.[p] || meal.prices[p] === 0)) return null
                     return (
                       <button
                         key={p}
@@ -184,7 +187,7 @@ const CompactMealCard = ({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
           <div className="flex items-end justify-between pt-0.5 sm:pt-1 gap-1.5 sm:gap-2">
             <div className="flex flex-col min-w-0">
@@ -195,6 +198,10 @@ const CompactMealCard = ({
             <button
               onClick={(e) => {
                 e.stopPropagation()
+                if (disabled && onBlockedAction) {
+                  onBlockedAction()
+                  return
+                }
                 onSelect(currentPortion)
               }}
               className={cn(
@@ -225,6 +232,8 @@ const MealSectionComponent = ({
   headerPrefix,
   extraHeaderContent,
   highlightedMealId,
+  disabled = false,
+  onBlockedAction,
 }: {
   title: string
   meals: Meal[]
@@ -237,6 +246,8 @@ const MealSectionComponent = ({
   headerPrefix?: string
   extraHeaderContent?: React.ReactNode
   highlightedMealId?: string | null
+  disabled?: boolean
+  onBlockedAction?: () => void
 }) => {
   const [detailMeal, setDetailMeal] = useState<Meal | null>(null)
 
@@ -329,6 +340,8 @@ const MealSectionComponent = ({
                       else onMealSelect(meal, p)
                     }}
                     onImageClick={() => setDetailMeal(meal)}
+                    disabled={disabled}
+                    onBlockedAction={onBlockedAction}
                   />
                 </div>
               ))}
@@ -343,6 +356,11 @@ const MealSectionComponent = ({
             onClose={() => setDetailMeal(null)}
             selectedPortion={selectedMeal?.id === detailMeal.id ? selectedMeal?.portion : "single"}
             onSelect={(m, p) => {
+                if (disabled && onBlockedAction) {
+                  onBlockedAction()
+                  setDetailMeal(null)
+                  return
+                }
                 onMealSelect(m, p)
                 setDetailMeal(null)
             }}
@@ -363,6 +381,8 @@ export function MealSelector({
   onSectionChange,
   instanceId = "default",
   onMealSelected,
+  disabled = false,
+  onBlockedAction,
 }: MealSelectorProps) {
   const [internalOpenSection, setInternalOpenSection] = useState<string | null>(null)
   const lastActiveId = useRef<string | null>(null)
@@ -432,6 +452,7 @@ export function MealSelector({
   }, [selectedMeals])
 
   const toggleSection = (section: string) => {
+    // Разрешаем открытие секций даже для заблокированных заказов (только просмотр)
     const isOpen = isSectionOpen(section)
     setSectionOpen(isOpen ? null : section)
   }
@@ -453,6 +474,10 @@ export function MealSelector({
   }
 
   const handleAutoSelect = (category: 'breakfast' | 'salad' | 'soup' | 'main') => {
+      if (disabled && onBlockedAction) {
+        onBlockedAction()
+        return
+      }
       // Force scroll reset by clearing active element focus if needed
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
 
@@ -462,9 +487,9 @@ export function MealSelector({
       else if (category === 'soup') list = soups
       else if (category === 'main') list = mains
 
-      const available = list.filter((m) => m.available !== false)
-      if (available.length > 0) {
-          const random = available[Math.floor(Math.random() * available.length)]
+      // Блюда уже отфильтрованы по неделе в API, просто берем случайное
+      if (list.length > 0) {
+          const random = list[Math.floor(Math.random() * list.length)]
           
           if (category === 'main') {
               const needsGarnish = random.needsGarnish && garnishes.length > 0
@@ -533,11 +558,15 @@ export function MealSelector({
   }
 
   const handleAutoSelectGarnish = () => {
+    if (disabled && onBlockedAction) {
+      onBlockedAction()
+      return
+    }
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     
-    const available = garnishes.filter((g) => g.available !== false)
-    if (available.length > 0) {
-      const randomGarnish = available[Math.floor(Math.random() * available.length)]
+    // Гарниры уже отфильтрованы по неделе в API
+    if (garnishes.length > 0) {
+      const randomGarnish = garnishes[Math.floor(Math.random() * garnishes.length)]
       if (selectedMeals.main) {
         onUpdate({
           ...selectedMeals,
@@ -576,6 +605,10 @@ export function MealSelector({
       <div className="py-2">
         <Button 
           onClick={(e) => { 
+            if (disabled && onBlockedAction) {
+              onBlockedAction()
+              return
+            }
             e.stopPropagation(); 
             e.preventDefault();
             onClick(); 
@@ -597,6 +630,10 @@ export function MealSelector({
           meals={breakfast}
           selectedMeal={selectedMeals.breakfast}
           onMealSelect={(selected, portion) => {
+            if (disabled && onBlockedAction) {
+              onBlockedAction()
+              return
+            }
             onUpdate({ ...selectedMeals, breakfast: selected ? { ...selected, portion: portion || "single" } : null })
             if (selected && onMealSelected) onMealSelected()
           }}
@@ -606,6 +643,8 @@ export function MealSelector({
           headerPrefix={headerPrefix}
           extraHeaderContent={<AutoButton onClick={() => handleAutoSelect('breakfast')} />}
           highlightedMealId={highlightedMealId}
+          disabled={disabled}
+          onBlockedAction={onBlockedAction}
         />
       )}
 
@@ -616,6 +655,10 @@ export function MealSelector({
           meals={salads}
           selectedMeal={selectedMeals.salad}
           onMealSelect={(selected, portion) => {
+            if (disabled && onBlockedAction) {
+              onBlockedAction()
+              return
+            }
             onUpdate({ ...selectedMeals, salad: selected ? { ...selected, portion: portion || "single" } : null })
             if (selected && onMealSelected) onMealSelected()
           }}
@@ -625,6 +668,8 @@ export function MealSelector({
           headerPrefix={headerPrefix}
           extraHeaderContent={<AutoButton onClick={() => handleAutoSelect('salad')} />}
           highlightedMealId={highlightedMealId}
+          disabled={disabled}
+          onBlockedAction={onBlockedAction}
         />
       )}
 
@@ -635,6 +680,10 @@ export function MealSelector({
           meals={soups}
           selectedMeal={selectedMeals.soup}
           onMealSelect={(selected, portion) => {
+            if (disabled && onBlockedAction) {
+              onBlockedAction()
+              return
+            }
             onUpdate({ ...selectedMeals, soup: selected ? { ...selected, portion: portion || "single" } : null })
             if (selected && onMealSelected) onMealSelected()
           }}
@@ -644,6 +693,8 @@ export function MealSelector({
           headerPrefix={headerPrefix}
           extraHeaderContent={<AutoButton onClick={() => handleAutoSelect('soup')} />}
           highlightedMealId={highlightedMealId}
+          disabled={disabled}
+          onBlockedAction={onBlockedAction}
         />
       )}
 
@@ -654,6 +705,10 @@ export function MealSelector({
           meals={mains}
           selectedMeal={selectedMeals.main}
           onMealSelect={(selected, portion) => {
+            if (disabled && onBlockedAction) {
+              onBlockedAction()
+              return
+            }
             if (!selected) {
               handleMainSelect(null, selectedMeals)
             } else {
@@ -676,6 +731,8 @@ export function MealSelector({
           headerPrefix={headerPrefix}
           extraHeaderContent={<AutoButton onClick={() => handleAutoSelect('main')} />}
           highlightedMealId={highlightedMealId}
+          disabled={disabled}
+          onBlockedAction={onBlockedAction}
         />
       )}
 
@@ -696,6 +753,10 @@ export function MealSelector({
                 onToggle={() => toggleSection("garnish")}
                 extraHeaderContent={<AutoButton onClick={handleAutoSelectGarnish} />}
                 onMealSelect={(meal, portion) => {
+                  if (disabled && onBlockedAction) {
+                    onBlockedAction()
+                    return
+                  }
                   if (selectedMeals.main) {
                     if (meal) {
                       onUpdate({
@@ -719,10 +780,12 @@ export function MealSelector({
                   }
                 }}
                 highlightedMealId={highlightedMealId}
-            />
+                disabled={disabled}
+                onBlockedAction={onBlockedAction}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {detailMeal && (
         <MealDetailModal

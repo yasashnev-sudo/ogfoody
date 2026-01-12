@@ -32,7 +32,8 @@ export interface Meal {
   id: number
   name: string
   ingredients: string
-  prices: {
+  price?: number // Одиночная цена (если не указан объект prices)
+  prices?: {
     single: number
     medium?: number
     large?: number
@@ -46,7 +47,6 @@ export interface Meal {
   needsGarnish?: boolean
   garnish?: Garnish | null
   image?: string
-  available?: boolean
   description?: string
   nutrition?: Nutrition
   category?: string
@@ -98,7 +98,8 @@ export interface Extra {
   price: number
   quantity: number
   image?: string
-  available?: boolean
+  isCurrentWeek?: boolean
+  isNextWeek?: boolean
   ingredients?: string
   description?: string
   nutrition?: Nutrition
@@ -110,7 +111,8 @@ export interface ExtraItem {
   name: string
   price: number
   image?: string
-  available?: boolean
+  isCurrentWeek?: boolean
+  isNextWeek?: boolean
   ingredients?: string
   description?: string
   nutrition?: Nutrition
@@ -134,20 +136,37 @@ export interface Order {
   orderNumber?: string
   startDate: string | Date
   persons: Person[]
-  delivered: boolean
   deliveryTime: string
   extras?: Extra[]
+  
+  // Улучшенные статусы оплаты
+  paymentStatus?: "pending" | "paid" | "refunded" | "failed"
+  paymentMethod?: "cash" | "card" | "sbp" | "online"
   paid: boolean
   paidAt?: string
-  cancelled?: boolean
-  paymentMethod?: "card" | "sbp" | "cash"
+  paymentId?: string
+  
+  // Статус заказа (без статусов доставки)
+  orderStatus?: "pending" | "confirmed" | "preparing" | "ready" | "cancelled"
+  
+  // УДАЛЕНО: delivered, cancelled - статусы доставки убраны
+  
+  // 🆕 ДОСТАВКА
+  deliveryFee?: number
+  deliveryDistrict?: string
+  deliveryAddress?: string
+  
   promoCode?: string
   promoDiscount?: number
   loyaltyPointsUsed?: number
   loyaltyPointsEarned?: number
   subtotal?: number
   total?: number
+  guestPhone?: string
+  guestAddress?: string
   weekType?: "current" | "next"
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface UserProfile {

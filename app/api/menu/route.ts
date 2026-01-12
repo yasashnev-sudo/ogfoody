@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { fetchMeals, fetchExtras, fetchDeliveryZones, isNocoDBConfigured } from "@/lib/nocodb"
 import { DELIVERY_TIMES } from "@/lib/meals-data"
 
-export const revalidate = 3600
+// Кэшируем на 1 минуту для более частого обновления данных
+export const revalidate = 60
 
 function parsePrice(value: string | number | undefined | null): number {
   if (value === undefined || value === null) return 0
@@ -29,12 +30,20 @@ function parseNumber(value: string | number | undefined | null): number {
   return isNaN(parsed) ? 0 : Math.round(parsed * 10) / 10
 }
 
-function parseIntervals(value: string | undefined | null): string[] {
+function parseIntervals(value: string | string[] | undefined | null): string[] {
   if (!value) return []
-  return value
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
+  // Если уже массив, возвращаем как есть
+  if (Array.isArray(value)) {
+    return value.map((s) => String(s).trim()).filter(Boolean)
+  }
+  // Если строка, парсим
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+  return []
 }
 
 export async function GET(request: Request) {
@@ -129,17 +138,44 @@ export async function GET(request: Request) {
       garnish: [],
     }
 
-    let skippedNotAvailable = 0
     let skippedWrongWeek = 0
 
-    for (const m of nocoMeals) {
-      const isCurrentWeek = parseBoolean(m.is_current_week)
-      const isNextWeek = parseBoolean(m.is_next_week)
-      const isAvailable = parseBoolean(m.available)
+    console.log(`[MENU API] Processing ${nocoMeals.length} meals, weekType=${weekType || "all"}`)
+    
+    let processedCount = 0
+    let trueFlagsCount = 0
 
-      if (!isAvailable) {
-        skippedNotAvailable++
-        continue
+    for (const m of nocoMeals) {
+      try {
+        processedCount++
+        if (processedCount === 1) {
+          console.log(`[MENU API] 🔵 Starting to process meals, first meal:`, {
+            name: (m as any)["Name"] ?? m.name,
+            category: (m as any)["Category"] ?? m.category,
+            currentWeek: (m as any)["Current Week"],
+            nextWeek: (m as any)["Next Week"],
+          })
+        }
+      // NocoDB возвращает данные с английскими заголовками колонок
+      // Поддерживаем оба варианта: имена колонок и заголовки
+      // ВАЖНО: Используем проверку на undefined, а не ??, так как false тоже валидное значение
+      const currentWeekRaw = (m as any)["Current Week"] !== undefined 
+        ? (m as any)["Current Week"] 
+        : ((m as any).is_current_week !== undefined ? (m as any).is_current_week : m.is_current_week)
+      const nextWeekRaw = (m as any)["Next Week"] !== undefined 
+        ? (m as any)["Next Week"] 
+        : ((m as any).is_next_week !== undefined ? (m as any).is_next_week : m.is_next_week)
+      
+      const isCurrentWeek = parseBoolean(currentWeekRaw)
+      const isNextWeek = parseBoolean(nextWeekRaw)
+      
+      if (isCurrentWeek || isNextWeek) {
+        trueFlagsCount++
+        // Логируем первые несколько блюд с True для отладки
+        if (trueFlagsCount <= 5) {
+          const mealName = (m as any)["Name"] ?? m.name
+          console.log(`[MENU API] ✅ Meal "${mealName}": raw=(${JSON.stringify(currentWeekRaw)}, ${JSON.stringify(nextWeekRaw)}), parsed=(${isCurrentWeek}, ${isNextWeek})`)
+        }
       }
 
       // Фильтрация по неделе:
@@ -155,23 +191,51 @@ export async function GET(request: Request) {
         skippedWrongWeek++
         continue
       }
-
-      const category = String(m.category || "").toLowerCase()
+      
+      // Если оба флага false, блюдо недоступно (пропускаем)
+      // Но только если weekType не указан (показываем все доступные)
+      if (!weekType && !isCurrentWeek && !isNextWeek) {
+        skippedWrongWeek++
+        continue
+      }
+      
+      // Поддерживаем английские заголовки колонок
+      const category = String(
+        ((m as any)["Category"] ?? m.category) || ""
+      ).toLowerCase()
+      
+      // Логируем первые несколько блюд
+      if (processedCount <= 5) {
+        const mealName = (m as any)["Name"] ?? m.name
+        console.log(`[MENU API] Processing meal "${mealName}": category="${category}", isCurrentWeek=${isCurrentWeek}, isNextWeek=${isNextWeek}`)
+      }
 
       // ... existing code for parsing prices ...
-      const priceSingle = parsePrice(m.price_single) || parsePrice(m.price)
-      const priceMedium = parsePrice(m.price_medium)
-      const priceLarge = parsePrice(m.price_large)
+      const priceSingle = parsePrice(
+        (m as any)["Price (Single)"] ?? m.price_single
+      ) || parsePrice((m as any)["Price"] ?? m.price)
+      const priceMedium = parsePrice(
+        (m as any)["Price (Medium)"] ?? m.price_medium
+      )
+      const priceLarge = parsePrice(
+        (m as any)["Price (Large)"] ?? m.price_large
+      )
 
-      const weightSingle = parsePrice(m.weight_single) || parsePrice(m.weight)
-      const weightMedium = parsePrice(m.weight_medium)
-      const weightLarge = parsePrice(m.weight_large)
+      const weightSingle = parsePrice(
+        (m as any)["Weight (Single)"] ?? m.weight_single
+      ) || parsePrice((m as any)["Weight"] ?? m.weight)
+      const weightMedium = parsePrice(
+        (m as any)["Weight (Medium)"] ?? m.weight_medium
+      )
+      const weightLarge = parsePrice(
+        (m as any)["Weight (Large)"] ?? m.weight_large
+      )
 
       const meal = {
         id: m.Id || m.id,
-        name: m.name || "",
-        ingredients: m.ingredients || "",
-        description: m.description || "",
+        name: ((m as any)["Name"] ?? m.name) || "",
+        ingredients: ((m as any)["Ingredients"] ?? m.ingredients) || "",
+        description: ((m as any)["Description"] ?? m.description) || "",
         prices: {
           single: priceSingle,
           medium: priceMedium,
@@ -183,44 +247,63 @@ export async function GET(request: Request) {
           large: weightLarge,
         },
         portion: "single" as const,
-        needsGarnish: parseBoolean(m.needs_garnish),
-        image: m.image || "",
-        available: true,
+        needsGarnish: parseBoolean(
+          (m as any)["Needs Garnish"] ?? m.needs_garnish
+        ),
+        image: ((m as any)["Image (URL)"] ?? m.image) || "",
         nutrition: {
-          calories: parseNumber(m.calories),
-          protein: parseNumber(m.protein),
-          fats: parseNumber(m.fats),
-          carbs: parseNumber(m.carbs),
+          calories: parseNumber((m as any)["Calories"] ?? m.calories),
+          protein: parseNumber((m as any)["Protein"] ?? m.protein),
+          fats: parseNumber((m as any)["Fats"] ?? m.fats),
+          carbs: parseNumber((m as any)["Carbs"] ?? m.carbs),
           weight: weightSingle,
         },
         category: category,
         weekType: isCurrentWeek && isNextWeek ? "both" : isCurrentWeek ? "current" : "next",
       }
+      
+      // Логируем первые несколько блюд после создания объекта
+      if (processedCount <= 3) {
+        console.log(`[MENU API] Created meal object: "${meal.name}", category="${category}", will try to add to groups`)
+      }
+
+      // Логируем первые несколько блюд для отладки
+      if (skippedWrongWeek < 5) {
+        console.log(`[MENU API] Meal "${meal.name}": category="${category}", isCurrentWeek=${isCurrentWeek}, isNextWeek=${isNextWeek}`)
+      }
 
       if (category === "breakfast") {
         groupedMeals.breakfast.push(meal)
+        if (skippedWrongWeek < 5) console.log(`[MENU API] ✅ Added to breakfast`)
       } else if (category === "garnish") {
         groupedMeals.garnish.push(meal)
+        if (skippedWrongWeek < 5) console.log(`[MENU API] ✅ Added to garnish`)
       } else if (category === "soup" || category === "salad" || category === "main") {
         const lunchCategory = `lunch_${category}`
         const dinnerCategory = `dinner_${category}`
 
-        if (groupedMeals[lunchCategory]) {
-          groupedMeals[lunchCategory].push({ ...meal, category: lunchCategory })
-        }
-        if (groupedMeals[dinnerCategory]) {
-          groupedMeals[dinnerCategory].push({ ...meal, id: `${meal.id}_dinner`, category: dinnerCategory })
-        }
+        groupedMeals[lunchCategory].push({ ...meal, category: lunchCategory })
+        if (processedCount <= 5) console.log(`[MENU API] ✅ Added "${meal.name}" to ${lunchCategory} (now: ${groupedMeals[lunchCategory].length})`)
+        
+        groupedMeals[dinnerCategory].push({ ...meal, id: `${meal.id}_dinner`, category: dinnerCategory })
+        if (processedCount <= 5) console.log(`[MENU API] ✅ Added "${meal.name}" to ${dinnerCategory} (now: ${groupedMeals[dinnerCategory].length})`)
+      } else {
+        if (processedCount <= 5) console.log(`[MENU API] ⚠️ Unknown category: "${category}" for meal "${meal.name}"`)
+      }
+      } catch (error) {
+        console.error(`[MENU API] ❌ Error processing meal:`, error, m)
+        skippedWrongWeek++
       }
     }
 
-    console.log(`[MENU API] Meals filtering: skipped ${skippedNotAvailable} not available, ${skippedWrongWeek} wrong week`)
+    console.log(`[MENU API] Meals filtering: weekType=${weekType || "all"}, processed=${processedCount}, with true flags=${trueFlagsCount}, skipped ${skippedWrongWeek} meals (not available for selected week)`)
     console.log(
       `[MENU API] Grouped meals:`,
       Object.entries(groupedMeals)
         .map(([k, v]) => `${k}:${v.length}`)
         .join(", "),
     )
+    console.log(`[MENU API] Total meals in groups: ${Object.values(groupedMeals).flat().length}`)
 
     // ... existing code for extras ...
     const groupedExtras: Record<string, any[]> = {
@@ -231,25 +314,49 @@ export async function GET(request: Request) {
     }
 
     for (const e of nocoExtras) {
-      const isAvailable = parseBoolean(e.available)
-      if (!isAvailable) continue
+      // NocoDB возвращает данные с английскими заголовками колонок
+      const isCurrentWeek = parseBoolean(
+        (e as any)["Current Week"] ?? (e as any).is_current_week ?? e.is_current_week
+      )
+      const isNextWeek = parseBoolean(
+        (e as any)["Next Week"] ?? (e as any).is_next_week ?? e.is_next_week
+      )
 
-      const category = String(e.category || "").toLowerCase()
+      // Фильтрация по неделе (аналогично meals):
+      // - Если оба флага false - дополнение недоступно
+      // - Для "current": должно быть доступно в текущей неделе или в обеих
+      // - Для "next": должно быть доступно в следующей неделе или в обеих
+      if (weekType === "current" && !isCurrentWeek) {
+        continue
+      }
+      if (weekType === "next" && !isNextWeek) {
+        continue
+      }
+      
+      // Если оба флага false, дополнение недоступно (пропускаем)
+      if (!isCurrentWeek && !isNextWeek) {
+        continue
+      }
+
+      const category = String(
+        ((e as any)["Category"] ?? e.category) || ""
+      ).toLowerCase()
 
       const extra = {
         id: e.Id || e.id,
-        name: e.name || "",
-        price: parsePrice(e.price),
-        image: e.image || "",
-        available: true,
-        ingredients: e.ingredients || "",
-        description: e.description || "",
+        name: ((e as any)["Name"] ?? e.name) || "",
+        price: parsePrice((e as any)["Price"] ?? e.price),
+        image: ((e as any)["Image (URL)"] ?? e.image) || "",
+        isCurrentWeek,
+        isNextWeek,
+        ingredients: ((e as any)["Ingredients"] ?? e.ingredients) || "",
+        description: ((e as any)["Description"] ?? e.description) || "",
         nutrition: {
-          calories: parseNumber(e.calories),
-          protein: parseNumber(e.protein),
-          fats: parseNumber(e.fats),
-          carbs: parseNumber(e.carbs),
-          weight: parsePrice(e.weight),
+          calories: parseNumber((e as any)["Calories"] ?? e.calories),
+          protein: parseNumber((e as any)["Protein"] ?? e.protein),
+          fats: parseNumber((e as any)["Fats"] ?? e.fats),
+          carbs: parseNumber((e as any)["Carbs"] ?? e.carbs),
+          weight: parsePrice((e as any)["Weight"] ?? e.weight),
         },
         category: category,
       }
@@ -268,15 +375,25 @@ export async function GET(request: Request) {
 
     // ... existing code for deliveryZones ...
     const deliveryZones = nocoZones
-      .filter((zone) => parseBoolean(zone.is_available))
-      .map((zone) => ({
+      .filter((zone: any) => {
+        // NocoDB API возвращает данные с ключами как title (с заглавными буквами)
+        // Пробуем оба варианта: column_name и title
+        const isAvailable = (zone as any).is_available ?? (zone as any)["Available"] ?? (zone as any).Available
+        return parseBoolean(isAvailable)
+      })
+      .map((zone: any) => ({
         id: zone.Id || zone.id,
-        city: zone.city || "",
-        district: zone.district || "",
-        deliveryFee: parsePrice(zone.delivery_fee),
-        minOrderAmount: parsePrice(zone.min_order_amount),
+        // Пробуем оба варианта: column_name (snake_case) и title (с заглавными)
+        city: zone.city || zone["City"] || zone.City || "",
+        district: zone.district || zone["District"] || zone.District || "",
+        deliveryFee: parsePrice(zone.delivery_fee ?? zone["Delivery Fee"] ?? zone["Delivery Fee"]),
+        minOrderAmount: parsePrice(zone.min_order_amount ?? zone["Min Order Amount"] ?? zone["Min Order Amount"]),
         isAvailable: true,
-        availableIntervals: parseIntervals(zone.available_intervals),
+        availableIntervals: parseIntervals(
+          (zone as any).available_intervals ?? 
+          (zone as any)["Available Intervals"] ?? 
+          (zone as any)["Available Intervals"]
+        ),
       }))
 
     // Извлекаем все уникальные временные интервалы из зон доставки

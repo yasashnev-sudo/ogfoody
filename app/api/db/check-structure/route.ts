@@ -20,7 +20,6 @@ const expectedSchemas: Record<string, Array<{ name: string; type: string; requir
     { name: "weight_medium", type: "number|string", required: false },
     { name: "weight_large", type: "number|string", required: false },
     { name: "image", type: "string", required: false },
-    { name: "available", type: "boolean|string", required: false },
     { name: "needs_garnish", type: "boolean|string", required: false },
     { name: "calories", type: "number|string", required: false },
     { name: "protein", type: "number|string", required: false },
@@ -37,12 +36,13 @@ const expectedSchemas: Record<string, Array<{ name: string; type: string; requir
     { name: "description", type: "string", required: false },
     { name: "price", type: "number|string", required: true },
     { name: "image", type: "string", required: false },
-    { name: "available", type: "boolean|string", required: false },
     { name: "calories", type: "number|string", required: false },
     { name: "protein", type: "number|string", required: false },
     { name: "fats", type: "number|string", required: false },
     { name: "carbs", type: "number|string", required: false },
     { name: "weight", type: "number|string", required: false },
+    { name: "is_current_week", type: "boolean|string", required: false },
+    { name: "is_next_week", type: "boolean|string", required: false },
   ],
   Delivery_Zones: [
     { name: "Id", type: "number", required: true, description: "Primary key" },
@@ -79,12 +79,12 @@ const expectedSchemas: Record<string, Array<{ name: string; type: string; requir
     { name: "order_number", type: "string", required: true },
     { name: "start_date", type: "string", required: true },
     { name: "delivery_time", type: "string", required: true },
-    { name: "status", type: "string", required: true, description: "pending|paid|delivered|cancelled" },
-    { name: "payment_method", type: "string", required: true, description: "card|sbp|cash" },
+    { name: "payment_status", type: "string", required: true, description: "pending|paid|refunded|failed" },
+    { name: "payment_method", type: "string", required: true, description: "cash|card|sbp|online" },
     { name: "paid", type: "boolean|string", required: false },
     { name: "paid_at", type: "string", required: false },
-    { name: "delivered", type: "boolean|string", required: false },
-    { name: "cancelled", type: "boolean|string", required: false },
+    { name: "payment_id", type: "string", required: false },
+    { name: "order_status", type: "string", required: true, description: "pending|confirmed|preparing|ready|cancelled" },
     { name: "promo_code", type: "string", required: false },
     { name: "promo_discount", type: "number|string", required: false },
     { name: "loyalty_points_used", type: "number|string", required: true },
@@ -143,6 +143,16 @@ const expectedSchemas: Record<string, Array<{ name: string; type: string; requir
     { name: "created_at", type: "string", required: true },
     { name: "updated_at", type: "string", required: true },
   ],
+  Loyalty_Points_Transactions: [
+    { name: "Id", type: "number", required: true, description: "Primary key" },
+    { name: "user_id", type: "number", required: true },
+    { name: "order_id", type: "number", required: false },
+    { name: "transaction_type", type: "string", required: true, description: "earned|spent|refunded" },
+    { name: "points", type: "number|string", required: true },
+    { name: "description", type: "string", required: false },
+    { name: "created_at", type: "string", required: true },
+    { name: "updated_at", type: "string", required: true },
+  ],
 }
 
 function getTableId(tableName: string): string {
@@ -157,6 +167,7 @@ function getTableId(tableName: string): string {
     Order_Extras: process.env.NOCODB_TABLE_ORDER_EXTRAS,
     Promo_Codes: process.env.NOCODB_TABLE_PROMO_CODES,
     Reviews: process.env.NOCODB_TABLE_REVIEWS,
+    Loyalty_Points_Transactions: process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,
   }
   return tableIds[tableName] || ""
 }

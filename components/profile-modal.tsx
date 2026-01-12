@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, User, MapPin, Gift, CreditCard, Save, Star, Coins, Phone } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { X, User, MapPin, Gift, Save, Star, Coins, Phone } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -28,9 +27,11 @@ interface ProfileModalProps {
   phone: string
   onClose: () => void
   onSave: (profile: UserProfile) => void
+  userProfile?: UserProfile | null // Добавлен для синхронизации баллов
+  isCheckoutFlow?: boolean // Флаг что это оформление заказа (нельзя закрыть)
 }
 
-export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
+export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFlow = false }: ProfileModalProps) {
   const [profile, setProfile] = useState<UserProfile>({
     phone,
     additionalPhone: "",
@@ -50,65 +51,197 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
 
   const [activeTab, setActiveTab] = useState<"profile" | "loyalty">("profile")
 
+  // Синхронизация всех данных (включая ID!) с внешним userProfile
   useEffect(() => {
-    const saved = localStorage.getItem(`profile_${phone}`)
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      if (parsed.address && !parsed.street) {
-        parsed.street = parsed.address
-        delete parsed.address
-      }
-      setProfile({ ...profile, ...parsed })
+    if (userProfile) {
+      console.log("🔄 Синхронизация: userProfile.id =", userProfile.id, "тип =", typeof userProfile.id)
+      setProfile((prev) => {
+        const updated = {
+          ...prev,
+          id: userProfile.id, // ВАЖНО: копируем ID!
+          name: userProfile.name || prev.name,
+          street: userProfile.street || prev.street,
+          building: userProfile.building || prev.building,
+          buildingSection: userProfile.buildingSection || prev.buildingSection,
+          apartment: userProfile.apartment || prev.apartment,
+          entrance: userProfile.entrance || prev.entrance,
+          floor: userProfile.floor || prev.floor,
+          intercom: userProfile.intercom || prev.intercom,
+          district: userProfile.district || prev.district,
+          deliveryComment: userProfile.deliveryComment || prev.deliveryComment,
+          additionalPhone: userProfile.additionalPhone || prev.additionalPhone,
+          loyaltyPoints: userProfile.loyaltyPoints || 0,
+          totalSpent: userProfile.totalSpent || 0,
+        }
+        console.log("✅ После синхронизации: profile.id =", updated.id, "тип =", typeof updated.id)
+        return updated
+      })
     }
+  }, [userProfile])
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      // Сначала загружаем из localStorage
+      const saved = localStorage.getItem(`profile_${phone}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.address && !parsed.street) {
+          parsed.street = parsed.address
+          delete parsed.address
+        }
+        setProfile((prev) => ({ ...prev, ...parsed }))
+      }
+
+      // Затем загружаем актуальные данные из базы данных
+      try {
+        const { fetchUserByPhone } = await import("@/lib/nocodb")
+        const dbUser = await fetchUserByPhone(phone)
+        if (dbUser) {
+          // NocoDB возвращает данные с обоими вариантами названий колонок
+          const loyaltyPointsRaw = dbUser.loyalty_points !== undefined 
+            ? dbUser.loyalty_points 
+            : (dbUser["Loyalty Points"] !== undefined ? dbUser["Loyalty Points"] : 0)
+          const totalSpentRaw = dbUser.total_spent !== undefined 
+            ? dbUser.total_spent 
+            : (dbUser["Total Spent"] !== undefined ? dbUser["Total Spent"] : 0)
+          
+          // Используем Id из dbUser - fetchUserByPhone уже возвращает User ID
+          console.log("✅ Загружен профиль из базы данных:", {
+            userId: dbUser.Id,
+            loyaltyPointsRaw,
+            totalSpentRaw,
+            allKeys: Object.keys(dbUser).filter(k => k.includes("oyalty") || k.includes("pent") || k.includes("Loyalty") || k.includes("Spent") || k.includes("User ID")),
+          })
+          
+          setProfile((prev) => {
+            // ВАЖНО: Сохраняем prev.id если dbUser.Id невалиден (NaN, null, undefined)
+            const validDbId = dbUser.Id && !isNaN(dbUser.Id) ? dbUser.Id : null
+            const finalId = validDbId || prev.id
+            
+            console.log("🔄 loadProfile: dbUser.Id =", dbUser.Id, "validDbId =", validDbId, "prev.id =", prev.id, "finalId =", finalId)
+            
+            return {
+              ...prev,
+              id: finalId,
+              name: dbUser.name || dbUser["Name"] || prev.name,
+              phone: dbUser.phone || dbUser["Phone"] || prev.phone,
+              additionalPhone: dbUser.additional_phone || dbUser["Additional Phone"] || prev.additionalPhone,
+              street: dbUser.street || dbUser["Street"] || prev.street,
+              building: dbUser.building || dbUser["Building"] || prev.building,
+              buildingSection: dbUser.building_section || dbUser["Building Section"] || prev.buildingSection,
+              apartment: dbUser.apartment || dbUser["Apartment"] || prev.apartment,
+              entrance: dbUser.entrance || dbUser["Entrance"] || prev.entrance,
+              floor: dbUser.floor || dbUser["Floor"] || prev.floor,
+              intercom: dbUser.intercom || dbUser["Intercom"] || prev.intercom,
+              district: dbUser.district || dbUser["District"] || prev.district,
+              deliveryComment: dbUser.delivery_comment || dbUser["Delivery Comment"] || prev.deliveryComment,
+              loyaltyPoints: typeof loyaltyPointsRaw === 'number' 
+                ? loyaltyPointsRaw 
+                : parseInt(String(loyaltyPointsRaw)) || 0,
+              totalSpent: typeof totalSpentRaw === 'number'
+                ? totalSpentRaw
+                : parseFloat(String(totalSpentRaw)) || 0,
+            }
+          })
+        }
+      } catch (error) {
+        console.error("Ошибка при загрузке профиля из базы данных:", error)
+      }
+    }
+
+    loadProfile()
   }, [phone])
 
   const handleSave = () => {
+    // Валидация для оформления заказа
+    if (isCheckoutFlow) {
+      if (!profile.name?.trim()) {
+        alert("Пожалуйста, укажите ваше имя")
+        return
+      }
+      if (!profile.street?.trim()) {
+        alert("Пожалуйста, укажите улицу")
+        return
+      }
+      if (!profile.building?.trim()) {
+        alert("Пожалуйста, укажите номер дома")
+        return
+      }
+    }
+    
+    console.log("💾 ProfileModal.handleSave: ID =", profile.id, "тип =", typeof profile.id)
+    console.log("💾 ProfileModal.handleSave: profile =", JSON.stringify(profile, null, 2))
+    
     localStorage.setItem(`profile_${phone}`, JSON.stringify(profile))
     onSave(profile)
-    onClose()
+    if (!isCheckoutFlow) {
+      onClose()
+    }
+    // Если isCheckoutFlow, модалка закроется автоматически после оформления заказа
   }
 
-  const loyaltyLevel = profile.totalSpent >= 50000 ? "gold" : profile.totalSpent >= 20000 ? "silver" : "bronze"
+  const totalSpent = profile.totalSpent || 0
+  const loyaltyPoints = profile.loyaltyPoints || 0
+  
+  const loyaltyLevel = totalSpent >= 50000 ? "gold" : totalSpent >= 20000 ? "silver" : "bronze"
   const loyaltyLevelName = loyaltyLevel === "gold" ? "Золотой" : loyaltyLevel === "silver" ? "Серебряный" : "Бронзовый"
   const cashbackPercent = loyaltyLevel === "gold" ? 7 : loyaltyLevel === "silver" ? 5 : 3
 
   const nextLevelSpent = loyaltyLevel === "gold" ? null : loyaltyLevel === "silver" ? 50000 : 20000
-  const progressToNext = nextLevelSpent ? Math.min((profile.totalSpent / nextLevelSpent) * 100, 100) : 100
+  const remainingToNextLevel = nextLevelSpent ? nextLevelSpent - totalSpent : 0
+  const progressToNext = nextLevelSpent ? Math.min((totalSpent / nextLevelSpent) * 100, 100) : 100
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 animate-fade-in">
       <div className="bg-background w-full md:max-w-lg md:rounded-xl rounded-t-xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-up-fade">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-bold">Личный кабинет</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
+        <div className="flex items-center justify-between p-4 border-b-2 border-black bg-white">
+          <h2 className="text-2xl font-black">
+            {isCheckoutFlow ? "Заполните данные для доставки" : "Личный кабинет"}
+          </h2>
+          {!isCheckoutFlow && (
+            <button
+              onClick={onClose}
+              className="w-10 h-10 rounded-lg border-2 border-black shadow-brutal btn-press hover:bg-[#FFEA00] transition-colors flex items-center justify-center"
+            >
+              <X className="w-5 h-5" strokeWidth={3} />
+            </button>
+          )}
         </div>
 
-        <div className="flex border-b border-border">
-          <button
-            onClick={() => setActiveTab("profile")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              activeTab === "profile"
-                ? "text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <User className="w-4 h-4 inline mr-2" />
-            Профиль
-          </button>
-          <button
-            onClick={() => setActiveTab("loyalty")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              activeTab === "loyalty"
-                ? "text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Gift className="w-4 h-4 inline mr-2" />
-            Бонусы
-          </button>
-        </div>
+        {isCheckoutFlow && (
+          <div className="px-4 py-3 bg-blue-50 border-b-2 border-black">
+            <p className="text-sm text-blue-900">
+              <strong>📦 Оформление заказа:</strong> Заполните имя и адрес доставки, чтобы завершить оформление
+            </p>
+          </div>
+        )}
+
+        {!isCheckoutFlow && (
+          <div className="flex border-b-2 border-black">
+            <button
+              onClick={() => setActiveTab("profile")}
+              className={`flex-1 py-4 text-sm font-black transition-all ${
+                activeTab === "profile"
+                  ? "text-black bg-white border-b-4 border-[#9D00FF]"
+                  : "text-muted-foreground hover:text-black hover:bg-white/50"
+              }`}
+            >
+              <User className="w-4 h-4 inline mr-2" strokeWidth={3} />
+              Профиль
+            </button>
+            <button
+              onClick={() => setActiveTab("loyalty")}
+              className={`flex-1 py-4 text-sm font-black transition-all ${
+                activeTab === "loyalty"
+                  ? "text-black bg-white border-b-4 border-[#9D00FF]"
+                  : "text-muted-foreground hover:text-black hover:bg-white/50"
+              }`}
+            >
+              <Gift className="w-4 h-4 inline mr-2" strokeWidth={3} />
+              Бонусы
+            </button>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === "profile" ? (
@@ -125,13 +258,28 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                 </div>
               </div>
 
+              {isCheckoutFlow && (
+                <div className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                  <p className="text-sm font-medium text-blue-900">
+                    <span className="text-red-600 font-bold">*</span> — обязательные поля для доставки
+                  </p>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-medium mb-1.5">Ваше имя</label>
+                <label className="block text-sm font-bold mb-1.5">
+                  {isCheckoutFlow && <span className="text-red-600 mr-1">*</span>}
+                  Ваше имя
+                </label>
                 <Input
                   value={profile.name}
                   onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  placeholder="Как к вам обращаться?"
+                  placeholder=""
+                  className={isCheckoutFlow && !profile.name ? 'border-red-300' : ''}
                 />
+                {isCheckoutFlow && !profile.name && (
+                  <p className="text-xs text-red-600 mt-1">Обязательное поле</p>
+                )}
               </div>
 
               <div className="pt-4 border-t border-border">
@@ -142,10 +290,10 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                 <Input
                   value={profile.additionalPhone || ""}
                   onChange={(e) => setProfile({ ...profile, additionalPhone: e.target.value })}
-                  placeholder="+7 (999) 123-45-67"
+                  placeholder=""
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Укажите, если хотите, чтобы курьер мог позвонить на другой номер
+                  По желанию. Укажите, если хотите, чтобы курьер мог позвонить на другой номер
                 </p>
               </div>
 
@@ -157,12 +305,15 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Район</label>
+                    <label className="block text-sm font-bold mb-1.5">
+                      {isCheckoutFlow && <span className="text-red-600 mr-1">*</span>}
+                      Район
+                    </label>
                     <Select
                       value={profile.district || ""}
                       onValueChange={(value) => setProfile({ ...profile, district: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={isCheckoutFlow && !profile.district ? 'border-red-300' : ''}>
                         <SelectValue placeholder="Выберите район" />
                       </SelectTrigger>
                       <SelectContent>
@@ -173,32 +324,49 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {isCheckoutFlow && !profile.district && (
+                      <p className="text-xs text-red-600 mt-1">Обязательное поле</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Улица</label>
+                    <label className="block text-sm font-bold mb-1.5">
+                      {isCheckoutFlow && <span className="text-red-600 mr-1">*</span>}
+                      Улица
+                    </label>
                     <Input
                       value={profile.street}
                       onChange={(e) => setProfile({ ...profile, street: e.target.value })}
-                      placeholder="ул. Примерная"
+                      placeholder=""
+                      className={isCheckoutFlow && !profile.street ? 'border-red-300' : ''}
                     />
+                    {isCheckoutFlow && !profile.street && (
+                      <p className="text-xs text-red-600 mt-1">Обязательное поле</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-sm font-medium mb-1.5">Дом</label>
+                      <label className="block text-sm font-bold mb-1.5">
+                        {isCheckoutFlow && <span className="text-red-600 mr-1">*</span>}
+                        Дом
+                      </label>
                       <Input
                         value={profile.building}
                         onChange={(e) => setProfile({ ...profile, building: e.target.value })}
-                        placeholder="12"
+                        placeholder=""
+                        className={isCheckoutFlow && !profile.building ? 'border-red-300' : ''}
                       />
+                      {isCheckoutFlow && !profile.building && (
+                        <p className="text-xs text-red-600 mt-1">Обязательно</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1.5">Корпус</label>
                       <Input
                         value={profile.buildingSection || ""}
                         onChange={(e) => setProfile({ ...profile, buildingSection: e.target.value })}
-                        placeholder="2"
+                        placeholder=""
                       />
                     </div>
                     <div>
@@ -206,7 +374,7 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                       <Input
                         value={profile.apartment}
                         onChange={(e) => setProfile({ ...profile, apartment: e.target.value })}
-                        placeholder="123"
+                        placeholder=""
                       />
                     </div>
                   </div>
@@ -217,7 +385,7 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                       <Input
                         value={profile.entrance}
                         onChange={(e) => setProfile({ ...profile, entrance: e.target.value })}
-                        placeholder="1"
+                        placeholder=""
                       />
                     </div>
                     <div>
@@ -225,7 +393,7 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                       <Input
                         value={profile.floor}
                         onChange={(e) => setProfile({ ...profile, floor: e.target.value })}
-                        placeholder="5"
+                        placeholder=""
                       />
                     </div>
                     <div>
@@ -233,7 +401,7 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                       <Input
                         value={profile.intercom}
                         onChange={(e) => setProfile({ ...profile, intercom: e.target.value })}
-                        placeholder="123#"
+                        placeholder=""
                       />
                     </div>
                   </div>
@@ -252,43 +420,45 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Карточка уровня в brutal стиле */}
               <div
-                className={`p-4 rounded-xl ${
+                className={`p-6 rounded-xl border-2 border-black shadow-brutal ${
                   loyaltyLevel === "gold"
-                    ? "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30"
+                    ? "bg-gradient-to-br from-[#FFD700] to-[#FFA500]"
                     : loyaltyLevel === "silver"
-                      ? "bg-gradient-to-r from-gray-300/20 to-gray-400/20 border border-gray-400/30"
-                      : "bg-gradient-to-r from-orange-600/20 to-amber-700/20 border border-orange-600/30"
+                      ? "bg-gradient-to-br from-[#C0C0C0] to-[#808080]"
+                      : "bg-gradient-to-br from-[#CD7F32] to-[#8B4513]"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
                     <Star
-                      className={`w-6 h-6 ${
-                        loyaltyLevel === "gold"
-                          ? "text-yellow-500"
-                          : loyaltyLevel === "silver"
-                            ? "text-gray-400"
-                            : "text-orange-600"
-                      }`}
+                      className="w-8 h-8 text-white drop-shadow-[2px_2px_0px_#000000]"
+                      strokeWidth={3}
                     />
-                    <span className="font-bold text-lg">{loyaltyLevelName} уровень</span>
+                    <span className="font-black text-2xl text-white drop-shadow-[2px_2px_0px_#000000]">
+                      {loyaltyLevelName} уровень
+                    </span>
                   </div>
-                  <span className="text-sm font-medium">{cashbackPercent}% кэшбэк</span>
+                  <span className="text-xl font-black text-black bg-white px-3 py-1 rounded-lg border-2 border-black shadow-brutal">
+                    {cashbackPercent}% кэшбэк
+                  </span>
                 </div>
 
                 {nextLevelSpent && (
                   <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">До следующего уровня</span>
-                      <span className="font-medium">
-                        {profile.totalSpent.toLocaleString()} / {nextLevelSpent.toLocaleString()} ₽
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="font-bold text-white drop-shadow-[1px_1px_0px_#000000]">До следующего уровня</span>
+                      <span className="font-black text-white drop-shadow-[1px_1px_0px_#000000]">
+                        {remainingToNextLevel.toLocaleString()} / {nextLevelSpent.toLocaleString()} ₽
                       </span>
                     </div>
-                    <div className="h-2 bg-background rounded-full overflow-hidden">
+                    <div className="h-3 bg-white rounded-lg overflow-hidden border-2 border-black">
                       <div
                         className={`h-full transition-all ${
-                          loyaltyLevel === "silver" ? "bg-yellow-500" : "bg-gray-400"
+                          loyaltyLevel === "silver" 
+                            ? "bg-gradient-to-r from-[#FFD700] to-[#FFA500]" 
+                            : "bg-gradient-to-r from-[#C0C0C0] to-[#808080]"
                         }`}
                         style={{ width: `${progressToNext}%` }}
                       />
@@ -297,84 +467,82 @@ export function ProfileModal({ phone, onClose, onSave }: ProfileModalProps) {
                 )}
               </div>
 
-              <div className="p-4 bg-primary/10 rounded-xl">
+              {/* Карточка баллов в brutal стиле */}
+              <div className="p-6 bg-gradient-to-br from-[#9D00FF] to-[#7000CC] rounded-xl border-2 border-black shadow-brutal">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                      <Coins className="w-6 h-6 text-primary" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-2 border-black shadow-brutal">
+                      <Coins className="w-8 h-8 text-[#9D00FF]" strokeWidth={3} />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Ваши баллы</p>
-                      <p className="text-2xl font-bold text-primary">{profile.loyaltyPoints}</p>
+                      <p className="text-sm font-bold text-white/80">Ваши баллы</p>
+                      <p className="text-4xl font-black text-white drop-shadow-[2px_2px_0px_#000000]">
+                        {loyaltyPoints.toLocaleString()}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">= {profile.loyaltyPoints} ₽</p>
-                    <p className="text-xs text-muted-foreground">1 балл = 1 ₽</p>
+                  <div className="text-right bg-white px-4 py-2 rounded-lg border-2 border-black">
+                    <p className="text-sm font-black text-[#9D00FF]">= {loyaltyPoints.toLocaleString()} ₽</p>
+                    <p className="text-xs font-bold text-black">1 балл = 1 ₽</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-semibold mb-3">Как работает программа лояльности</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-bold">1.</span>
+              {/* Как работает программа */}
+              <div className="p-6 bg-[#FFEA00] rounded-xl border-2 border-black shadow-brutal">
+                <h4 className="font-black text-lg mb-4 text-black">Как работает программа лояльности</h4>
+                <ul className="space-y-3 text-sm font-bold text-black">
+                  <li className="flex items-start gap-3">
+                    <span className="text-[#9D00FF] font-black text-lg">1.</span>
                     Получайте {cashbackPercent}% баллами с каждого заказа
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-bold">2.</span>
+                  <li className="flex items-start gap-3">
+                    <span className="text-[#9D00FF] font-black text-lg">2.</span>
                     Оплачивайте до 50% заказа баллами
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-bold">3.</span>
+                  <li className="flex items-start gap-3">
+                    <span className="text-[#9D00FF] font-black text-lg">3.</span>
                     Повышайте уровень и получайте больше кэшбэка
                   </li>
                 </ul>
               </div>
 
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-semibold mb-3">Уровни программы</h4>
+              {/* Уровни программы */}
+              <div className="p-6 bg-white rounded-xl border-2 border-black shadow-brutal">
+                <h4 className="font-black text-lg mb-4 text-black">Уровни программы</h4>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-orange-600 shrink-0" />
-                    <span className="text-sm font-medium min-w-[90px]">Бронзовый</span>
-                    <span className="text-sm text-muted-foreground">3% кэшбэк</span>
+                    <div className="w-4 h-4 rounded-full bg-[#CD7F32] border-2 border-black shrink-0" />
+                    <span className="text-sm font-black min-w-[110px] text-black">Бронзовый</span>
+                    <span className="text-sm font-bold text-black">3% кэшбэк</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-gray-400 shrink-0" />
-                    <span className="text-sm font-medium min-w-[90px]">Серебряный</span>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">от 20 000 ₽ · 5%</span>
+                    <div className="w-4 h-4 rounded-full bg-[#C0C0C0] border-2 border-black shrink-0" />
+                    <span className="text-sm font-black min-w-[110px] text-black">Серебряный</span>
+                    <span className="text-sm font-bold text-black whitespace-nowrap">от 20 000 ₽ · 5%</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0" />
-                    <span className="text-sm font-medium min-w-[90px]">Золотой</span>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">от 50 000 ₽ · 7%</span>
+                    <div className="w-4 h-4 rounded-full bg-[#FFD700] border-2 border-black shrink-0" />
+                    <span className="text-sm font-black min-w-[110px] text-black">Золотой</span>
+                    <span className="text-sm font-bold text-black whitespace-nowrap">от 50 000 ₽ · 7%</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  <h4 className="font-semibold">Статистика</h4>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Всего потрачено:{" "}
-                  <span className="font-medium text-foreground">{profile.totalSpent.toLocaleString()} ₽</span>
-                </p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="border-t border-border p-4">
-          <Button onClick={handleSave} className="w-full">
-            <Save className="w-4 h-4 mr-2" />
-            Сохранить
-          </Button>
+        <div className="border-t-2 border-black p-4">
+          <button
+            onClick={handleSave}
+            className="w-full py-4 px-6 bg-[#FFEA00] hover:bg-[#FFF033] text-black font-black text-lg rounded-xl border-2 border-black shadow-brutal btn-press transition-all"
+          >
+            <Save className="w-5 h-5 inline mr-2" strokeWidth={3} />
+            {isCheckoutFlow ? "Оформить заказ" : "Сохранить"}
+          </button>
         </div>
       </div>
     </div>
   )
 }
+

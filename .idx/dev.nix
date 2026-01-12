@@ -11,17 +11,19 @@
     NOCODB_BASE_ID = "p9id5v4q0ukk9iz";
     NOCODB_PROJECT_ID = "p9id5v4q0ukk9iz";
     
-    # Table IDs
-    NOCODB_TABLE_MEALS = "mmtctn4flssh2ua";
-    NOCODB_TABLE_EXTRAS = "mksy21hmttmo855";
-    NOCODB_TABLE_DELIVERY_ZONES = "mpoppulqhsz1der";
-    NOCODB_TABLE_USERS = "mvrp4r9o3z69c45";
-    NOCODB_TABLE_ORDERS = "meddiicl0gr0r8y";
-    NOCODB_TABLE_ORDER_PERSONS = "mvr08d33zm5i8oi";
-    NOCODB_TABLE_ORDER_MEALS = "ma2swd51ph89csr";
-    NOCODB_TABLE_ORDER_EXTRAS = "mebruxwjsnxrxj9";
-    NOCODB_TABLE_PROMO_CODES = "mgov8ce836696fy";
-    NOCODB_TABLE_REVIEWS = "mv8c69ib9muz9ki";
+    # Table IDs (обновлено после пересоздания таблиц с английскими заголовками)
+    NOCODB_TABLE_MEALS = "m6h073y33i44nwx";
+    NOCODB_TABLE_EXTRAS = "m43rjzbwcon7a9p";
+    NOCODB_TABLE_DELIVERY_ZONES = "mozhmlebwluzna4";
+    NOCODB_TABLE_USERS = "mg9dm2m41bjv8ar";
+    NOCODB_TABLE_ORDERS = "m96i4ai2yelbboh";
+    NOCODB_TABLE_ORDER_PERSONS = "m6jccosyrdiz2bm";
+    NOCODB_TABLE_ORDER_MEALS = "mvwp0iaqj2tne15";
+    NOCODB_TABLE_ORDER_EXTRAS = "mm5yxpaojbtjs4v";
+    NOCODB_TABLE_PROMO_CODES = "mbm55wmm3ok48n8";
+    NOCODB_TABLE_REVIEWS = "mrfo7gyp91oq77b";
+    NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS = "mn244txmccpwmhx";
+    NOCODB_TABLE_FRAUD_ALERTS = "mr9txejs65nk1yi";
   };
   idx = {
     extensions = [
