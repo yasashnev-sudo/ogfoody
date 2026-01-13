@@ -570,8 +570,10 @@ export function OrderModal({
   // Можно отменить заказ, если:
   // 1. Заказ существует
   // 2. Дата доставки > сегодня (только будущие даты, завтра и позже)
+  // ✅ ИСПРАВЛЕНО 2026-01-13: Кнопка "Отменить" только для существующих заказов (с id)
   const canCancel = !!(
     existingOrder &&
+    existingOrder.id && // Черновики (без id) не могут быть отменены
     orderStartDate &&
     orderStartDate.getTime() > today.getTime()
   )
