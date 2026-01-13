@@ -595,7 +595,13 @@ export function OrderModal({
   // Блокируем редактирование для ВСЕХ оплаченных заказов, независимо от способа оплаты
   const isPaid = existingOrder?.paid === true || existingOrder?.paymentStatus === "paid"
   const isPaidWithCard = isPaid && existingOrder?.paymentMethod !== "cash"
-  const canEdit = !isViewOnly && !isPaid
+  
+  // ✅ ИСПРАВЛЕНО 2026-01-13: Разделяем право редактировать состав и право оплатить
+  // canEditContent - редактировать состав заказа (блюда, extras) - НЕТ в день доставки
+  // canPay - оплатить заказ - ДА даже в день доставки (если не оплачен)
+  const canEditContent = !isViewOnly && !isPaid  // Нельзя редактировать в день доставки
+  const canPay = !isPaid && !isPastDate           // Можно оплатить сегодня, но не прошлые
+  const canEdit = canEditContent                  // Для обратной совместимости
   const isExistingOrder = !!existingOrder
 
   const fillRandomMeals = (personId: number) => {
@@ -1474,6 +1480,31 @@ export function OrderModal({
                         </Button>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* ✅ ИСПРАВЛЕНО 2026-01-13: Кнопка оплаты для дня доставки (вне блока canEdit) */}
+                {!canEditContent && canPay && isExistingOrder && !isPaid && existingOrder && isAuthenticated && (
+                  <div className="mt-6 border-t border-border pt-6">
+                    <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                      <p className="text-sm text-blue-900">
+                        <strong>🕐 Доставка сегодня:</strong> редактирование недоступно, но вы можете оплатить заказ
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => onRequestPayment?.(existingOrder, finalTotal)}
+                      disabled={isProcessingPayment || isDataLoading}
+                      className="w-full h-16 text-lg bg-[#FFEA00] hover:bg-[#FFF033] border-2 border-black rounded-2xl shadow-brutal active:scale-[0.98] transition-transform"
+                    >
+                      {isDataLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span className="font-black text-black">Загрузка данных...</span>
+                        </div>
+                      ) : (
+                        <span className="font-black text-black">Оплатить заказ · {finalTotal} ₽</span>
+                      )}
+                    </Button>
                   </div>
                 )}
 
