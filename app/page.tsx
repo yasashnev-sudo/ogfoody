@@ -307,11 +307,13 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   const [successDialog, setSuccessDialog] = useState<{
     open: boolean
     loyaltyPointsEarned?: number
+    loyaltyPointsUsed?: number
     loyaltyPointsStatus?: "pending" | "earned"
     loyaltyPointsMessage?: string
   }>({
     open: false,
     loyaltyPointsEarned: 0,
+    loyaltyPointsUsed: 0,
     loyaltyPointsStatus: undefined,
     loyaltyPointsMessage: undefined,
   })
@@ -2069,6 +2071,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setSuccessDialog({
         open: true,
         loyaltyPointsEarned: pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0),
+        loyaltyPointsUsed: pointsUsed > 0 ? pointsUsed : 0, // ✅ ИСПРАВЛЕНО 2026-01-13: Показываем использованные баллы
         // ✅ ИСПРАВЛЕНО 10.01.2026: Для наличных баллы pending, для карты - earned
         loyaltyPointsStatus: paymentMethod === 'cash' ? 'pending' : 'earned',
       })
@@ -3362,6 +3365,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         open={successDialog.open}
         onClose={() => setSuccessDialog({ open: false })}
         loyaltyPointsEarned={successDialog.loyaltyPointsEarned}
+        loyaltyPointsUsed={successDialog.loyaltyPointsUsed}
         loyaltyPointsStatus={successDialog.loyaltyPointsStatus}
         loyaltyPointsMessage={successDialog.loyaltyPointsMessage}
       />
