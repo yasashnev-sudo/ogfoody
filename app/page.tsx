@@ -2031,16 +2031,24 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       const newLoyaltyPoints = data.userProfile?.loyaltyPoints || userProfile.loyaltyPoints || 0
       const pointsDifference = newLoyaltyPoints - oldLoyaltyPoints
       
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Учитываем использованные баллы при расчете фактически начисленных
+      // pointsDifference = начислено - использовано
+      // actualPointsAwarded = pointsDifference + pointsUsed = начислено
+      const actualPointsAwarded = pointsDifference > 0 
+        ? pointsDifference + pointsUsed  // Учитываем использованные баллы
+        : (data.loyaltyPointsEarned || 0)
+      
       console.log('🎁 Расчет начисленных баллов:', {
         oldLoyaltyPoints,
         newLoyaltyPoints,
         pointsDifference,
+        pointsUsed,
+        actualPointsAwarded,
         'data.loyaltyPointsEarned': data.loyaltyPointsEarned,
-        'используем': pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0)
+        'расчет': `pointsDifference (${pointsDifference}) + pointsUsed (${pointsUsed}) = ${actualPointsAwarded}`
       })
       
       // 🔥 АВТОПРОВЕРКА: Проверяем корректность начисления баллов
-      const actualPointsAwarded = pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0)
       const expectedPoints = data.loyaltyPointsEarned || Math.floor((order.total || 0) * 0.01) // 1% от суммы
       await checkLoyaltyPointsAwarded(debug, {
         paymentMethod,
