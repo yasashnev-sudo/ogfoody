@@ -357,14 +357,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               })
               
               // Начисляем баллы пользователю
+              // ✅ ИСПРАВЛЕНО: передаем pointsUsed = 0, так как баллы уже списаны при создании/редактировании заказа
               console.log(`🔍 [PATCH ${id}] 8️⃣ Вызов awardLoyaltyPoints с параметрами:`, {
                 userId: currentOrder.user_id,
                 orderTotal,
-                pointsUsed,
+                pointsUsed: 0, // баллы уже списаны, не списываем повторно
                 loyaltyPointsEarned,
                 orderId: id,
               })
-              await awardLoyaltyPoints(currentOrder.user_id, orderTotal, pointsUsed, loyaltyPointsEarned, Number(id))
+              await awardLoyaltyPoints(currentOrder.user_id, orderTotal, 0, loyaltyPointsEarned, Number(id))
               
               console.log(`🔍 [PATCH ${id}] 9️⃣ Результат awardLoyaltyPoints: успешно`)
               console.log(`✅ Начислено ${loyaltyPointsEarned} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
