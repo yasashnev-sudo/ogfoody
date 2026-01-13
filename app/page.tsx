@@ -1715,13 +1715,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setShowAuthModal(true)
       return
     }
-    // Для заказов с наличными открываем модальное окно заказа для смены способа оплаты
-    if (order.paymentMethod === "cash" && !order.paid) {
-      const orderDate = toDate(order.startDate)
-      setSelectedDate(orderDate)
-      return
-    }
-    // Для других заказов открываем модальное окно оплаты
+    // ✅ ИСПРАВЛЕНО 2026-01-13: Всегда открываем PaymentModal для выбора способа оплаты
+    // Ранее для заказов с наличными открывался OrderModal, что было неправильно
     setPaymentOrder({ order, total })
   }
 
