@@ -2733,9 +2733,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         
         setShowDistrictModal(false)
         
-        // ✅ ИСПРАВЛЕНО 2026-01-11: Для гостя открываем AuthModal после выбора района
+        // ✅ ИСПРАВЛЕНО 2026-01-13: Для гостя устанавливаем shouldAutoCheckout и открываем AuthModal
         if (!currentUser) {
-          console.log("👤 Гость выбрал район → открываем AuthModal")
+          console.log("👤 Гость выбрал район → устанавливаем shouldAutoCheckout и открываем AuthModal")
+          setShouldAutoCheckout(true) // ✅ КРИТИЧНО: Без этого ProfileModal не откроется!
           setShowAuthModal(true)
         } else {
           // Для авторизованного - открываем обратно OrderModal
