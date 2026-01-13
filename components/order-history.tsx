@@ -14,6 +14,7 @@ import {
   AlertCircle,
   RotateCcw,
   Loader2,
+  MessageCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -295,12 +296,30 @@ export function OrderHistory({
     const orderDate = toDate(startDate)
     orderDate.setHours(0, 0, 0, 0)
     
-    // Можно отменить заказ, если дата доставки еще не прошла (включая сегодня)
-    // Это работает для всех заказов, включая оплаченные
-    // Для оплаченных заказов можно отменить до даты доставки включительно
-    const dateIsValid = orderDate.getTime() >= today.getTime()
+    // ✅ ИЗМЕНЕНО 2026-01-13: Клиент НЕ может отменить заказ на сегодняшний день
+    // Можно отменить только заказы на будущие даты (завтра и позже)
+    const dateIsValid = orderDate.getTime() > today.getTime()
     
     return dateIsValid
+  }
+
+  const isTodayOrder = (startDate: Date | string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const orderDate = toDate(startDate)
+    orderDate.setHours(0, 0, 0, 0)
+    
+    return orderDate.getTime() === today.getTime()
+  }
+
+  const handleContactSupport = (orderNumber?: string) => {
+    const message = orderNumber 
+      ? `У меня вопрос по заказу №${orderNumber}`
+      : `У меня вопрос по заказу`
+    
+    // Открываем WhatsApp с предзаполненным сообщением
+    const whatsappUrl = `https://wa.me/74951234567?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
   }
 
   const canReviewOrder = (order: Order, orderKey: string) => {
@@ -721,7 +740,7 @@ export function OrderHistory({
                   </div>
                 )}
               
-                {canCancel && (
+                {canCancel ? (
                   <Button
                     size="sm"
                     onClick={() => handleCancelClick(order)}
@@ -730,7 +749,16 @@ export function OrderHistory({
                   >
                     🗑️ ОТМЕНИТЬ
                   </Button>
-                )}
+                ) : isTodayOrder(order.startDate) ? (
+                  <Button
+                    size="sm"
+                    onClick={() => handleContactSupport(order.orderNumber)}
+                    className="flex-1 bg-green-500 hover:bg-green-600 border-2 border-black text-white font-bold text-xs h-8"
+                  >
+                    <MessageCircle className="w-3 h-3 mr-1" />
+                    ПОДДЕРЖКА
+                  </Button>
+                ) : null}
               </div>
             </div>
           )

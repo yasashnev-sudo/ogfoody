@@ -30,7 +30,8 @@ import {
   ArrowDown,
   ArrowRight,
   Receipt,
-  Coins
+  Coins,
+  MessageCircle
 } from "lucide-react"
 import { MealSelector } from "@/components/meal-selector"
 import { ExtrasSelector } from "@/components/extras-selector"
@@ -546,6 +547,17 @@ export function OrderModal({
     }
   }
 
+  const handleContactSupport = () => {
+    const orderNumber = existingOrder?.orderNumber
+    const message = orderNumber 
+      ? `У меня вопрос по заказу №${orderNumber}`
+      : `У меня вопрос по заказу`
+    
+    // Открываем WhatsApp с предзаполненным сообщением
+    const whatsappUrl = `https://wa.me/74951234567?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
+  }
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -554,13 +566,14 @@ export function OrderModal({
     orderStartDate.setHours(0, 0, 0, 0)
   }
 
+  // ✅ ИЗМЕНЕНО 2026-01-13: Клиент НЕ может отменить заказ на сегодняшний день
   // Можно отменить заказ, если:
   // 1. Заказ существует
-  // 2. Дата доставки >= сегодня (включая сегодня)
+  // 2. Дата доставки > сегодня (только будущие даты, завтра и позже)
   const canCancel = !!(
     existingOrder &&
     orderStartDate &&
-    orderStartDate.getTime() >= today.getTime()
+    orderStartDate.getTime() > today.getTime()
   )
 
   // Режим только просмотра для прошедших дат и дня доставки
@@ -1443,21 +1456,43 @@ export function OrderModal({
                           Отменить заказ
                         </Button>
                       )}
+                      
+                      {!canCancel && existingOrder && isToday && (
+                        <Button
+                          size="sm"
+                          onClick={handleContactSupport}
+                          className="w-full mt-4 bg-green-500 hover:bg-green-600 text-white border-2 border-black shadow-brutal font-black"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Связаться с поддержкой
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Кнопка отмены для оплаченных заказов - вне блока canEdit */}
-                {!canEdit && canCancel && existingOrder && (
+                {!canEdit && existingOrder && (
                   <div className="mt-6 border-t border-border pt-6">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCancelClick}
-                      className="w-full bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      Отменить заказ
-                    </Button>
+                    {canCancel ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelClick}
+                        className="w-full bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Отменить заказ
+                      </Button>
+                    ) : isToday ? (
+                      <Button
+                        size="sm"
+                        onClick={handleContactSupport}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white border-2 border-black shadow-brutal font-black"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Связаться с поддержкой
+                      </Button>
+                    ) : null}
                   </div>
                 )}
               </div>

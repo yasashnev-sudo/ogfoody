@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "pULRoAvF@P-@4Y"
+
+spawn scp root@5.129.194.168:/var/www/ogfoody/.env.production ./.env.production.temp
+expect "password:" { send "$password\r" }
+expect eof
+
+# Создаём .env.local
+exec cp .env.production.temp .env.local
+
+# Меняем настройки для локальной разработки
+if {[file exists .env.local]} {
+    set fp [open .env.local r]
+    set data [read $fp]
+    close $fp
+    
+    # Заменяем значения
+    set data [regsub {NOCODB_URL=http://172.20.0.2:8080} $data {NOCODB_URL=https://noco.povarnakolesah.ru}]
+    set data [regsub {NODE_ENV=production} $data {NODE_ENV=development}]
+    set data [regsub {NEXT_PUBLIC_APP_URL=https://ogfoody.ru} $data {NEXT_PUBLIC_APP_URL=http://localhost:3000}]
+    
+    set fp [open .env.local w]
+    puts $fp $data
+    close $fp
+    
+    puts "\n\033\[0;32m✅ .env.local создан для локальной разработки\033\[0m\n"
+    
+    # Показываем содержимое
+    puts "\033\[0;34m📋 Содержимое .env.local:\033\[0m"
+    exec cat .env.local
+    
+    # Удаляем временный файл
+    exec rm .env.production.temp
+    
+    puts "\n\033\[1;33m================================\033\[0m"
+    puts "\033\[0;32mГотово! Теперь можешь запустить:\033\[0m"
+    puts "\033\[0;34mnpm run dev\033\[0m"
+    puts "\033\[1;33m================================\033\[0m\n"
+}
+

@@ -1167,6 +1167,31 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       allKeys: Object.keys(currentOrder).filter(k => k.toLowerCase().includes('loyalty') || k.toLowerCase().includes('points')),
     })
 
+    // ✅ ДОБАВЛЕНО 2026-01-13: Проверка на дату доставки - нельзя отменить заказ на сегодня
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    let orderDate: Date
+    if (currentOrder.start_date) {
+      orderDate = new Date(currentOrder.start_date)
+    } else if ((currentOrder as any).delivery_date) {
+      orderDate = new Date((currentOrder as any).delivery_date)
+    } else {
+      console.error(`⚠️ Заказ ${id} не имеет start_date или delivery_date`)
+      return NextResponse.json({ 
+        error: "Cannot determine order delivery date" 
+      }, { status: 400 })
+    }
+    orderDate.setHours(0, 0, 0, 0)
+    
+    // Запрещаем отмену заказа на сегодняшний день или прошедшие даты
+    if (orderDate.getTime() <= today.getTime()) {
+      console.log(`❌ Попытка отменить заказ ${id} на дату ${orderDate.toISOString().split('T')[0]} (сегодня или прошлое)`)
+      return NextResponse.json({ 
+        error: "Cannot cancel order for today or past dates. Only future orders can be cancelled." 
+      }, { status: 403 })
+    }
+
     // Проверяем, не был ли заказ уже отменен
     const wasCancelled = currentOrder.order_status === "cancelled"
 
