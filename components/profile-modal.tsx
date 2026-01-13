@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, User, MapPin, Gift, Save, Star, Coins, Phone } from "lucide-react"
+import { X, User, MapPin, Gift, Save, Star, Coins, Phone, CheckCircle2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -537,8 +537,17 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
             onClick={handleSave}
             className="w-full py-4 px-6 bg-[#FFEA00] hover:bg-[#FFF033] text-black font-black text-lg rounded-xl border-2 border-black shadow-brutal btn-press transition-all"
           >
-            <Save className="w-5 h-5 inline mr-2" strokeWidth={3} />
-            {isCheckoutFlow ? "Оформить заказ" : "Сохранить"}
+            {isCheckoutFlow ? (
+              <>
+                <CheckCircle2 className="w-5 h-5 inline mr-2" strokeWidth={3} />
+                Оформить заказ
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5 inline mr-2" strokeWidth={3} />
+                Сохранить
+              </>
+            )}
           </button>
         </div>
       </div>
