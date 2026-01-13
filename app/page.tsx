@@ -33,6 +33,7 @@ import { DebugProvider } from "@/components/debug/DebugContext"
 import { DebugFloatingButton } from "@/components/debug/DebugFloatingButton"
 import { useDebug } from "@/components/debug/DebugContext"
 import { ErrorBoundary } from "@/components/debug/ErrorBoundary"
+import { checkLoyaltyPointsAwarded, checkOrderTotal, checkOrderData, checkProfileUpdate, checkAuthState } from "@/lib/debug-auto-checks"
 
 const formatDateKey = (date: Date): string => {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`
@@ -1983,6 +1984,20 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         'используем': pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0)
       })
       
+      // 🔥 АВТОПРОВЕРКА: Проверяем корректность начисления баллов
+      const actualPointsAwarded = pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0)
+      const expectedPoints = data.loyaltyPointsEarned || Math.floor((order.total || 0) * 0.01) // 1% от суммы
+      await checkLoyaltyPointsAwarded(debug, {
+        paymentMethod,
+        orderTotal: order.total || 0,
+        expectedPoints,
+        actualPointsAwarded,
+        oldPoints: oldLoyaltyPoints,
+        newPoints: newLoyaltyPoints,
+        userId: userProfile.id,
+        orderId: order.id || 'unknown',
+      })
+      
       // Скрываем loading (любой) и показываем success
       setShowPaymentLoading(false)
       setShowCashPaymentAnimation(false)
@@ -2415,6 +2430,16 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       console.log(`💰 Стоимость доставки: ${deliveryFee}₽ для района "${district}"`)
       debug.log(`💰 Delivery fee calculated: ${deliveryFee}₽`, { district, subtotal: pendingCheckout.order.subtotal || pendingCheckout.total })
       
+      // 🔥 АВТОПРОВЕРКА: Проверяем корректность расчёта суммы
+      const subtotal = pendingCheckout.order.subtotal || pendingCheckout.total
+      const totalWithDelivery = subtotal + deliveryFee
+      await checkOrderTotal(debug, {
+        subtotal,
+        deliveryFee,
+        total: totalWithDelivery,
+        userId: userProfile.id,
+      })
+      
       // ВАЖНО: Заказ уже был создан в OrderModal, ищем его в списке orders
       // Берем последний заказ пользователя (который только что был создан)
       const lastOrder = orders.length > 0 ? orders[orders.length - 1] : null
@@ -2460,6 +2485,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             hasDinner: !!(p.day1.dinner?.salad || p.day1.dinner?.soup || p.day1.dinner?.main),
           } : null
         }))
+      })
+      
+      // 🔥 АВТОПРОВЕРКА: Проверяем корректность данных заказа перед отправкой
+      await checkOrderData(debug, {
+        order: updatedOrder,
+        userId: userProfile.id,
       })
       
       if (!updatedOrder.persons || updatedOrder.persons.length === 0) {

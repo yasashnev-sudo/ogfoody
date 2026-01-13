@@ -174,8 +174,8 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
         }
       }
 
-      // Получаем последние 20 логов
-      const recentLogs = logsRef.current.slice(-20).map(log => 
+      // Получаем последние 50 логов (увеличено для лучшего контекста)
+      const recentLogs = logsRef.current.slice(-50).map(log => 
         `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}${
           log.data ? `\nData: ${JSON.stringify(log.data, null, 2)}` : ''
         }`
@@ -245,18 +245,17 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
         stack: event.error?.stack,
       });
 
-      // Автоотправка критических ошибок в продакшене
-      if (process.env.NODE_ENV === 'production') {
-        captureError({
-          errorMessage: `Uncaught Error: ${event.message}`,
-          data: { 
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno, 
-            stack: event.error?.stack,
-          },
-        });
-      }
+      // 🔥 Автоотправка ВСЕГДА (и в dev, и в prod)
+      captureError({
+        errorMessage: `Uncaught Error: ${event.message}`,
+        data: { 
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno, 
+          stack: event.error?.stack,
+          environment: process.env.NODE_ENV,
+        },
+      });
     };
 
     // Перехват необработанных Promise rejections
@@ -267,16 +266,15 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
         stack: event.reason?.stack,
       });
 
-      // Автоотправка в продакшене
-      if (process.env.NODE_ENV === 'production') {
-        captureError({
-          errorMessage: `Unhandled Promise Rejection: ${reason}`,
-          data: { 
-            reason: event.reason,
-            stack: event.reason?.stack,
-          },
-        });
-      }
+      // 🔥 Автоотправка ВСЕГДА (и в dev, и в prod)
+      captureError({
+        errorMessage: `Unhandled Promise Rejection: ${reason}`,
+        data: { 
+          reason: event.reason,
+          stack: event.reason?.stack,
+          environment: process.env.NODE_ENV,
+        },
+      });
     };
 
     // Подписываемся на глобальные ошибки
