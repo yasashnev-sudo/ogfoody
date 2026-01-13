@@ -144,6 +144,41 @@ export async function POST(request: Request) {
       }
     }
 
+    // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату для этого пользователя
+    if (userId) {
+      const orderStartDate = typeof order.startDate === "string" 
+        ? order.startDate 
+        : order.startDate.toISOString().split("T")[0]
+      
+      console.log(`🔍 Проверка существующего заказа на дату ${orderStartDate} для пользователя ${userId}...`)
+      
+      try {
+        const existingOrders = await fetchOrdersByUser(userId)
+        const existingOrderOnDate = existingOrders.find((o) => {
+          const oDate = typeof o.start_date === 'string' 
+            ? o.start_date 
+            : (o["Start Date"] || o.start_date)?.split('T')[0]
+          return oDate === orderStartDate && o.order_status !== 'cancelled'
+        })
+        
+        if (existingOrderOnDate) {
+          console.warn(`⚠️ ВАЛИДАЦИЯ: На дату ${orderStartDate} уже есть заказ (ID: ${existingOrderOnDate.Id}, номер: ${existingOrderOnDate.order_number || existingOrderOnDate["Order Number"]})`)
+          return NextResponse.json({ 
+            error: "Order already exists for this date",
+            details: `На эту дату (${orderStartDate}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+            existingOrderId: existingOrderOnDate.Id,
+            existingOrderNumber: existingOrderOnDate.order_number || existingOrderOnDate["Order Number"],
+            date: orderStartDate
+          }, { status: 400 })
+        }
+        
+        console.log(`✅ Валидация: На дату ${orderStartDate} нет существующего заказа, можно создавать`)
+      } catch (error) {
+        console.error(`❌ Ошибка при проверке существующего заказа:`, error)
+        // Не прерываем процесс создания заказа, но логируем ошибку
+      }
+    }
+
     // Генерация номера заказа
     const orderNumber = generateOrderNumber()
     console.log("Generated order number:", orderNumber)

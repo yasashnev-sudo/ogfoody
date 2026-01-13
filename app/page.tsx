@@ -942,6 +942,30 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         return
       }
     } else if (isAuthenticated && userProfile?.id) {
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату
+      const orderDate = typeof order.startDate === 'string' 
+        ? order.startDate 
+        : order.startDate.toISOString().split('T')[0]
+      const existingOrderOnDate = orders.find((o) => {
+        if (!o.id) return false // Черновики не учитываем
+        const oDate = typeof o.startDate === 'string' 
+          ? o.startDate 
+          : o.startDate.toISOString().split('T')[0]
+        return oDate === orderDate
+      })
+      
+      if (existingOrderOnDate) {
+        console.warn(`⚠️ На дату ${orderDate} уже есть заказ (ID: ${existingOrderOnDate.id})`)
+        setWarningDialog({
+          open: true,
+          title: "Заказ уже существует",
+          description: `На эту дату (${typeof order.startDate === 'string' ? new Date(order.startDate).toLocaleDateString('ru-RU') : order.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+          variant: "warning",
+        })
+        setShowOrderLoading(false)
+        return
+      }
+      
       // Создаем новый заказ через API
       console.log("✅ Условие для создания заказа выполнено:", {
         isAuthenticated,
@@ -978,6 +1002,19 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
           console.error("❌ Ошибка при создании заказа:", errorData)
+          
+          // ✅ ИСПРАВЛЕНО 2026-01-13: Показываем понятное сообщение, если заказ уже существует
+          if (errorData.error === "Order already exists for this date" || errorData.details) {
+            setWarningDialog({
+              open: true,
+              title: "Заказ уже существует",
+              description: errorData.details || `На эту дату уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+              variant: "warning",
+            })
+            setShowOrderLoading(false)
+            return
+          }
+          
           throw new Error(errorData.error || "Failed to create order")
         }
         
@@ -1565,6 +1602,27 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
    */
   const handleRepeatOrder = async (order: Order, targetDate: Date) => {
     try {
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату
+      const targetDateKey = targetDate.toISOString().split('T')[0]
+      const existingOrderOnDate = orders.find((o) => {
+        if (!o.id) return false // Черновики не учитываем
+        const oDate = typeof o.startDate === 'string' 
+          ? o.startDate 
+          : o.startDate.toISOString().split('T')[0]
+        return oDate === targetDateKey
+      })
+      
+      if (existingOrderOnDate) {
+        console.warn(`⚠️ [Repeat Order] На дату ${targetDateKey} уже есть заказ (ID: ${existingOrderOnDate.id})`)
+        setWarningDialog({
+          open: true,
+          title: "Заказ уже существует",
+          description: `На эту дату (${targetDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+          variant: "warning",
+        })
+        return
+      }
+      
       // ✅ Получаем неделю для целевой даты
       const weekType = getWeekTypeForDate(targetDate)
       
