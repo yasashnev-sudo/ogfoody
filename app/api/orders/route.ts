@@ -146,8 +146,9 @@ export async function POST(request: Request) {
 
     // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату для этого пользователя
     if (userId) {
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Нормализуем дату заказа (берем только дату без времени)
       const orderStartDate = typeof order.startDate === "string" 
-        ? order.startDate 
+        ? order.startDate.split('T')[0]  // Берем только дату из строки
         : order.startDate.toISOString().split("T")[0]
       
       console.log(`🔍 Проверка существующего заказа на дату ${orderStartDate} для пользователя ${userId}...`)
@@ -158,26 +159,20 @@ export async function POST(request: Request) {
         // ✅ ИСПРАВЛЕНО 2026-01-13: Детальное логирование для отладки
         console.log(`🔍 [ВАЛИДАЦИЯ] Проверка заказов на дату ${orderStartDate} для пользователя ${userId}`)
         console.log(`🔍 [ВАЛИДАЦИЯ] Всего заказов пользователя: ${existingOrders.length}`)
+        console.log(`🔍 [ВАЛИДАЦИЯ] Входящая дата заказа: ${typeof order.startDate === "string" ? order.startDate : order.startDate.toISOString()}`)
         
         const existingOrderOnDate = existingOrders.find((o) => {
-          const oDate = typeof o.start_date === 'string' 
-            ? o.start_date 
-            : (o["Start Date"] || o.start_date)?.split('T')[0]
+          // ✅ ИСПРАВЛЕНО 2026-01-13: Нормализуем дату существующего заказа (берем только дату без времени)
+          const oDateRaw = o.start_date || o["Start Date"] || ''
+          const oDate = typeof oDateRaw === 'string' 
+            ? oDateRaw.split('T')[0]  // Берем только дату из строки
+            : new Date(oDateRaw).toISOString().split('T')[0]
           
           const orderStatus = o.order_status || o["Order Status"] || 'pending'
           const isCancelled = orderStatus === 'cancelled'
           
-          // ✅ ИСПРАВЛЕНО 2026-01-13: Логируем каждый заказ для отладки
-          if (oDate === orderStartDate) {
-            console.log(`🔍 [ВАЛИДАЦИЯ] Найден заказ на дату ${orderStartDate}:`, {
-              orderId: o.Id,
-              orderNumber: o.order_number || o["Order Number"],
-              orderStatus,
-              isCancelled,
-              paid: o.paid || o["Paid"],
-              startDate: oDate,
-            })
-          }
+          // ✅ ИСПРАВЛЕНО 2026-01-13: Логируем каждый заказ для отладки (все заказы, не только совпадающие)
+          console.log(`🔍 [ВАЛИДАЦИЯ] Заказ ${o.Id}: дата=${oDate}, статус=${orderStatus}, отменен=${isCancelled}, совпадает=${oDate === orderStartDate}`)
           
           // ✅ ИСПРАВЛЕНО 2026-01-13: Учитываем только неотмененные заказы
           return oDate === orderStartDate && !isCancelled
