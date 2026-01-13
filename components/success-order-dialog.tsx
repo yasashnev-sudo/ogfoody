@@ -39,7 +39,8 @@ export function SuccessOrderDialog({ open, onClose, loyaltyPointsEarned, loyalty
                     </div>
                     
                     {/* Списанные баллы */}
-                    {loyaltyPointsUsed && loyaltyPointsUsed > 0 && (
+                    {/* ✅ ИСПРАВЛЕНО 2026-01-13: Показываем только если баллы действительно были списаны (не 0 и не undefined) */}
+                    {loyaltyPointsUsed !== undefined && loyaltyPointsUsed !== null && loyaltyPointsUsed > 0 && (
                       <div className="w-full bg-red-50 border-2 border-red-200 rounded-lg p-3">
                         <div className="text-center">
                           <p className="text-xs text-red-700 mb-1 font-semibold">Списано</p>

@@ -15,12 +15,14 @@ export async function GET(request: Request) {
   try {
     console.log(`🕐 Запуск cron job: process-pending-points`)
     
-    // Получаем текущую дату минус 1 день
+    // ✅ ИСПРАВЛЕНО 2026-01-13: Получаем вчерашнюю дату в формате YYYY-MM-DD (без времени)
+    // Это нужно для правильного сравнения дат доставки
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(0, 0, 0, 0) // Устанавливаем время на 00:00:00 для правильного сравнения
     const yesterdayStr = yesterday.toISOString().split('T')[0] // YYYY-MM-DD
     
-    console.log(`📅 Обрабатываем заказы с датой доставки до: ${yesterdayStr}`)
+    console.log(`📅 Обрабатываем заказы с датой доставки до: ${yesterdayStr} (включительно)`)
     
     // Ищем все pending транзакции
     const pendingTransactionsResponse = await nocoFetch<NocoDBResponse<NocoDBLoyaltyPointsTransaction>>(
@@ -102,12 +104,19 @@ export async function GET(request: Request) {
           continue
         }
         
-        // Проверяем, прошли ли сутки после даты доставки
-        const deliveryDate = new Date(startDate)
-        if (deliveryDate > yesterday) {
-          console.log(`⏳ Заказ ${orderId} еще не прошел суток после доставки (${startDate}), пропускаем`)
+        // ✅ ИСПРАВЛЕНО 2026-01-13: Правильное сравнение дат (только дата, без времени)
+        // Нормализуем дату доставки: если строка - парсим, если Date - используем как есть
+        const deliveryDateStr = typeof startDate === 'string' 
+          ? startDate.split('T')[0]  // Берем только дату из строки "YYYY-MM-DD" или "YYYY-MM-DDTHH:mm:ss"
+          : new Date(startDate).toISOString().split('T')[0]  // Конвертируем Date в строку YYYY-MM-DD
+        
+        // Сравниваем строки дат (YYYY-MM-DD)
+        if (deliveryDateStr > yesterdayStr) {
+          console.log(`⏳ Заказ ${orderId} еще не прошел суток после доставки (${deliveryDateStr} > ${yesterdayStr}), пропускаем`)
           continue
         }
+        
+        console.log(`✅ Заказ ${orderId} прошел проверку даты: ${deliveryDateStr} <= ${yesterdayStr}`)
         
         // Проверяем способ оплаты (должен быть наличные)
         const paymentMethod = order.payment_method || (order as any)["Payment Method"]
