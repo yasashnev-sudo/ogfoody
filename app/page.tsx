@@ -2611,13 +2611,41 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                 ? updatedOrder.startDate 
                 : updatedOrder.startDate.toISOString().split('T')[0]
               
+              // ✅ ИСПРАВЛЕНО 2026-01-13: Формируем детальное сообщение с номером заказа
+              let description = errorData.details || `На эту дату (${typeof updatedOrder.startDate === 'string' ? new Date(updatedOrder.startDate).toLocaleDateString('ru-RU') : updatedOrder.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ.`
+              
+              if (errorData.existingOrderNumber) {
+                description += ` Номер заказа: ${errorData.existingOrderNumber}.`
+              }
+              
+              description += " Отмените существующий заказ или выберите другую дату."
+              
               setShowOrderLoading(false)
               setWarningDialog({
                 open: true,
                 title: "Заказ уже существует",
-                description: errorData.details || `На эту дату (${typeof updatedOrder.startDate === 'string' ? new Date(updatedOrder.startDate).toLocaleDateString('ru-RU') : updatedOrder.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+                description,
                 variant: "warning",
               })
+              
+              // ✅ ИСПРАВЛЕНО 2026-01-13: Если есть existingOrderId, загружаем заказы чтобы показать существующий
+              if (errorData.existingOrderId) {
+                console.log(`🔄 Загружаем заказы для отображения существующего заказа #${errorData.existingOrderId}`)
+                // Загружаем заказы пользователя, чтобы существующий заказ отобразился в календаре
+                try {
+                  const ordersResponse = await fetch(`/api/orders?userId=${userProfile.id}`)
+                  if (ordersResponse.ok) {
+                    const ordersData = await ordersResponse.json()
+                    if (ordersData.orders) {
+                      setOrders(ordersData.orders)
+                      console.log(`✅ Заказы загружены, найден заказ #${errorData.existingOrderId}`)
+                    }
+                  }
+                } catch (error) {
+                  console.error("❌ Ошибка при загрузке заказов:", error)
+                }
+              }
+              
               // Очищаем pending checkout
               setPendingCheckout(null)
               setShouldAutoCheckout(false)
@@ -2634,7 +2662,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               }
             })
             
-            throw new Error(errorData.error || "Failed to create order")
+            // ✅ ИСПРАВЛЕНО 2026-01-13: Сохраняем errorData в error для доступа в catch
+            const errorWithData = new Error(errorData.error || "Failed to create order")
+            ;(errorWithData as any).data = errorData
+            throw errorWithData
           }
           
           const result = await response.json()
@@ -2659,13 +2690,42 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               ? updatedOrder.startDate 
               : updatedOrder.startDate.toISOString().split('T')[0]
             
+            // ✅ ИСПРАВЛЕНО 2026-01-13: Пытаемся извлечь информацию о существующем заказе из error
+            let description = `На эту дату (${typeof updatedOrder.startDate === 'string' ? new Date(updatedOrder.startDate).toLocaleDateString('ru-RU') : updatedOrder.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ.`
+            
+            // Пытаемся найти информацию о заказе в error.data или error
+            const errorData = (error as any).data || (error as any)
+            if (errorData?.existingOrderNumber) {
+              description += ` Номер заказа: ${errorData.existingOrderNumber}.`
+            }
+            
+            description += " Отмените существующий заказ или выберите другую дату."
+            
             setShowOrderLoading(false)
             setWarningDialog({
               open: true,
               title: "Заказ уже существует",
-              description: `На эту дату (${typeof updatedOrder.startDate === 'string' ? new Date(updatedOrder.startDate).toLocaleDateString('ru-RU') : updatedOrder.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+              description,
               variant: "warning",
             })
+            
+            // ✅ ИСПРАВЛЕНО 2026-01-13: Загружаем заказы для отображения существующего
+            if (errorData?.existingOrderId) {
+              console.log(`🔄 Загружаем заказы для отображения существующего заказа #${errorData.existingOrderId}`)
+              try {
+                const ordersResponse = await fetch(`/api/orders?userId=${userProfile.id}`)
+                if (ordersResponse.ok) {
+                  const ordersData = await ordersResponse.json()
+                  if (ordersData.orders) {
+                    setOrders(ordersData.orders)
+                    console.log(`✅ Заказы загружены, найден заказ #${errorData.existingOrderId}`)
+                  }
+                }
+              } catch (fetchError) {
+                console.error("❌ Ошибка при загрузке заказов:", fetchError)
+              }
+            }
+            
             // Очищаем pending checkout
             setPendingCheckout(null)
             setShouldAutoCheckout(false)
@@ -2722,13 +2782,41 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               : pendingCheckout.order.startDate.toISOString().split('T')[0])
           : 'неизвестная дата'
         
+        // ✅ ИСПРАВЛЕНО 2026-01-13: Пытаемся извлечь информацию о существующем заказе из error
+        let description = `На эту дату (${orderDate !== 'неизвестная дата' ? new Date(orderDate).toLocaleDateString('ru-RU') : orderDate}) у вас уже есть заказ.`
+        
+        const errorData = (error as any).data || (error as any)
+        if (errorData?.existingOrderNumber) {
+          description += ` Номер заказа: ${errorData.existingOrderNumber}.`
+        }
+        
+        description += " Отмените существующий заказ или выберите другую дату."
+        
         setShowOrderLoading(false)
         setWarningDialog({
           open: true,
           title: "Заказ уже существует",
-          description: `На эту дату (${orderDate !== 'неизвестная дата' ? new Date(orderDate).toLocaleDateString('ru-RU') : orderDate}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+          description,
           variant: "warning",
         })
+        
+        // ✅ ИСПРАВЛЕНО 2026-01-13: Загружаем заказы для отображения существующего
+        if (errorData?.existingOrderId && userProfile?.id) {
+          console.log(`🔄 Загружаем заказы для отображения существующего заказа #${errorData.existingOrderId}`)
+          try {
+            const ordersResponse = await fetch(`/api/orders?userId=${userProfile.id}`)
+            if (ordersResponse.ok) {
+              const ordersData = await ordersResponse.json()
+              if (ordersData.orders) {
+                setOrders(ordersData.orders)
+                console.log(`✅ Заказы загружены, найден заказ #${errorData.existingOrderId}`)
+              }
+            }
+          } catch (fetchError) {
+            console.error("❌ Ошибка при загрузке заказов:", fetchError)
+          }
+        }
+        
         // Очищаем pending checkout
         setPendingCheckout(null)
         setShouldAutoCheckout(false)
