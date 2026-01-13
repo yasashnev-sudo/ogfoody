@@ -2605,6 +2605,25 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
             console.error("❌ Ошибка при создании заказа:", errorData)
             
+            // ✅ ИСПРАВЛЕНО 2026-01-13: Показываем понятное сообщение, если заказ уже существует
+            if (errorData.error === "Order already exists for this date" || errorData.error === "Duplicate order date" || errorData.details) {
+              const orderDate = typeof updatedOrder.startDate === 'string' 
+                ? updatedOrder.startDate 
+                : updatedOrder.startDate.toISOString().split('T')[0]
+              
+              setShowOrderLoading(false)
+              setWarningDialog({
+                open: true,
+                title: "Заказ уже существует",
+                description: errorData.details || `На эту дату (${typeof updatedOrder.startDate === 'string' ? new Date(updatedOrder.startDate).toLocaleDateString('ru-RU') : updatedOrder.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+                variant: "warning",
+              })
+              // Очищаем pending checkout
+              setPendingCheckout(null)
+              setShouldAutoCheckout(false)
+              return
+            }
+            
             // ✅ DEBUG RECORDER: Захватываем ошибку API
             await debug.captureError({
               errorMessage: `API Error: POST /api/orders (${response.status})`,
@@ -2633,6 +2652,25 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           console.log("📅 Заказ добавлен в календарь")
         } catch (error: any) {
           console.error("❌ Не удалось создать заказ в БД:", error)
+          
+          // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, не является ли это ошибкой дубликата
+          if (error.message && (error.message.includes("Order already exists") || error.message.includes("Duplicate order date"))) {
+            const orderDate = typeof updatedOrder.startDate === 'string' 
+              ? updatedOrder.startDate 
+              : updatedOrder.startDate.toISOString().split('T')[0]
+            
+            setShowOrderLoading(false)
+            setWarningDialog({
+              open: true,
+              title: "Заказ уже существует",
+              description: `На эту дату (${typeof updatedOrder.startDate === 'string' ? new Date(updatedOrder.startDate).toLocaleDateString('ru-RU') : updatedOrder.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+              variant: "warning",
+            })
+            // Очищаем pending checkout
+            setPendingCheckout(null)
+            setShouldAutoCheckout(false)
+            return
+          }
           
           // ✅ DEBUG RECORDER: Захватываем общую ошибку создания заказа
           await debug.captureError({
@@ -2675,6 +2713,27 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       
     } catch (error: any) {
       console.error("❌ Ошибка при автооформлении заказа:", error)
+      
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, не является ли это ошибкой дубликата
+      if (error.message && (error.message.includes("Order already exists") || error.message.includes("Duplicate order date"))) {
+        const orderDate = pendingCheckout?.order?.startDate
+          ? (typeof pendingCheckout.order.startDate === 'string' 
+              ? pendingCheckout.order.startDate 
+              : pendingCheckout.order.startDate.toISOString().split('T')[0])
+          : 'неизвестная дата'
+        
+        setShowOrderLoading(false)
+        setWarningDialog({
+          open: true,
+          title: "Заказ уже существует",
+          description: `На эту дату (${orderDate !== 'неизвестная дата' ? new Date(orderDate).toLocaleDateString('ru-RU') : orderDate}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+          variant: "warning",
+        })
+        // Очищаем pending checkout
+        setPendingCheckout(null)
+        setShouldAutoCheckout(false)
+        return
+      }
       
       // ✅ DEBUG RECORDER: Захватываем любую необработанную ошибку
       await debug.captureError({
