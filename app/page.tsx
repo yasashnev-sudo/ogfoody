@@ -2049,7 +2049,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       })
       
       // 🔥 АВТОПРОВЕРКА: Проверяем корректность начисления баллов
-      const expectedPoints = data.loyaltyPointsEarned || Math.floor((order.total || 0) * 0.01) // 1% от суммы
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Используем loyaltyPointsEarned из ответа API
+      // Баллы рассчитываются на бэкенде с учетом правильного процента и полной суммы заказа
+      const expectedPoints = data.loyaltyPointsEarned || 0
       await checkLoyaltyPointsAwarded(debug, {
         paymentMethod,
         orderTotal: order.total || 0,

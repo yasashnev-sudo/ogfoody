@@ -942,6 +942,15 @@ export function calculateCashbackPercent(totalSpent: number): number {
 
 /**
  * Рассчитывает количество баллов, которые будут начислены за заказ
+ * 
+ * ✅ ИСПРАВЛЕНО 2026-01-13: Баллы начисляются на ПОЛНУЮ сумму заказа (orderTotal),
+ * а не на сумму минус использованные баллы. Это соответствует документации
+ * DATA_ARCHITECTURE_RULES.md: "Баллы начисляются на ПОЛНУЮ сумму заказа"
+ * 
+ * @param orderTotal - Полная сумма заказа (subtotal + delivery_fee - promo_discount)
+ * @param pointsUsed - Количество использованных баллов (не влияет на расчет начисления)
+ * @param totalSpent - Общая сумма потраченных средств (для определения уровня лояльности)
+ * @returns Количество начисляемых баллов
  */
 export function calculateEarnedPoints(orderTotal: number, pointsUsed: number, totalSpent: number): number {
   if (orderTotal <= 0) {
@@ -950,17 +959,18 @@ export function calculateEarnedPoints(orderTotal: number, pointsUsed: number, to
   }
   
   const cashbackPercent = calculateCashbackPercent(totalSpent)
-  // Баллы начисляются с суммы заказа минус использованные баллы
-  const amountForPoints = Math.max(0, orderTotal - pointsUsed)
-  const earnedPoints = Math.floor(amountForPoints * (cashbackPercent / 100))
+  // ✅ ИСПРАВЛЕНО: Баллы начисляются на ПОЛНУЮ сумму заказа (orderTotal)
+  // Использованные баллы (pointsUsed) не влияют на расчет начисления
+  const earnedPoints = Math.floor(orderTotal * (cashbackPercent / 100))
   
   console.log(`🔢 calculateEarnedPoints:`, {
     orderTotal,
     pointsUsed,
     totalSpent,
     cashbackPercent,
-    amountForPoints,
     earnedPoints,
+    calculation: `${orderTotal} * (${cashbackPercent} / 100) = ${earnedPoints}`,
+    note: 'Баллы начисляются на полную сумму заказа (orderTotal)',
   })
   
   return earnedPoints
