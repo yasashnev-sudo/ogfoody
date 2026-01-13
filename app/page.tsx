@@ -945,28 +945,57 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       }
     } else if (isAuthenticated && userProfile?.id) {
       // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Учитываем только активные заказы (с id, не отмененные)
       const orderDate = typeof order.startDate === 'string' 
         ? order.startDate 
         : order.startDate.toISOString().split('T')[0]
+      
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Детальное логирование для отладки
+      console.log(`🔍 [handleSaveOrder] Проверка заказов на дату ${orderDate}`)
+      console.log(`🔍 [handleSaveOrder] Всего заказов в локальном стейте: ${orders.length}`)
+      
       const existingOrderOnDate = orders.find((o) => {
         if (!o.id) return false // Черновики не учитываем
+        // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем orderStatus вместо cancelled
+        const orderStatus = o.orderStatus || 'pending'
+        if (orderStatus === 'cancelled') return false // Отмененные заказы не учитываем
         const oDate = typeof o.startDate === 'string' 
           ? o.startDate 
           : o.startDate.toISOString().split('T')[0]
+        
+        // ✅ ИСПРАВЛЕНО 2026-01-13: Логируем каждый заказ для отладки
+        if (oDate === orderDate) {
+          console.log(`🔍 [handleSaveOrder] Найден заказ на дату ${orderDate}:`, {
+            orderId: o.id,
+            orderNumber: o.orderNumber,
+            orderStatus,
+            paid: o.paid,
+            startDate: oDate,
+          })
+        }
+        
         return oDate === orderDate
       })
       
       if (existingOrderOnDate) {
-        console.warn(`⚠️ На дату ${orderDate} уже есть заказ (ID: ${existingOrderOnDate.id})`)
+        const orderStatus = existingOrderOnDate.orderStatus || 'pending'
+        console.warn(`⚠️ [handleSaveOrder] На дату ${orderDate} уже есть активный заказ:`, {
+          orderId: existingOrderOnDate.id,
+          orderNumber: existingOrderOnDate.orderNumber,
+          orderStatus,
+          paid: existingOrderOnDate.paid,
+        })
         setWarningDialog({
           open: true,
           title: "Заказ уже существует",
-          description: `На эту дату (${typeof order.startDate === 'string' ? new Date(order.startDate).toLocaleDateString('ru-RU') : order.startDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+          description: `На эту дату (${typeof order.startDate === 'string' ? new Date(order.startDate).toLocaleDateString('ru-RU') : order.startDate.toLocaleDateString('ru-RU')}) у вас уже есть активный заказ. Отмените существующий заказ или выберите другую дату.`,
           variant: "warning",
         })
         setShowOrderLoading(false)
         return
       }
+      
+      console.log(`✅ [handleSaveOrder] На дату ${orderDate} нет активного заказа, можно создавать`)
       
       // Создаем новый заказ через API
       console.log("✅ Условие для создания заказа выполнено:", {
@@ -2413,19 +2442,47 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     }
 
     // ✅ ДОБАВЛЕНО 11.01.2026: Проверяем, есть ли уже заказ на эту дату
+    // ✅ ИСПРАВЛЕНО 2026-01-13: Учитываем только активные заказы (с id, не отмененные)
     const orderDate = pendingCheckout.order.startDate
+    const orderDateStr = typeof orderDate === 'string' ? orderDate : orderDate.toISOString().split('T')[0]
+    
+    // ✅ ИСПРАВЛЕНО 2026-01-13: Детальное логирование для отладки
+    console.log(`🔍 [handleAutoCheckout] Проверка заказов на дату ${orderDateStr}`)
+    console.log(`🔍 [handleAutoCheckout] Всего заказов в локальном стейте: ${orders.length}`)
+    
     const existingOrderOnDate = orders.find((o) => {
+      if (!o.id) return false // Черновики не учитываем
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем orderStatus вместо cancelled
+      const orderStatus = o.orderStatus || 'pending'
+      if (orderStatus === 'cancelled') return false // Отмененные заказы не учитываем
       const oDate = typeof o.startDate === 'string' ? o.startDate : o.startDate.toISOString().split('T')[0]
-      const checkDate = typeof orderDate === 'string' ? orderDate : orderDate.toISOString().split('T')[0]
-      return oDate === checkDate
+      
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Логируем каждый заказ для отладки
+      if (oDate === orderDateStr) {
+        console.log(`🔍 [handleAutoCheckout] Найден заказ на дату ${orderDateStr}:`, {
+          orderId: o.id,
+          orderNumber: o.orderNumber,
+          orderStatus,
+          paid: o.paid,
+          startDate: oDate,
+        })
+      }
+      
+      return oDate === orderDateStr
     })
 
     if (existingOrderOnDate) {
-      console.warn(`⚠️ На дату ${orderDate} уже есть заказ (ID: ${existingOrderOnDate.id})`)
+      const orderStatus = existingOrderOnDate.orderStatus || 'pending'
+      console.warn(`⚠️ [handleAutoCheckout] На дату ${orderDateStr} уже есть активный заказ:`, {
+        orderId: existingOrderOnDate.id,
+        orderNumber: existingOrderOnDate.orderNumber,
+        orderStatus,
+        paid: existingOrderOnDate.paid,
+      })
       setWarningDialog({
         open: true,
         title: "Заказ уже существует",
-        description: `На эту дату (${typeof orderDate === 'string' ? new Date(orderDate).toLocaleDateString('ru-RU') : orderDate.toLocaleDateString('ru-RU')}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+        description: `На эту дату (${typeof orderDate === 'string' ? new Date(orderDate).toLocaleDateString('ru-RU') : orderDate.toLocaleDateString('ru-RU')}) у вас уже есть активный заказ. Отмените существующий заказ или выберите другую дату.`,
         variant: "warning",
       })
       // Очищаем pendingCheckout и shouldAutoCheckout
@@ -2433,6 +2490,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setShouldAutoCheckout(false)
       return
     }
+    
+    console.log(`✅ [handleAutoCheckout] На дату ${orderDateStr} нет активного заказа, можно создавать`)
 
     // ✅ ДОБАВЛЕНО 10.01.2026: Показываем анимацию во время автооформления
     setShowOrderLoading(true)

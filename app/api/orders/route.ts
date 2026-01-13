@@ -154,25 +154,56 @@ export async function POST(request: Request) {
       
       try {
         const existingOrders = await fetchOrdersByUser(userId)
+        
+        // ✅ ИСПРАВЛЕНО 2026-01-13: Детальное логирование для отладки
+        console.log(`🔍 [ВАЛИДАЦИЯ] Проверка заказов на дату ${orderStartDate} для пользователя ${userId}`)
+        console.log(`🔍 [ВАЛИДАЦИЯ] Всего заказов пользователя: ${existingOrders.length}`)
+        
         const existingOrderOnDate = existingOrders.find((o) => {
           const oDate = typeof o.start_date === 'string' 
             ? o.start_date 
             : (o["Start Date"] || o.start_date)?.split('T')[0]
-          return oDate === orderStartDate && o.order_status !== 'cancelled'
+          
+          const orderStatus = o.order_status || o["Order Status"] || 'pending'
+          const isCancelled = orderStatus === 'cancelled'
+          
+          // ✅ ИСПРАВЛЕНО 2026-01-13: Логируем каждый заказ для отладки
+          if (oDate === orderStartDate) {
+            console.log(`🔍 [ВАЛИДАЦИЯ] Найден заказ на дату ${orderStartDate}:`, {
+              orderId: o.Id,
+              orderNumber: o.order_number || o["Order Number"],
+              orderStatus,
+              isCancelled,
+              paid: o.paid || o["Paid"],
+              startDate: oDate,
+            })
+          }
+          
+          // ✅ ИСПРАВЛЕНО 2026-01-13: Учитываем только неотмененные заказы
+          return oDate === orderStartDate && !isCancelled
         })
         
         if (existingOrderOnDate) {
-          console.warn(`⚠️ ВАЛИДАЦИЯ: На дату ${orderStartDate} уже есть заказ (ID: ${existingOrderOnDate.Id}, номер: ${existingOrderOnDate.order_number || existingOrderOnDate["Order Number"]})`)
+          const orderStatus = existingOrderOnDate.order_status || existingOrderOnDate["Order Status"] || 'pending'
+          const orderNumber = existingOrderOnDate.order_number || existingOrderOnDate["Order Number"]
+          
+          console.warn(`⚠️ ВАЛИДАЦИЯ: На дату ${orderStartDate} уже есть активный заказ:`, {
+            orderId: existingOrderOnDate.Id,
+            orderNumber,
+            orderStatus,
+            paid: existingOrderOnDate.paid || existingOrderOnDate["Paid"],
+          })
+          
           return NextResponse.json({ 
             error: "Order already exists for this date",
-            details: `На эту дату (${orderStartDate}) у вас уже есть заказ. Отмените существующий заказ или выберите другую дату.`,
+            details: `На эту дату (${orderStartDate}) у вас уже есть активный заказ (${orderNumber}). Отмените существующий заказ или выберите другую дату.`,
             existingOrderId: existingOrderOnDate.Id,
-            existingOrderNumber: existingOrderOnDate.order_number || existingOrderOnDate["Order Number"],
+            existingOrderNumber: orderNumber,
             date: orderStartDate
           }, { status: 400 })
         }
         
-        console.log(`✅ Валидация: На дату ${orderStartDate} нет существующего заказа, можно создавать`)
+        console.log(`✅ Валидация: На дату ${orderStartDate} нет активного заказа, можно создавать`)
       } catch (error) {
         console.error(`❌ Ошибка при проверке существующего заказа:`, error)
         // Не прерываем процесс создания заказа, но логируем ошибку
