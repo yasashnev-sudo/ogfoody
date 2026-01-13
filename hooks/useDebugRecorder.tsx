@@ -111,11 +111,13 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
   // Функция для создания скриншота
   const captureScreenshot = useCallback(async (): Promise<string | null> => {
     try {
-      const canvas = await html2canvas(document.body, {
+      // ✅ УЛУЧШЕНИЕ: Таймаут для мобильных устройств
+      const screenshotPromise = html2canvas(document.body, {
         allowTaint: true,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        scale: window.devicePixelRatio > 1 ? 1 : window.devicePixelRatio, // ✅ Оптимизация для retina
         // ✅ Игнорируем ошибки с современными CSS функциями
         ignoreElements: (element) => {
           // Пропускаем элементы, которые могут вызывать проблемы
@@ -138,6 +140,21 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
           });
         }
       });
+      
+      // ✅ УЛУЧШЕНИЕ: Таймаут 10 секунд для мобильных
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.warn('[DEBUG] Screenshot timeout (10s) - continuing without screenshot');
+          resolve(null);
+        }, 10000);
+      });
+      
+      const canvas = await Promise.race([screenshotPromise, timeoutPromise]);
+      if (!canvas) {
+        console.warn('[DEBUG] Screenshot timed out, sending report without screenshot');
+        return null;
+      }
+      
       return canvas.toDataURL('image/png');
     } catch (error: any) {
       // ✅ Более информативная ошибка, но не критичная
@@ -193,8 +210,22 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
         userComment: userComment || null, // ✅ Добавляем комментарий пользователя
       };
 
+      // ✅ УЛУЧШЕНИЕ: Проверка сети перед отправкой
+      if (!navigator.onLine) {
+        addLog('error', '❌ Нет подключения к интернету');
+        throw new Error('No internet connection');
+      }
+
       // Отправляем отчет на сервер
       addLog('info', 'Sending debug report to server...');
+      console.log('[DEBUG] Отправка отчета:', {
+        logsCount: recentLogs.length,
+        hasScreenshot: !!screenshot,
+        screenshotSize: screenshot ? `${(screenshot.length / 1024).toFixed(0)} KB` : 'N/A',
+        url: meta.url,
+        userAgent: meta.userAgent?.substring(0, 50) + '...',
+      });
+      
       const response = await fetch('/api/debug/report', {
         method: 'POST',
         headers: {
@@ -206,6 +237,14 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
           meta,
         }),
       });
+
+      console.log('[DEBUG] Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[DEBUG] Server error response:', errorText);
+        throw new Error(`Server returned ${response.status}: ${errorText}`);
+      }
 
       const result = await response.json();
 

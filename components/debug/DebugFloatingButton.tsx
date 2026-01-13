@@ -7,6 +7,7 @@ import { DebugConsole } from './DebugConsole';
 export function DebugFloatingButton() {
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState<string | null>(null);
   const debug = useDebug();
 
   // ✅ Горячая клавиша: Ctrl+Shift+D
@@ -24,18 +25,34 @@ export function DebugFloatingButton() {
   }, []);
 
   const handleSendReport = async (comment: string) => {
-    const result = await debug.sendManualReport(comment);
-    
-    // ✅ Показываем уведомление об успехе + вибрация на iPhone
-    if (result?.success) {
-      // 🔥 Vibration feedback (работает на iPhone)
-      if ('vibrate' in navigator) {
-        navigator.vibrate(200); // 200ms вибрация
-      }
+    try {
+      const result = await debug.sendManualReport(comment);
       
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000); // Скрываем через 3 секунды
-      setIsConsoleOpen(false); // Закрываем консоль после успешной отправки
+      // ✅ Показываем уведомление об успехе + вибрация на iPhone
+      if (result?.success) {
+        // 🔥 Vibration feedback (работает на iPhone)
+        if ('vibrate' in navigator) {
+          navigator.vibrate(200); // 200ms вибрация
+        }
+        
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000); // Скрываем через 3 секунды
+        setIsConsoleOpen(false); // Закрываем консоль после успешной отправки
+      } else {
+        // ❌ Ошибка от сервера
+        setShowError(result?.error || 'Не удалось отправить отчет');
+        setTimeout(() => setShowError(null), 5000);
+      }
+    } catch (error: any) {
+      // ❌ Ошибка сети или другая проблема
+      console.error('[DEBUG] Failed to send report:', error);
+      setShowError(error.message || 'Ошибка сети. Проверьте подключение к интернету');
+      setTimeout(() => setShowError(null), 5000);
+      
+      // Вибрация ошибки
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]); // Двойная вибрация для ошибки
+      }
     }
   };
 
@@ -81,6 +98,19 @@ export function DebugFloatingButton() {
             <div>
               <p className="font-bold">Отчёт отправлен!</p>
               <p className="text-xs opacity-90">Проверь папку debug_reports/</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ❌ Уведомление об ошибке */}
+      {showError && (
+        <div className="fixed bottom-24 right-6 bg-red-600 text-white px-4 py-3 rounded-lg shadow-xl z-[99999] max-w-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">❌</span>
+            <div>
+              <p className="font-bold">Ошибка отправки</p>
+              <p className="text-xs opacity-90">{showError}</p>
             </div>
           </div>
         </div>
