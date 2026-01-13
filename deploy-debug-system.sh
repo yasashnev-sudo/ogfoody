@@ -89,3 +89,4 @@ echo "📁 View debug reports:"
 echo "   ssh $SERVER 'ls -lh /root/my-project/debug_reports/'"
 echo ""
 
+

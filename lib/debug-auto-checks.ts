@@ -330,3 +330,4 @@ export async function checkAuthState(
   debug.log('✅ Auth state check completed', { isAuthenticated, hasProfile: !!userProfile });
 }
 
+

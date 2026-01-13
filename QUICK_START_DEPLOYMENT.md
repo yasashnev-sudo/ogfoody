@@ -151,3 +151,4 @@ curl https://ogfoody.ru/api/health
 - Nginx: `systemctl status nginx`
 - Логи: `pm2 logs ogfoody`
 
+

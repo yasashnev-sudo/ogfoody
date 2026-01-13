@@ -220,3 +220,4 @@ Uncaught ChunkLoadError: Failed to load chunk /_next/static/chunks/7e21d23f15b87
 **Downtime:** 2 минуты  
 **Восстановлено:** 15:06 UTC  
 
+

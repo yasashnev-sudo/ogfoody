@@ -60,3 +60,4 @@ systemctl reload nginx    # Перезагрузка
 - SERVER_ACCESS_INFO.md - детальная информация
 - ERROR_LOGGING_SETUP_GUIDE.md - настройка логирования
 
+

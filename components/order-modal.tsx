@@ -1441,7 +1441,8 @@ export function OrderModal({
                           )}
 
                           {/* Кнопка "Оплатить заказ" для существующего неоплаченного заказа */}
-                          {isExistingOrder && !isPaid && existingOrder && (
+                          {/* ✅ ИСПРАВЛЕНО 2026-01-13: Кнопка только для заказов с id (не для черновиков) */}
+                          {isExistingOrder && existingOrder?.id && !isPaid && existingOrder && (
                             <Button
                               onClick={() => onRequestPayment?.(existingOrder, finalTotal)}
                               disabled={isProcessingPayment || isDataLoading}
@@ -1486,7 +1487,8 @@ export function OrderModal({
                 )}
 
                 {/* ✅ ИСПРАВЛЕНО 2026-01-13: Кнопка оплаты для дня доставки (вне блока canEdit) */}
-                {!canEditContent && canPay && isExistingOrder && !isPaid && existingOrder && isAuthenticated && (
+                {/* ✅ ИСПРАВЛЕНО 2026-01-13: Добавлена проверка existingOrder.id (не для черновиков) */}
+                {!canEditContent && canPay && isExistingOrder && existingOrder?.id && !isPaid && existingOrder && isAuthenticated && (
                   <div className="mt-6 border-t border-border pt-6">
                     <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
                       <p className="text-sm text-blue-900">

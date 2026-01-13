@@ -140,3 +140,4 @@ test('Safe Loading: Проверка loading states в коде', async ({ page 
 
 
 
+

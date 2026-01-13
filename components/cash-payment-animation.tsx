@@ -49,3 +49,4 @@ export function CashPaymentAnimation({ open }: CashPaymentAnimationProps) {
 
 
 
+

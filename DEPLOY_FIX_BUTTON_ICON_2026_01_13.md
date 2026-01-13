@@ -133,3 +133,4 @@ curl -I https://ogfoody.ru
 - Следить за новыми баг-репортами в `/var/www/ogfoody/debug_reports/`
 - Проверять feedback от user-122 по этому исправлению
 
+
