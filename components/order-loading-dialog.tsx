@@ -35,7 +35,7 @@ export function OrderLoadingDialog({ open, text }: OrderLoadingDialogProps) {
             {/* Main logo */}
             <div className="relative w-20 h-20 rounded-full flex items-center justify-center mx-auto">
               <Image
-                src="/OGFooDY логотип.png"
+                src="/logo-small.png"
                 alt="OGFooDY Logo"
                 width={80}
                 height={80}

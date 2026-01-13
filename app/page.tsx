@@ -2846,7 +2846,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           <div className="flex items-center gap-3">
             <div className="h-14 w-14 rounded-full border-2 border-black overflow-hidden flex items-center justify-center shrink-0">
               <Image 
-                src="/OGFooDY логотип.png" 
+                src="/logo-small.png" 
                 alt="OGFooDY Logo" 
                 width={56} 
                 height={56} 

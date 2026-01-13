@@ -129,7 +129,7 @@ export function AppMenu({ userPhone }: AppMenuProps) {
                     <div className="flex items-center gap-3 p-4 mb-2 bg-white border-2 border-black rounded-lg shadow-brutal">
                       <div className="w-12 h-12 bg-[#9D00FF] border-2 border-black rounded-lg flex items-center justify-center shadow-brutal overflow-hidden">
                         <img 
-                          src="/OGFooDY логотип.png" 
+                          src="/logo-small.png" 
                           alt="OGFooDY Logo" 
                           className="w-full h-full object-contain p-1"
                         />

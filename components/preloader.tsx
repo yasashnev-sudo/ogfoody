@@ -53,7 +53,7 @@ export function Preloader() {
           >
             <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-full border-4 border-black overflow-hidden flex items-center justify-center shadow-brutal">
               <Image
-                src="/OGFooDY логотип.png"
+                src="/logo-small.png"
                 alt="OGFooDY Logo"
                 width={128}
                 height={128}
