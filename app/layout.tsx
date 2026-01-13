@@ -1,7 +1,8 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
+// ✅ ИСПРАВЛЕНО 2026-01-13: Убран Vercel Analytics (проект не на Vercel, вызывает Script error)
+// import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -47,7 +48,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`}>
         {children}
-        <Analytics />
+        {/* ✅ ИСПРАВЛЕНО 2026-01-13: Убран Vercel Analytics (проект не на Vercel) */}
+        {/* <Analytics /> */}
       </body>
     </html>
   )

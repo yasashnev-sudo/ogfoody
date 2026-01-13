@@ -210,6 +210,13 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
   useEffect(() => {
     // Перехват необработанных JS ошибок
     const handleGlobalError = (event: ErrorEvent) => {
+      // ✅ ИСПРАВЛЕНО 2026-01-13: Игнорируем "Script error" без деталей (CORS/cross-origin)
+      // Такие ошибки возникают когда скрипт с другого домена падает, браузер скрывает детали
+      // Это не критичные ошибки и засоряют логи (например, от Vercel Analytics на не-Vercel сервере)
+      if (event.message === 'Script error.' && !event.filename && !event.lineno && !event.colno) {
+        return; // Не логируем такие ошибки
+      }
+
       addLog('error', `🚨 Uncaught Error: ${event.message}`, {
         filename: event.filename,
         lineno: event.lineno,
