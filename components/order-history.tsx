@@ -672,7 +672,7 @@ export function OrderHistory({
                     </Button>
 
                     {repeatMenuOpen === orderKey && (
-                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-10 min-w-[200px]">
+                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-10 min-w-[280px] max-w-[95vw]">
                         <div className="text-[10px] font-black mb-2 text-gray-600">📅 ВЫБЕРИТЕ ДАТУ ДОСТАВКИ:</div>
                         {!allItemsAvailable && (
                           <div className="mb-2 p-2 bg-orange-100 rounded-lg border border-orange-500 text-[10px]">
@@ -685,13 +685,13 @@ export function OrderHistory({
                             </div>
                           </div>
                         )}
-                        <div className="max-h-40 overflow-y-auto space-y-1">
-                          {freeDates.length === 0 ? (
-                            <div className="text-[10px] text-gray-500 text-center py-2">
-                              Нет доступных дат
-                            </div>
-                          ) : (
-                            freeDates.map((date) => {
+                        {freeDates.length === 0 ? (
+                          <div className="text-[10px] text-gray-500 text-center py-2">
+                            Нет доступных дат
+                          </div>
+                        ) : (
+                          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                            {freeDates.map((date) => {
                               const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
                               const dayName = dayNames[date.getDay()]
                               const today = new Date()
@@ -699,17 +699,26 @@ export function OrderHistory({
                               const dateTime = new Date(date)
                               dateTime.setHours(0, 0, 0, 0)
                               const daysFromNow = Math.floor((dateTime.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                              const isThisWeek = daysFromNow >= 0 && daysFromNow <= 7
+                              
+                              // Определяем тип даты для визуального выделения
+                              const isToday = daysFromNow === 0
+                              const isTomorrow = daysFromNow === 1
+                              const isThisWeek = daysFromNow >= 2 && daysFromNow <= 7
                               
                               return (
                                 <button
                                   key={formatDateKey(date)}
-                                  className={`w-full text-left px-3 py-2 text-[11px] font-bold hover:bg-blue-50 rounded-lg border-2 transition-all ${
-                                    isThisWeek 
-                                      ? 'border-blue-500 bg-blue-50/50' 
-                                      : 'border-gray-300 bg-white'
-                                  }`}
+                                  className={`flex-shrink-0 flex flex-col items-center justify-center w-[70px] h-[80px] rounded-lg border-2 transition-all font-bold ${
+                                    isToday 
+                                      ? 'border-[#FFEA00] bg-[#FFEA00]/20 hover:bg-[#FFEA00]/40' 
+                                      : isTomorrow
+                                      ? 'border-[#9D00FF] bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20'
+                                      : isThisWeek
+                                      ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-100'
+                                      : 'border-gray-300 bg-white hover:bg-gray-50'
+                                  } ${repeatLoading === orderKey ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                   onClick={async () => {
+                                    if (repeatLoading === orderKey) return
                                     // ✅ КРИТИЧНО: Устанавливаем loading перед вызовом
                                     setRepeatLoading(orderKey)
                                     try {
@@ -722,19 +731,40 @@ export function OrderHistory({
                                   }}
                                   disabled={repeatLoading === orderKey}
                                 >
-                                  <div className="flex items-center justify-between">
-                                    <span>{dayName}, {formatDisplayDate(date)}</span>
-                                    {isThisWeek && (
-                                      <span className="text-[9px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">
-                                        {daysFromNow === 0 ? 'СЕГОДНЯ' : daysFromNow === 1 ? 'ЗАВТРА' : `+${daysFromNow}д`}
-                                      </span>
-                                    )}
-                                  </div>
+                                  {/* День недели */}
+                                  <span className="text-[10px] font-black uppercase text-gray-600 mb-1">
+                                    {dayName}
+                                  </span>
+                                  
+                                  {/* Число и месяц */}
+                                  <span className={`text-base font-black mb-1 ${
+                                    isToday || isTomorrow ? 'text-black' : 'text-gray-800'
+                                  }`}>
+                                    {date.getDate()}
+                                  </span>
+                                  
+                                  {/* Месяц */}
+                                  <span className="text-[9px] font-bold text-gray-500">
+                                    {formatDisplayDate(date).split(' ')[1]}
+                                  </span>
+                                  
+                                  {/* Бейдж */}
+                                  {(isToday || isTomorrow || isThisWeek) && (
+                                    <div className={`absolute top-1 right-1 text-[7px] px-1 py-0.5 rounded font-black ${
+                                      isToday 
+                                        ? 'bg-[#FFEA00] text-black' 
+                                        : isTomorrow 
+                                        ? 'bg-[#9D00FF] text-white'
+                                        : 'bg-blue-500 text-white'
+                                    }`}>
+                                      {isToday ? 'СЕГОДНЯ' : isTomorrow ? 'ЗАВТРА' : `+${daysFromNow}д`}
+                                    </div>
+                                  )}
                                 </button>
                               )
-                            })
-                          )}
-                        </div>
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
