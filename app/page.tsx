@@ -264,6 +264,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  const [draftOrder, setDraftOrder] = useState<Order | null>(null) // ✅ Черновик для повторения заказа
   const [view, setView] = useState<"calendar" | "history">("calendar")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
@@ -769,6 +770,26 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     
     const user = localStorage.getItem("currentUser")
     const orderTimestamp = getDateTimestamp(order.startDate)
+    
+    // ✅ ИСПРАВЛЕНО 2026-01-13: Если это черновик (повторение), добавляем в orders
+    const isDraft = draftOrder && getDateTimestamp(draftOrder.startDate) === orderTimestamp
+    if (isDraft) {
+      console.log("📝 [Save Draft] Сохраняем черновик заказа в orders")
+      setOrders(prevOrders => {
+        // Проверяем, нет ли уже заказа на эту дату
+        const existingIndex = prevOrders.findIndex(o => getDateTimestamp(o.startDate) === orderTimestamp)
+        if (existingIndex !== -1) {
+          // Заменяем существующий
+          const updated = [...prevOrders]
+          updated[existingIndex] = order
+          return updated
+        }
+        // Добавляем новый
+        return [...prevOrders, order]
+      })
+      setDraftOrder(null) // Очищаем черновик
+    }
+    
     const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
     
     console.log("🔵 handleSaveOrder вызван:", {
@@ -776,6 +797,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       hasUserProfile: !!userProfile,
       userId: userProfile?.id,
       hasExistingOrder: !!existingOrder?.id,
+      isDraft,
     })
     
     // Если заказ существует и имеет id, и пользователь авторизован, обновляем через API
@@ -1608,35 +1630,15 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         loyaltyPointsUsed: 0,
       }
 
-      console.log('🚀 [Repeat Order] Добавляем заказ в state через setOrders')
-      
-      // ✅ ИСПРАВЛЕНО: Используем функциональное обновление для гарантии актуального state
-      setOrders(prevOrders => {
-        const orderTimestamp = getDateTimestamp(targetDate)
-        // Проверяем, есть ли уже заказ на эту дату
-        const existingIndex = prevOrders.findIndex(o => {
-          const oTimestamp = getDateTimestamp(o.startDate)
-          return oTimestamp === orderTimestamp
-        })
-        
-        if (existingIndex !== -1) {
-          // ✅ Заменяем существующий заказ
-          const updated = [...prevOrders]
-          updated[existingIndex] = newOrder
-          console.log('📝 [Repeat Order] Заменен существующий заказ на дату:', {
-            oldId: prevOrders[existingIndex].id,
-            timestamp: orderTimestamp
-          })
-          return updated
-        } else {
-          // ✅ Добавляем новый заказ
-          console.log('➕ [Repeat Order] Добавлен новый заказ для даты:', orderTimestamp)
-          return [...prevOrders, newOrder]
-        }
-      })
-      
-      // ✅ Открываем OrderModal - state уже обновлен синхронно
+      // ✅ ИСПРАВЛЕНО 2026-01-13: НЕ добавляем заказ в state сразу
+      // Заказ будет добавлен только после нажатия "Сохранить" в OrderModal через handleSaveOrder
+      console.log('📝 [Repeat Order] Черновик заказа создан (не сохранен в state)')
       console.log('🎯 [Repeat Order] Открываем OrderModal для даты:', targetDate.toISOString())
+      
+      // Сохраняем черновик во временный state
+      setDraftOrder(newOrder)
+      
+      // Открываем модалку - теперь она получит черновик через useMemo ниже
       setSelectedDate(targetDate)
 
     } catch (error) {
@@ -2787,16 +2789,19 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     }
   }
 
+  // ✅ ИСПРАВЛЕНО 2026-01-13: Приоритет черновику над существующим заказом
   const existingOrder = selectedDate
-    ? orders.find((o) => {
-        const orderStartDate = new Date(o.startDate)
-        orderStartDate.setHours(0, 0, 0, 0)
+    ? (draftOrder && getDateTimestamp(draftOrder.startDate) === getDateTimestamp(selectedDate)
+        ? draftOrder // Черновик имеет приоритет
+        : orders.find((o) => {
+            const orderStartDate = new Date(o.startDate)
+            orderStartDate.setHours(0, 0, 0, 0)
 
-        const checkDate = new Date(selectedDate)
-        checkDate.setHours(0, 0, 0, 0)
+            const checkDate = new Date(selectedDate)
+            checkDate.setHours(0, 0, 0, 0)
 
-        return orderStartDate.getTime() === checkDate.getTime()
-      })
+            return orderStartDate.getTime() === checkDate.getTime()
+          }))
     : undefined
 
   const availableDates = getAvailableDates()
@@ -3054,6 +3059,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         existingOrder={existingOrder}
         onClose={() => {
           setSelectedDate(null)
+          setDraftOrder(null) // ✅ Очищаем черновик при закрытии
         }}
         onSave={handleSaveOrder}
         onCancel={handleCancelOrder}
