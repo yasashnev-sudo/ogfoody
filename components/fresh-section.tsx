@@ -5,6 +5,7 @@ import Image from "next/image"
 import { useMenu } from "@/hooks/use-menu"
 import { getMealPrice } from "@/lib/types"
 import type { Meal } from "@/lib/types"
+import { FreshCardSkeleton } from "@/components/meal-card-skeleton"
 
 interface FreshCardProps {
   name: string
@@ -110,13 +111,12 @@ export function FreshSection({ onDishClick }: FreshSectionProps) {
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-black uppercase tracking-tight">
           СВЕЖАК
         </h2>
-        <div className="flex gap-4 sm:gap-6">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl border-2 border-black shadow-brutal flex-shrink-0 w-[280px] sm:w-[320px] h-[400px] animate-pulse"
-            />
-          ))}
+        <div className="overflow-x-auto -mx-4 px-4 pb-2">
+          <div className="flex gap-4 sm:gap-6">
+            {[1, 2, 3].map((i) => (
+              <FreshCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       </div>
     )

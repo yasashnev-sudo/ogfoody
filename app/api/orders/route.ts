@@ -321,6 +321,13 @@ export async function POST(request: Request) {
     if (order.extras && order.extras.length > 0) {
       console.log(`📦 Creating ${order.extras.length} extras for order ${nocoOrder.Id}`)
       for (const extra of order.extras) {
+        // ✅ ИСПРАВЛЕНИЕ: Проверяем наличие extra.id перед созданием
+        if (!extra.id) {
+          console.error(`  ❌ Extra без ID:`, JSON.stringify(extra, null, 2))
+          console.warn(`  ⚠️ Пропускаем дополнение без ID, продолжаем...`)
+          continue
+        }
+        
         console.log(`  Creating extra ${extra.id} (qty: ${extra.quantity}, price: ${extra.price})`)
         try {
           const result = await createOrderExtra({

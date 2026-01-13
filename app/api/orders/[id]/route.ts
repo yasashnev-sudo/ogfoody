@@ -526,6 +526,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         // Создаем новые дополнения
         if (order.extras && order.extras.length > 0) {
           for (const extra of order.extras) {
+            // ✅ ИСПРАВЛЕНИЕ: Проверяем наличие extra.id перед созданием
+            if (!extra.id) {
+              console.error(`  ❌ Extra без ID при обновлении заказа:`, JSON.stringify(extra, null, 2))
+              console.warn(`  ⚠️ Пропускаем дополнение без ID, продолжаем...`)
+              continue
+            }
+            
             await createOrderExtra({
               order_id: Number(id),
               extra_id: extra.id,

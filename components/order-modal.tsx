@@ -187,7 +187,7 @@ export function OrderModal({
   const isInDeliveryZone = cityLower.includes("санкт-петербург") || cityLower.includes("спб") || !userCity
 
   const weekType = getWeekTypeForDate(date)
-  const { meals: menuData, extras: availableExtras, deliveryTimes: rawDeliveryTimes } = useMenu(weekType)
+  const { meals: menuData, extras: availableExtras, deliveryTimes: rawDeliveryTimes, isLoading: isMenuLoading } = useMenu(weekType)
   // Убеждаемся, что deliveryTimes всегда массив
   const deliveryTimes = Array.isArray(rawDeliveryTimes) ? rawDeliveryTimes : []
 
@@ -1075,6 +1075,7 @@ export function OrderModal({
                             onSectionChange={setActiveSectionId}
                             instanceId="day1-breakfast"
                             onMealSelected={handleMealSelected}
+                            isLoading={isMenuLoading}
                           />
                         </div>
 
@@ -1111,6 +1112,7 @@ export function OrderModal({
                             onSectionChange={setActiveSectionId}
                             instanceId="day1-lunch"
                             onMealSelected={handleMealSelected}
+                            isLoading={isMenuLoading}
                           />
                         </div>
 
@@ -1147,6 +1149,7 @@ export function OrderModal({
                             onSectionChange={setActiveSectionId}
                             instanceId="day1-dinner"
                             onMealSelected={handleMealSelected}
+                            isLoading={isMenuLoading}
                           />
                         </div>
                       </div>
@@ -1181,6 +1184,7 @@ export function OrderModal({
                             onSectionChange={setActiveSectionId}
                             instanceId="day2-breakfast"
                             onMealSelected={handleMealSelected}
+                            isLoading={isMenuLoading}
                           />
                         </div>
 
@@ -1217,6 +1221,7 @@ export function OrderModal({
                             onSectionChange={setActiveSectionId}
                             instanceId="day2-lunch"
                             onMealSelected={handleMealSelected}
+                            isLoading={isMenuLoading}
                           />
                         </div>
 
@@ -1253,6 +1258,7 @@ export function OrderModal({
                             onSectionChange={setActiveSectionId}
                             instanceId="day2-dinner"
                             onMealSelected={handleMealSelected}
+                            isLoading={isMenuLoading}
                           />
                         </div>
                       </div>

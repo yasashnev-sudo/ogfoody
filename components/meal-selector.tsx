@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Meal, PortionSize, getMealPrice, getMealWeight } from "@/lib/types"
 import { MealDetailModal } from "./meal-detail-modal"
+import { MealGridSkeleton } from "@/components/meal-card-skeleton"
 
 const adaptGarnishToMeal = (garnish: any): Meal => {
   return {
@@ -39,6 +40,7 @@ interface MealSelectorProps {
   onMealSelected?: () => void
   disabled?: boolean
   onBlockedAction?: () => void
+  isLoading?: boolean
 }
 
 const PORTION_LABELS: Record<PortionSize, string> = {
@@ -383,6 +385,7 @@ export function MealSelector({
   onMealSelected,
   disabled = false,
   onBlockedAction,
+  isLoading = false,
 }: MealSelectorProps) {
   const [internalOpenSection, setInternalOpenSection] = useState<string | null>(null)
   const lastActiveId = useRef<string | null>(null)
@@ -620,6 +623,15 @@ export function MealSelector({
         </Button>
       </div>
   )
+
+  // Показываем skeleton при загрузке
+  if (isLoading) {
+    return (
+      <div className="space-y-3 pb-4">
+        <MealGridSkeleton count={3} className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3 pb-4">

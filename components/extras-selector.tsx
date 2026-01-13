@@ -45,7 +45,8 @@ export function ExtrasSelector({ extras, availableExtras, onUpdate, disabled }: 
     } else if (existing) {
       onUpdate(extras.map((e) => (e.name === item.name ? { ...e, quantity: newQty } : e)))
     } else {
-      onUpdate([...extras, { name: item.name, price: item.price, quantity: newQty, image: item.image }])
+      // ✅ ИСПРАВЛЕНИЕ: Добавляем id при создании нового extra
+      onUpdate([...extras, { id: item.id, name: item.name, price: item.price, quantity: newQty, image: item.image }])
     }
   }
 
