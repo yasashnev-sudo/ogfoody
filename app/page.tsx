@@ -2841,10 +2841,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   return (
     <div className="min-h-screen bg-background">
       <Preloader />
-      <div className="bg-white px-4 pt-12 pb-6 border-b-2 border-black safe-area-top">
+      <div className="bg-white px-4 pt-12 pb-6 border-b border-gray-200 safe-area-top">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="h-14 w-14 rounded-full border-2 border-black overflow-hidden flex items-center justify-center shrink-0">
+            <div className="h-14 w-14 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-md">
               <Image 
                 src="/logo-small.png" 
                 alt="OGFooDY Logo" 
@@ -2886,17 +2886,17 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           ) : (
             <button
               onClick={() => setShowProfile(true)}
-              className="flex items-center gap-2 text-black bg-muted rounded-xl px-3 py-2 w-full hover:bg-muted/80 transition-colors border-2 border-black"
+              className="flex items-center gap-2 text-black bg-muted rounded-xl px-3 py-2 w-full hover:bg-muted/80 transition-colors shadow-sm"
             >
               <User className="w-4 h-4" />
               <span className="text-sm font-bold flex-1 text-left">{userProfile?.name || currentUser}</span>
               {userProfile && (
-                <span className="text-xs bg-[#9D00FF] text-white px-2 py-0.5 rounded-lg font-black border-2 border-black">{userProfile.loyaltyPoints || 0} баллов</span>
+                <span className="text-xs bg-[#9D00FF] text-white px-2 py-0.5 rounded-lg font-black">{userProfile.loyaltyPoints || 0} баллов</span>
               )}
             </button>
           )
         ) : (
-          <div className="flex items-center gap-2 text-black bg-muted rounded-xl px-3 py-2 w-full border-2 border-black">
+          <div className="flex items-center gap-2 text-black bg-muted rounded-xl px-3 py-2 w-full shadow-sm">
             <User className="w-4 h-4" />
             <span className="text-sm font-bold">Гость</span>
             <span className="text-xs text-black/70 ml-auto font-medium">Войдите для оформления заказа</span>
@@ -2904,7 +2904,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         )}
       </div>
 
-      <div className="px-4 py-4 -mt-4 bg-background rounded-t-3xl border-t-2 border-black relative z-10">
+      <div className="px-4 py-4 -mt-4 bg-background rounded-t-3xl relative z-10">
         <p className="text-muted-foreground text-sm mb-4">
           {view === "calendar" ? "Выберите дату для заказа" : "История ваших заказов"}
         </p>

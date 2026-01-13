@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
 
 interface LogEntry {
   timestamp: string;
@@ -13,8 +12,7 @@ interface LogEntry {
 interface CaptureErrorOptions {
   errorMessage?: string;
   data?: any;
-  includeScreenshot?: boolean;
-  userComment?: string; // ✅ Добавлен комментарий пользователя
+  userComment?: string; // ✅ Комментарий пользователя
 }
 
 export function useDebugRecorder(userId?: string, userEmail?: string) {
@@ -41,8 +39,6 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     // ✅ ИСПРАВЛЕНО: Выводим в оригинальную консоль ТОЛЬКО если это НЕ внутренний лог Debug системы
     const originalConsole = (window as any).__originalConsole || console;
     const isDebugInternalLog = message.includes('[DEBUG]') || 
-                                message.includes('Capturing screenshot') || 
-                                message.includes('Screenshot captured') ||
                                 message.includes('Sending debug report');
     
     if (!isDebugInternalLog) {
@@ -108,61 +104,8 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     };
   }, [addLog]);
 
-  // Функция для создания скриншота
-  const captureScreenshot = useCallback(async (): Promise<string | null> => {
-    try {
-      // ✅ УЛУЧШЕНИЕ: Таймаут для мобильных устройств
-      const screenshotPromise = html2canvas(document.body, {
-        allowTaint: true,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        scale: window.devicePixelRatio > 1 ? 1 : window.devicePixelRatio, // ✅ Оптимизация для retina
-        // ✅ Игнорируем ошибки с современными CSS функциями
-        ignoreElements: (element) => {
-          // Пропускаем элементы, которые могут вызывать проблемы
-          return false;
-        },
-        onclone: (clonedDoc) => {
-          // Убираем проблемные стили из клона
-          const allElements = clonedDoc.querySelectorAll('*');
-          allElements.forEach((el: any) => {
-            const style = el.style;
-            if (style) {
-              // Заменяем lab() на fallback цвет
-              if (style.backgroundColor && style.backgroundColor.includes('lab(')) {
-                style.backgroundColor = '#ffffff';
-              }
-              if (style.color && style.color.includes('lab(')) {
-                style.color = '#000000';
-              }
-            }
-          });
-        }
-      });
-      
-      // ✅ УЛУЧШЕНИЕ: Таймаут 10 секунд для мобильных
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.warn('[DEBUG] Screenshot timeout (10s) - continuing without screenshot');
-          resolve(null);
-        }, 10000);
-      });
-      
-      const canvas = await Promise.race([screenshotPromise, timeoutPromise]);
-      if (!canvas) {
-        console.warn('[DEBUG] Screenshot timed out, sending report without screenshot');
-        return null;
-      }
-      
-      return canvas.toDataURL('image/png');
-    } catch (error: any) {
-      // ✅ Более информативная ошибка, но не критичная
-      const originalConsole = (window as any).__originalConsole || console;
-      originalConsole.warn('[DEBUG] Screenshot failed (not critical, logs will still be saved):', error.message || error);
-      return null;
-    }
-  }, []);
+  // ❌ УБРАНО: Функция создания скриншота (тратила время, не всегда работала)
+  // Screenshots disabled to save time and improve reliability
 
   // Основная функция для захвата ошибки и отправки отчета
   const captureError = useCallback(async (options: CaptureErrorOptions = {}) => {
@@ -174,22 +117,13 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     setIsCapturing(true);
 
     try {
-      const { errorMessage = 'Unknown error', data, includeScreenshot = true, userComment } = options;
+      const { errorMessage = 'Unknown error', data, userComment } = options;
 
       // Логируем ошибку (но не как ERROR, чтобы не пугать Next.js)
       addLog('warn', `🐞 Capturing error report: ${errorMessage}`, data);
 
-      // Создаем скриншот
-      let screenshot: string | null = null;
-      if (includeScreenshot) {
-        addLog('info', 'Capturing screenshot...');
-        screenshot = await captureScreenshot();
-        if (screenshot) {
-          addLog('info', 'Screenshot captured successfully');
-        } else {
-          addLog('warn', 'Screenshot capture failed, but continuing with logs only');
-        }
-      }
+      // ❌ УБРАНО: Создание скриншота (экономим время)
+      const screenshot: string | null = null;
 
       // Получаем последние 50 логов (увеличено для лучшего контекста)
       const recentLogs = logsRef.current.slice(-50).map(log => 
@@ -262,13 +196,12 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     } finally {
       setIsCapturing(false);
     }
-  }, [isCapturing, addLog, captureScreenshot, userId, userEmail]);
+  }, [isCapturing, addLog, userId, userEmail]);
 
   // Ручная отправка отчета
   const sendManualReport = useCallback(async (userComment?: string) => {
     return captureError({
       errorMessage: 'Manual report submission',
-      includeScreenshot: true,
       userComment, // ✅ Передаём комментарий
     });
   }, [captureError]);
@@ -361,11 +294,17 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     addLog('info', message, data);
   }, [addLog]);
 
+  // Заглушка для обратной совместимости (если где-то вызывается)
+  const captureScreenshot = useCallback(async (): Promise<string | null> => {
+    console.log('[DEBUG] Screenshot disabled - saving time');
+    return null;
+  }, []);
+
   return {
     // Основные методы
     captureError,
     sendManualReport,
-    captureScreenshot,
+    captureScreenshot, // Оставляем для обратной совместимости, но возвращает null
     
     // Управление логами
     getLogs,
