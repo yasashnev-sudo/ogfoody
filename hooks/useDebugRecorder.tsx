@@ -234,6 +234,68 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     });
   }, [captureError]);
 
+  // 🔥 НОВОЕ: Перехват глобальных ошибок (отдельный useEffect после определения captureError)
+  useEffect(() => {
+    // Перехват необработанных JS ошибок
+    const handleGlobalError = (event: ErrorEvent) => {
+      addLog('error', `🚨 Uncaught Error: ${event.message}`, {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        stack: event.error?.stack,
+      });
+
+      // Автоотправка критических ошибок в продакшене
+      if (process.env.NODE_ENV === 'production') {
+        captureError({
+          errorMessage: `Uncaught Error: ${event.message}`,
+          data: { 
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno, 
+            stack: event.error?.stack,
+          },
+        });
+      }
+    };
+
+    // Перехват необработанных Promise rejections
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason?.message || event.reason || 'Unknown rejection';
+      addLog('error', `🚨 Unhandled Promise Rejection: ${reason}`, {
+        reason: event.reason,
+        stack: event.reason?.stack,
+      });
+
+      // Автоотправка в продакшене
+      if (process.env.NODE_ENV === 'production') {
+        captureError({
+          errorMessage: `Unhandled Promise Rejection: ${reason}`,
+          data: { 
+            reason: event.reason,
+            stack: event.reason?.stack,
+          },
+        });
+      }
+    };
+
+    // Подписываемся на глобальные ошибки
+    window.addEventListener('error', handleGlobalError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    // Делаем доступным для Error Boundary
+    (window as any).__debugRecorder = {
+      captureError,
+      addLog,
+    };
+
+    // Восстанавливаем при размонтировании
+    return () => {
+      window.removeEventListener('error', handleGlobalError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [addLog, captureError]);
+
   // Получить текущие логи
   const getLogs = useCallback(() => {
     return [...logsRef.current];

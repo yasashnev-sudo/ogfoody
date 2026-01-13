@@ -26,10 +26,16 @@ export function DebugFloatingButton() {
   const handleSendReport = async (comment: string) => {
     const result = await debug.sendManualReport(comment);
     
-    // ✅ Показываем уведомление об успехе
+    // ✅ Показываем уведомление об успехе + вибрация на iPhone
     if (result?.success) {
+      // 🔥 Vibration feedback (работает на iPhone)
+      if ('vibrate' in navigator) {
+        navigator.vibrate(200); // 200ms вибрация
+      }
+      
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000); // Скрываем через 3 секунды
+      setIsConsoleOpen(false); // Закрываем консоль после успешной отправки
     }
   };
 
@@ -38,22 +44,32 @@ export function DebugFloatingButton() {
 
   return (
     <>
-      {/* Плавающая кнопка */}
+      {/* 🔥 УЛУЧШЕННАЯ Плавающая кнопка для iPhone */}
       <button
-        onClick={() => setIsConsoleOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center text-2xl z-[99999] group"
+        onClick={() => {
+          setIsConsoleOpen(true);
+          // Лёгкая вибрация при открытии (feedback для пользователя)
+          if ('vibrate' in navigator) {
+            navigator.vibrate(50);
+          }
+        }}
+        className="fixed bottom-6 right-6 w-16 h-16 sm:w-14 sm:h-14 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center text-3xl sm:text-2xl z-[99999] group touch-manipulation active:scale-95"
         title="Open Debug Console (Ctrl+Shift+D)"
+        style={{
+          WebkitTapHighlightColor: 'transparent', // Убираем синюю подсветку на iOS
+          userSelect: 'none', // Отключаем выделение текста
+        }}
       >
         🐞
         {errorCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black">
-            {errorCount}
+          <span className="absolute -top-1 -right-1 w-6 h-6 sm:w-5 sm:h-5 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black animate-pulse">
+            {errorCount > 99 ? '99+' : errorCount}
           </span>
         )}
       </button>
 
-      {/* Подсказка о горячей клавише (показывается при наведении) */}
-      <div className="fixed bottom-24 right-6 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[99999]">
+      {/* Подсказка о горячей клавише (только на desktop) */}
+      <div className="hidden sm:block fixed bottom-24 right-6 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[99999]">
         Ctrl+Shift+D
       </div>
 

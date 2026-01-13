@@ -32,6 +32,7 @@ import { UserProfileHeaderSkeleton, OrderHistorySkeleton } from "@/components/lo
 import { DebugProvider } from "@/components/debug/DebugContext"
 import { DebugFloatingButton } from "@/components/debug/DebugFloatingButton"
 import { useDebug } from "@/components/debug/DebugContext"
+import { ErrorBoundary } from "@/components/debug/ErrorBoundary"
 
 const formatDateKey = (date: Date): string => {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`
@@ -242,10 +243,12 @@ export default function Home() {
   
   return (
     <DebugProvider userId={userProfile?.id?.toString()} userEmail={userProfile?.email}>
-      <HomeWithDebug 
-        userProfile={userProfile}
-        setUserProfile={setUserProfile}
-      />
+      <ErrorBoundary>
+        <HomeWithDebug 
+          userProfile={userProfile}
+          setUserProfile={setUserProfile}
+        />
+      </ErrorBoundary>
     </DebugProvider>
   )
 }
