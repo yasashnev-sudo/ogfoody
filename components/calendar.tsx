@@ -230,6 +230,11 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
         return "border-2 border-black bg-[#9D00FF] text-white shadow-brutal cursor-pointer brutal-hover"
       }
       
+      // ✅ ИСПРАВЛЕНО 2026-01-14: Выделение текущей даты цветом (без надписи)
+      if (isDateToday) {
+        return "bg-[#9D00FF]/20 border-2 border-[#9D00FF] cursor-pointer hover:bg-[#9D00FF]/30"
+      }
+      
       // No food - White/Transparent background
       if (isAvailableForNewOrder) {
         return "hover:bg-[#FFEA00]/20 cursor-pointer"
@@ -237,25 +242,15 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
       
       return "opacity-40 cursor-not-allowed"
     }
-    
-    // ✅ ИСПРАВЛЕНО 2026-01-14: Более явная фиолетовая заливка для текущей даты
-    const getTodayHighlight = () => {
-      // Показываем только если это сегодня, нет еды, не выбрана, и это текущий месяц
-      if (isDateToday && !hasFood && !isSelected && isCurrentMonth) {
-        return "bg-[#9D00FF]/20 rounded-lg" // ✅ Более явная заливка (20% вместо 10%) и скругленные углы
-      }
-      return ""
-    }
 
     return (
       <div
         key={date.toISOString()}
         onClick={() => isCurrentMonth && handleDateClick(date)}
         className={cn(
-          "relative min-h-[3rem] sm:min-h-[4rem] flex items-center justify-center transition-all p-1",
+          "relative min-h-[3rem] sm:min-h-[4rem] flex items-center justify-center rounded-lg transition-all p-1",
           !isCurrentMonth && "opacity-30",
           getBackgroundClass(),
-          getTodayHighlight(), // ✅ ИСПРАВЛЕНО 2026-01-14: Слабо-фиолетовая заливка для текущей даты
           !isCurrentMonth && "cursor-not-allowed",
         )}
       >
@@ -318,7 +313,7 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
               <span className={cn(
                 "text-xs sm:text-sm font-bold leading-none z-10",
                 !isCurrentMonth && "text-muted-foreground",
-                "text-black"
+                isDateToday ? "text-[#9D00FF]" : "text-black"
               )}>
                 {format(date, "d")}
               </span>

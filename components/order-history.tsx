@@ -330,18 +330,15 @@ export function OrderHistory({
       return false
     }
     
-    // Можно оставить отзыв, если дата доставки уже прошла (заказ был вчера или раньше)
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Можно оставить отзыв после первого дня доставки (более раннее разрешение)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const orderDate = toDate(order.startDate)
     orderDate.setHours(0, 0, 0, 0)
     
-    // Заказ на 2 дня, поэтому проверяем второй день доставки
-    const day2Date = new Date(orderDate)
-    day2Date.setDate(day2Date.getDate() + 1)
-    
-    // Можно оставить отзыв, если второй день доставки уже прошел
-    return day2Date.getTime() < today.getTime()
+    // Можно оставить отзыв, если дата доставки уже прошла (заказ был сегодня или раньше)
+    // Это позволяет оставлять отзыв уже после первого дня доставки
+    return orderDate.getTime() <= today.getTime()
   }
 
   const getOrderReview = (orderKey: string) => {
