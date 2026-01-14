@@ -367,7 +367,7 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
                     <span className="text-[10px] sm:text-xs font-black text-black leading-none">+</span>
                   </div>
                 </div>
-                <span className="text-xs sm:text-sm font-black text-black">Заказать, чтобы не голодать</span>
+                <span className="text-xs sm:text-sm font-black text-black">Закажите, чтобы не остаться без еды</span>
             </div>
         </div>
       </div>

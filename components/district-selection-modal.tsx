@@ -93,7 +93,7 @@ export function DistrictSelectionModal({ open, onDistrictSelected, userName, isG
           </DialogTitle>
           <DialogDescription className="text-base pt-2">
             {userName ? (
-              <span className="block mb-2">Приятно познакомиться, {userName}! 👋</span>
+              <span className="block mb-2">Здравствуйте, {userName}! 👋</span>
             ) : isGuest ? (
               <span className="block mb-2">Добро пожаловать! 👋</span>
             ) : null}
@@ -163,7 +163,7 @@ export function DistrictSelectionModal({ open, onDistrictSelected, userName, isG
                 </ScrollArea>
 
                 <p className="text-xs text-muted-foreground">
-                  💡 Доставка бесплатная при заказе от 2300₽
+                  💡 Бесплатная доставка в синей зоне при заказе от 2300₽
                 </p>
               </div>
 

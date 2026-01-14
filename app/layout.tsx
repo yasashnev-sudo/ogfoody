@@ -4,13 +4,15 @@ import { Geist, Geist_Mono } from "next/font/google"
 // ✅ ИСПРАВЛЕНО 2026-01-13: Убран Vercel Analytics (проект не на Vercel, вызывает Script error)
 // import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+import { Footer } from "@/components/footer"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SWITCH — доставка домашней еды",
-  description: "SWITCH — сервис доставки домашней еды на каждый день. Свежие блюда с доставкой на 2 дня.",
+  title: "OGFooDY — Доставка домашней еды в Санкт-Петербурге",
+  description: "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне, заказ через удобный календарь. ИП Ясашнев.",
+  keywords: "доставка еды спб, домашняя еда, готовые обеды, доставка обедов, огфуди, ogfoody",
   generator: "v0.app",
   icons: {
     icon: [
@@ -45,9 +47,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`font-sans antialiased`}>
-        {children}
+    <html lang="ru">
+      <body className={`font-sans antialiased flex flex-col min-h-screen`}>
+        <div className="flex-1">
+          {children}
+        </div>
+        <Footer />
         {/* ✅ ИСПРАВЛЕНО 2026-01-13: Убран Vercel Analytics (проект не на Vercel) */}
         {/* <Analytics /> */}
       </body>

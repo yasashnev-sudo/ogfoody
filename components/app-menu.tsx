@@ -18,7 +18,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { TermsModal } from "@/components/terms-modal"
 
 interface AppMenuProps {
   userPhone: string
@@ -29,7 +28,6 @@ type MenuSection = "main" | "about" | "support" | "faq" | "delivery" | "chat"
 export function AppMenu({ userPhone }: AppMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [section, setSection] = useState<MenuSection>("main")
-  const [showTerms, setShowTerms] = useState(false)
   const [chatMessages, setChatMessages] = useState<{ text: string; isUser: boolean }[]>([
     { text: "Здравствуйте! Чем могу помочь?", isUser: false },
   ])
@@ -63,8 +61,8 @@ export function AppMenu({ userPhone }: AppMenuProps) {
       a: "Откройте заказ в календаре и нажмите 'Отменить заказ'. Отмена доступна до дня доставки.",
     },
     {
-      q: "Почему некоторые блюда недоступны?",
-      a: "Меню обновляется еженедельно. Некоторые блюда могут быть временно недоступны.",
+      q: "Как оплатить?",
+      a: "Наличными курьеру или картой на сайте.",
     },
   ]
 
@@ -210,18 +208,29 @@ export function AppMenu({ userPhone }: AppMenuProps) {
                       <ChevronRight className="w-5 h-5 text-black stroke-[2.5px]" />
                     </button>
 
-                    <div className="pt-4 border-t-2 border-black mt-4">
-                      <button
-                        onClick={() => setShowTerms(true)}
+                    <div className="pt-4 border-t-2 border-black mt-4 space-y-2">
+                      <a
+                        href="/offer"
                         className="w-full flex items-center gap-4 p-4 bg-white border-2 border-black rounded-lg shadow-brutal hover:bg-[#FFEA00] transition-colors"
                       >
                         <div className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
                           <FileText className="w-5 h-5 text-black stroke-[2.5px]" />
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="font-black text-black">Пользовательское соглашение</p>
+                          <p className="font-black text-black">Публичная оферта</p>
                         </div>
-                      </button>
+                      </a>
+                      <a
+                        href="/policy"
+                        className="w-full flex items-center gap-4 p-4 bg-white border-2 border-black rounded-lg shadow-brutal hover:bg-[#FFEA00] transition-colors"
+                      >
+                        <div className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
+                          <FileText className="w-5 h-5 text-black stroke-[2.5px]" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="font-black text-black">Политика конфиденциальности</p>
+                        </div>
+                      </a>
                     </div>
                   </div>
                 )}
@@ -238,7 +247,7 @@ export function AppMenu({ userPhone }: AppMenuProps) {
                     <h3 className="text-xl font-black text-black">OGFooDY — это про заботу</h3>
                     <p className="text-black/70 leading-relaxed">
                       Мы готовим еду как для своей семьи. Каждое блюдо создается из свежих продуктов нашими опытными
-                      поварами с многолетним стажем. OGFooDY — это домашняя еда на каждый день без хлопот.
+                      поварами. OGFooDY — это домашняя еда на каждый день без хлопот.
                     </p>
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <div className="bg-white border-2 border-black rounded-lg p-4 text-center shadow-brutal">
@@ -256,7 +265,7 @@ export function AppMenu({ userPhone }: AppMenuProps) {
                           <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                         ))}
                       </div>
-                      <span className="text-sm text-black/70">4.9 на Яндекс.Картах</span>
+                      <span className="text-sm text-black/70">4.9 по отзывам клиентов</span>
                     </div>
                   </div>
                 )}
@@ -267,38 +276,38 @@ export function AppMenu({ userPhone }: AppMenuProps) {
                       <Clock className="w-5 h-5 text-green-600 mt-0.5 stroke-[2.5px]" />
                       <div>
                         <p className="font-black text-black">Время доставки</p>
-                        <p className="text-sm text-black/70">Вечером с 17:00 до 22:00</p>
+                        <p className="text-sm text-black/70">Вечерняя доставка накануне дня питания</p>
                       </div>
                     </div>
 
                     <div className="bg-white border-2 border-black rounded-lg p-4 shadow-brutal">
-                      <p className="font-black text-black mb-2">Зона доставки</p>
+                      <p className="font-black text-black mb-2">Стоимость доставки</p>
                       <p className="text-sm text-black/70">
-                        Доставляем по всей Москве в пределах МКАД. Доставка за МКАД до 10 км — бесплатно.
+                        Минимальный заказ — 2300 руб. Бесплатно в синей зоне, +400 руб в красной. Другие районы — по тарифам Яндекс.Доставки.
                       </p>
                     </div>
 
                     <div className="space-y-3">
-                      <p className="font-black text-black">Как это работает</p>
+                      <p className="font-black text-black">Важно знать</p>
                       <div className="flex gap-3">
                         <div className="w-8 h-8 bg-[#9D00FF] border-2 border-black rounded-lg text-white flex items-center justify-center text-sm font-black shrink-0 shadow-brutal">
                           1
                         </div>
-                        <p className="text-sm text-black/70 pt-1">Выбираете дату и собираете заказ на 2 дня</p>
+                        <p className="text-sm text-black/70 pt-1">Ближайшая доставка завтра (кроме субботы)</p>
                       </div>
                       <div className="flex gap-3">
                         <div className="w-8 h-8 bg-[#9D00FF] border-2 border-black rounded-lg text-white flex items-center justify-center text-sm font-black shrink-0 shadow-brutal">
                           2
                         </div>
                         <p className="text-sm text-black/70 pt-1">
-                          Мы готовим и привозим вечером выбранного дня
+                          Заказы по текущему меню принимаются на любой день до ближайшего понедельника
                         </p>
                       </div>
                       <div className="flex gap-3">
                         <div className="w-8 h-8 bg-[#9D00FF] border-2 border-black rounded-lg text-white flex items-center justify-center text-sm font-black shrink-0 shadow-brutal">
                           3
                         </div>
-                        <p className="text-sm text-black/70 pt-1">Наслаждаетесь домашней едой 2 дня</p>
+                        <p className="text-sm text-black/70 pt-1">По субботам мы отдыхаем</p>
                       </div>
                     </div>
                   </div>
@@ -317,48 +326,37 @@ export function AppMenu({ userPhone }: AppMenuProps) {
 
                 {section === "support" && (
                   <div className="p-4 space-y-4">
-                    <a href="tel:+74951234567" className="flex items-center gap-4 p-4 bg-white border-2 border-black rounded-lg shadow-brutal hover:bg-[#FFEA00] transition-colors">
+                    <a href="tel:+79219176619" className="flex items-center gap-4 p-4 bg-white border-2 border-black rounded-lg shadow-brutal hover:bg-[#FFEA00] transition-colors">
                       <div className="w-12 h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
                         <Phone className="w-6 h-6 text-[#9D00FF] stroke-[2.5px]" />
                       </div>
                       <div>
-                        <p className="font-black text-black">+7 (495) 123-45-67</p>
-                        <p className="text-sm text-black/70">Ежедневно с 9:00 до 21:00</p>
+                        <p className="font-black text-black">+7 (921) 917-66-19</p>
+                        <p className="text-sm text-black/70">Ежедневно с 10:00 до 22:00</p>
                       </div>
                     </a>
 
-                    <a href="mailto:hello@switch-food.ru" className="flex items-center gap-4 p-4 bg-white border-2 border-black rounded-lg shadow-brutal hover:bg-[#FFEA00] transition-colors">
+                    <a href="mailto:hello@ogfoody.ru" className="flex items-center gap-4 p-4 bg-white border-2 border-black rounded-lg shadow-brutal hover:bg-[#FFEA00] transition-colors">
                       <div className="w-12 h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
                         <MessageCircle className="w-6 h-6 text-[#9D00FF] stroke-[2.5px]" />
                       </div>
                       <div>
-                        <p className="font-black text-black">hello@switch-food.ru</p>
-                        <p className="text-sm text-black/70">Ответим в течение часа</p>
+                        <p className="font-black text-black">hello@ogfoody.ru</p>
+                        <p className="text-sm text-black/70">Ответим в течение дня</p>
                       </div>
                     </a>
 
-                    <div className="pt-4">
-                      <p className="text-sm font-black text-black mb-3">Мы в соцсетях</p>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          className="w-12 h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal hover:bg-[#FFEA00] transition-colors font-black text-black"
-                        >
-                          <span className="text-lg">TG</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="w-12 h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal hover:bg-[#FFEA00] transition-colors font-black text-black"
-                        >
-                          <span className="text-lg">VK</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="w-12 h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal hover:bg-[#FFEA00] transition-colors font-black text-black"
-                        >
-                          <span className="text-lg">WA</span>
-                        </button>
-                      </div>
+                    <div className="bg-white border-2 border-black rounded-lg p-4 shadow-brutal">
+                      <p className="font-black text-black mb-2">Реквизиты</p>
+                      <p className="text-xs text-black/70">
+                        ИП Ясашнев Сергей Владимирович
+                        <br />
+                        ИНН 780624071235
+                        <br />
+                        ОГРНИП 318784700273802
+                        <br />
+                        Адрес: Лиговский пр., д. 289 А
+                      </p>
                     </div>
                   </div>
                 )}
@@ -403,7 +401,6 @@ export function AppMenu({ userPhone }: AppMenuProps) {
         </div>
       )}
 
-      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
     </>
   )
 }

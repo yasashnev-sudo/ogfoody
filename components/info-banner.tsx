@@ -38,7 +38,7 @@ export function InfoBanner({ isAuthenticated, onAuthClick, onClose }: InfoBanner
               Мы доставляем по всему Санкт-Петербургу
             </h3>
             <p className="text-sm text-gray-700 leading-relaxed">
-              Доставка в большинстве районов — <span className="font-semibold text-green-700">бесплатная</span>!
+              Проверьте ваш район при оформлении заказа
             </p>
           </div>
         </div>

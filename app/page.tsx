@@ -948,7 +948,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         setWarningDialog({
           open: true,
           title: "Ошибка обновления",
-          description: "Не удалось обновить заказ. Попробуйте еще раз.",
+          description: "Не удалось обновить заказ. Пожалуйста, попробуйте еще раз.",
           variant: "error",
         })
         return
@@ -1240,7 +1240,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         setWarningDialog({
           open: true,
           title: "Ошибка создания заказа",
-          description: error instanceof Error ? error.message : "Не удалось создать заказ. Попробуйте еще раз.",
+          description: error instanceof Error ? error.message : "Не удалось создать заказ. Пожалуйста, попробуйте еще раз.",
           variant: "error",
         })
       }
@@ -1378,7 +1378,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         setWarningDialog({
           open: true,
           title: "Ошибка обновления",
-          description: "Не удалось обновить заказ. Попробуйте еще раз.",
+          description: "Не удалось обновить заказ. Пожалуйста, попробуйте еще раз.",
           variant: "error",
         })
         return
@@ -1894,7 +1894,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setWarningDialog({
         open: true,
         title: "Ошибка оплаты",
-        description: "Не удалось отметить заказ как оплаченный. Попробуйте еще раз.",
+        description: "Не удалось отметить заказ как оплаченный. Пожалуйста, попробуйте еще раз.",
         variant: "error",
       })
     }
@@ -2147,7 +2147,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setWarningDialog({
         open: true,
         title: "Ошибка оплаты",
-        description: "Не удалось оплатить заказ. Попробуйте еще раз.",
+        description: "Не удалось оплатить заказ. Пожалуйста, попробуйте еще раз.",
         variant: "error",
       })
     }
@@ -2753,7 +2753,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         setWarningDialog({
           open: true,
           title: "Ошибка создания заказа",
-          description: "Не удалось создать заказ: отсутствуют данные о блюдах. Пожалуйста, попробуйте снова.",
+          description: "Не удалось создать заказ: отсутствуют данные о блюдах. Пожалуйста, попробуйте еще раз.",
           variant: "error",
         })
         setPendingCheckout(null)
@@ -3035,7 +3035,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setWarningDialog({
         open: true,
         title: "Ошибка оформления",
-        description: "Не удалось оформить заказ. Попробуйте еще раз.",
+        description: "Не удалось оформить заказ. Пожалуйста, попробуйте еще раз.",
         variant: "error",
       })
     }
@@ -3193,7 +3193,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setWarningDialog({
         open: true,
         title: "Ошибка сохранения",
-        description: "Не удалось сохранить район. Попробуйте еще раз.",
+        description: "Не удалось сохранить район. Пожалуйста, попробуйте еще раз.",
         variant: "error",
       })
     }

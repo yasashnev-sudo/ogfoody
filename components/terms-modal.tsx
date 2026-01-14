@@ -122,13 +122,13 @@ export function TermsModal({ onClose, onAccept, showAcceptButton = false }: Term
           <section>
             <h4 className="font-semibold mb-2">8. Контакты</h4>
             <p className="text-muted-foreground leading-relaxed">
-              ООО «СВИТЧ ФУД»
+              ИП Ясашнев Сергей Владимирович
               <br />
-              Телефон: +7 (495) 123-45-67
+              Телефон: +7 (921) 917-66-19
               <br />
-              Email: hello@switch-food.ru
+              Email: hello@ogfoody.ru
               <br />
-              Адрес: г. Москва, ул. Примерная, д. 1
+              Адрес: Лиговский пр., д. 289 А, г. Санкт-Петербург
             </p>
           </section>
 

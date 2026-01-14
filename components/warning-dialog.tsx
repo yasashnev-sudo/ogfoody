@@ -18,7 +18,7 @@ export function WarningDialog({
   onClose,
   title,
   description,
-  buttonText = "Понятно",
+  buttonText = "Закрыть",
   variant = "warning",
 }: WarningDialogProps) {
   const getVariantStyles = () => {
