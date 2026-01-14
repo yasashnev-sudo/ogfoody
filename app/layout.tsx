@@ -14,22 +14,84 @@ export const metadata: Metadata = {
   description: "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне, заказ через удобный календарь. ИП Ясашнев.",
   keywords: "доставка еды спб, домашняя еда, готовые обеды, доставка обедов, огфуди, ogfoody",
   generator: "v0.app",
+  applicationName: "OGFooDY",
+  referrer: "origin-when-cross-origin",
+  authors: [{ name: "ИП Ясашнев Сергей Владимирович" }],
+  creator: "OGFooDY",
+  publisher: "OGFooDY",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://ogfoody.ru"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    url: "https://ogfoody.ru",
+    siteName: "OGFooDY",
+    title: "OGFooDY — Доставка домашней еды в Санкт-Петербурге",
+    description: "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне, заказ через удобный календарь.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "OGFooDY — Доставка домашней еды",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "OGFooDY — Доставка домашней еды в Санкт-Петербурге",
+    description: "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне.",
+    images: ["/og-image.png"],
+  },
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
+        url: "/favicon-16x16.png",
+        sizes: "16x16",
+        type: "image/png",
       },
       {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
+        url: "/favicon-32x32.png",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/favicon-96x96.png",
+        sizes: "96x96",
+        type: "image/png",
       },
       {
         url: "/icon.svg",
         type: "image/svg+xml",
       },
     ],
-    apple: "/apple-icon.png",
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/safari-pinned-tab.svg",
+        color: "#FFEA00",
+      },
+    ],
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "OGFooDY",
   },
 }
 
