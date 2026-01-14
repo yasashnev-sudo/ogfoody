@@ -353,8 +353,9 @@
   .range-slider-mobile::-webkit-slider-runnable-track {
     width: 100%;
     height: 12px;
-    background: hsl(var(--muted));
+    background: #e5e7eb; /* ✅ ИСПРАВЛЕНО 2026-01-14: Серый цвет для видимости шкалы */
     border-radius: 0.5rem;
+    border: 1px solid #d1d5db; /* Добавляем границу для лучшей видимости */
   }
 
   .range-slider-mobile::-webkit-slider-thumb {
@@ -373,8 +374,9 @@
   .range-slider-mobile::-moz-range-track {
     width: 100%;
     height: 12px;
-    background: hsl(var(--muted));
+    background: #e5e7eb; /* ✅ ИСПРАВЛЕНО 2026-01-14: Серый цвет для видимости шкалы */
     border-radius: 0.5rem;
+    border: 1px solid #d1d5db; /* Добавляем границу для лучшей видимости */
   }
 
   .range-slider-mobile::-moz-range-thumb {
