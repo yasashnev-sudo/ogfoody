@@ -59,16 +59,8 @@ async function generateIcons() {
       console.log(`✅ Создан: ${filename} (${size}x${size})`);
     }
 
-    // Создаем favicon.ico (16x16 и 32x32 в одном файле)
+    // Создаем favicon.ico (используем PNG, браузеры его поддерживают)
     console.log('\n📦 Создаю favicon.ico...');
-    const favicon16 = await sharp(LOGO_PATH)
-      .resize(16, 16, {
-        fit: 'contain',
-        background: { r: 255, g: 234, b: 0, alpha: 1 }
-      })
-      .png()
-      .toBuffer();
-    
     const favicon32 = await sharp(LOGO_PATH)
       .resize(32, 32, {
         fit: 'contain',
@@ -77,13 +69,21 @@ async function generateIcons() {
       .png()
       .toBuffer();
 
-    // Для простоты создаем favicon.ico как PNG 32x32
-    // (настоящий .ico требует специальной библиотеки)
+    // Создаем favicon.ico (PNG формат, но с расширением .ico - браузеры поддерживают)
     await sharp(favicon32)
       .png()
       .toFile(path.join(OUTPUT_DIR, 'favicon.ico'));
     
-    console.log('✅ Создан: favicon.ico');
+    // Также создаем для Next.js app/icon.ico (Next.js автоматически использует файлы icon.* в app/)
+    const appIconDir = path.join(__dirname, '../app');
+    if (!fs.existsSync(appIconDir)) {
+      fs.mkdirSync(appIconDir, { recursive: true });
+    }
+    await sharp(favicon32)
+      .png()
+      .toFile(path.join(appIconDir, 'icon.ico'));
+    
+    console.log('✅ Создан: favicon.ico и app/icon.ico');
 
     // Создаем SVG иконку для Safari pinned tab
     console.log('\n🎨 Создаю safari-pinned-tab.svg...');
