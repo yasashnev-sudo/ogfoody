@@ -322,6 +322,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   
   // ✅ ИСПРАВЛЕНО 2026-01-14: Уведомление об успехе сохранения профиля
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false)
+  // ✅ ИСПРАВЛЕНО 2026-01-14: Уведомление об успехе отправки отзыва
+  const [reviewSubmitSuccess, setReviewSubmitSuccess] = useState(false)
   
   // ✅ ИСПРАВЛЕНО 2026-01-14: Приветственное сообщение после входа
   const [welcomeMessage, setWelcomeMessage] = useState<{ open: boolean; userName?: string }>({ open: false })
@@ -2168,6 +2170,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       }
       return newReviews
     })
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Показываем уведомление об успехе после отправки отзыва
+    setReviewSubmitSuccess(true)
   }
 
   const handleLogin = async (phone: string) => {
@@ -3680,6 +3684,15 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         title={`Добро пожаловать${welcomeMessage.userName ? `, ${welcomeMessage.userName}` : ''}!`}
         description="Рады видеть вас снова"
         duration={4000}
+      />
+
+      {/* ✅ ИСПРАВЛЕНО 2026-01-14: Уведомление об успехе отправки отзыва */}
+      <SuccessNotification
+        open={reviewSubmitSuccess}
+        onClose={() => setReviewSubmitSuccess(false)}
+        title="Спасибо за отзыв!"
+        description="Ваш отзыв успешно отправлен"
+        duration={3000}
       />
     </div>
   )

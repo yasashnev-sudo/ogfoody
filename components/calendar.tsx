@@ -230,11 +230,6 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
         return "border-2 border-black bg-[#9D00FF] text-white shadow-brutal cursor-pointer brutal-hover"
       }
       
-      // ✅ ИСПРАВЛЕНО 2026-01-14: Выделение текущей даты цветом (без надписи)
-      if (isDateToday) {
-        return "bg-[#9D00FF]/20 border-2 border-[#9D00FF] cursor-pointer hover:bg-[#9D00FF]/30"
-      }
-      
       // No food - White/Transparent background
       if (isAvailableForNewOrder) {
         return "hover:bg-[#FFEA00]/20 cursor-pointer"
@@ -310,10 +305,13 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
               </span>
             ) : (
               // Empty Days - Black text on white background
+              // ✅ ИСПРАВЛЕНО 2026-01-14: Текущая дата выделяется увеличенной цифрой и цветом (без прямоугольника)
               <span className={cn(
-                "text-xs sm:text-sm font-bold leading-none z-10",
+                "font-bold leading-none z-10",
                 !isCurrentMonth && "text-muted-foreground",
-                isDateToday ? "text-[#9D00FF]" : "text-black"
+                isDateToday 
+                  ? "text-[#9D00FF] text-base sm:text-lg" // Увеличенная цифра и фиолетовый цвет
+                  : "text-black text-xs sm:text-sm" // Обычный размер
               )}>
                 {format(date, "d")}
               </span>
