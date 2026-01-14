@@ -18,6 +18,7 @@ export function OrderLoadingDialog({ open, text }: OrderLoadingDialogProps) {
       <DialogContent 
         className="sm:max-w-md border-0 p-0 bg-transparent shadow-none" 
         onInteractOutside={(e) => e.preventDefault()}
+        showCloseButton={false} // ✅ ИСПРАВЛЕНО 2026-01-14: Убран крестик из диалога загрузки
       >
         <VisuallyHidden>
           <DialogTitle>{text || 'Создание заказа'}</DialogTitle>
