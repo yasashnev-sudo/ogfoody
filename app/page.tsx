@@ -2181,11 +2181,16 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       }
 
       // ✅ ИСПРАВЛЕНО 2026-01-14: Сохраняем в NocoDB через API endpoint
+      // NocoDB может принимать данные в обоих форматах (snake_case и Title Case)
       const reviewData = {
         order_id: order.id,
+        "Order ID": order.id, // Title Case для совместимости
         user_id: userProfile.id,
+        "User ID": userProfile.id, // Title Case для совместимости
         rating: rating,
+        "Rating": rating, // Title Case для совместимости
         text: text || "",
+        "Review Text": text || "", // Title Case для совместимости
       }
 
       console.log('📝 Сохраняю отзыв в NocoDB:', reviewData)
