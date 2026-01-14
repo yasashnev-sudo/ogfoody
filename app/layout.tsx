@@ -50,41 +50,41 @@ export const metadata: Metadata = {
     description: "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне.",
     images: ["/og-image.png"],
   },
-  // Иконки с cache busting для решения проблем с кешированием
+  // Иконки с cache busting - версия 4 (увеличьте при следующем обновлении)
   icons: {
     icon: [
       {
-        url: "/favicon.ico?v=2",
+        url: "/favicon.ico?v=4",
       },
       {
-        url: "/favicon-16x16.png?v=2",
+        url: "/favicon-16x16.png?v=4",
         sizes: "16x16",
         type: "image/png",
       },
       {
-        url: "/favicon-32x32.png?v=2",
+        url: "/favicon-32x32.png?v=4",
         sizes: "32x32",
         type: "image/png",
       },
       {
-        url: "/favicon-96x96.png?v=2",
+        url: "/favicon-96x96.png?v=4",
         sizes: "96x96",
         type: "image/png",
       },
       {
-        url: "/icon.svg?v=2",
+        url: "/icon.svg?v=4",
         type: "image/svg+xml",
       },
     ],
-    shortcut: "/favicon.ico?v=2",
+    shortcut: "/favicon.ico?v=4",
     apple: [
       {
-        url: "/apple-touch-icon.png?v=2",
+        url: "/apple-touch-icon.png?v=4",
         sizes: "180x180",
         type: "image/png",
       },
       {
-        url: "/apple-icon.png?v=2",
+        url: "/apple-icon.png?v=4",
         sizes: "180x180",
         type: "image/png",
       },
@@ -92,7 +92,7 @@ export const metadata: Metadata = {
     other: [
       {
         rel: "mask-icon",
-        url: "/safari-pinned-tab.svg?v=2",
+        url: "/safari-pinned-tab.svg?v=4",
         color: "#FFEA00",
       },
     ],
