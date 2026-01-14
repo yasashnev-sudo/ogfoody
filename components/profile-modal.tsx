@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { X, User, MapPin, Gift, Save, Star, Coins, Phone, CheckCircle2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -50,6 +50,9 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
   })
 
   const [activeTab, setActiveTab] = useState<"profile" | "loyalty">("profile")
+  const [initialProfile, setInitialProfile] = useState<UserProfile | null>(null)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const profileLoadedRef = useRef(false)
 
   // Синхронизация всех данных (включая ID!) с внешним userProfile
   useEffect(() => {
@@ -74,6 +77,13 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
           totalSpent: userProfile.totalSpent || 0,
         }
         console.log("✅ После синхронизации: profile.id =", updated.id, "тип =", typeof updated.id)
+        
+        // ✅ ИСПРАВЛЕНО 2026-01-14: Сохраняем исходный профиль для отслеживания изменений
+        if (!profileLoadedRef.current) {
+          setInitialProfile({ ...updated })
+          profileLoadedRef.current = true
+        }
+        
         return updated
       })
     }
@@ -120,7 +130,7 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
             
             console.log("🔄 loadProfile: dbUser.Id =", dbUser.Id, "validDbId =", validDbId, "prev.id =", prev.id, "finalId =", finalId)
             
-            return {
+            const updatedProfile = {
               ...prev,
               id: finalId,
               name: dbUser.name || dbUser["Name"] || prev.name,
@@ -142,6 +152,14 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
                 ? totalSpentRaw
                 : parseFloat(String(totalSpentRaw)) || 0,
             }
+            
+            // ✅ ИСПРАВЛЕНО 2026-01-14: Сохраняем исходный профиль для отслеживания изменений
+            if (!profileLoadedRef.current) {
+              setInitialProfile({ ...updatedProfile })
+              profileLoadedRef.current = true
+            }
+            
+            return updatedProfile
           })
         }
       } catch (error) {
@@ -151,6 +169,23 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
 
     loadProfile()
   }, [phone])
+
+  // ✅ ИСПРАВЛЕНО 2026-01-14: Проверка наличия изменений
+  const hasChanges = () => {
+    if (!initialProfile) return false
+    
+    // Сравниваем только редактируемые поля (исключаем loyaltyPoints и totalSpent)
+    const editableFields: (keyof UserProfile)[] = [
+      'name', 'street', 'building', 'buildingSection', 'apartment',
+      'entrance', 'floor', 'intercom', 'district', 'deliveryComment', 'additionalPhone'
+    ]
+    
+    return editableFields.some(field => {
+      const current = profile[field] || ""
+      const initial = initialProfile[field] || ""
+      return String(current).trim() !== String(initial).trim()
+    })
+  }
 
   const handleSave = () => {
     // Валидация для оформления заказа
@@ -174,7 +209,16 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
     
     localStorage.setItem(`profile_${phone}`, JSON.stringify(profile))
     onSave(profile)
-    if (!isCheckoutFlow) {
+    
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Показываем сообщение об успехе только если были изменения
+    if (!isCheckoutFlow && hasChanges()) {
+      setShowSuccessMessage(true)
+      // Закрываем модалку через 1.5 секунды после показа сообщения
+      setTimeout(() => {
+        onClose()
+      }, 1500)
+    } else if (!isCheckoutFlow) {
+      // Если изменений нет, закрываем сразу
       onClose()
     }
     // Если isCheckoutFlow, модалка закроется автоматически после оформления заказа
@@ -244,7 +288,17 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
         )}
 
         <div className="flex-1 overflow-y-auto p-4">
-          {activeTab === "profile" ? (
+          {showSuccessMessage ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[300px] space-y-6">
+              <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center border-4 border-black shadow-brutal">
+                <CheckCircle2 className="w-10 h-10 text-white stroke-[3px]" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-2xl font-black text-black mb-2">Профиль сохранен!</h3>
+                <p className="text-base text-gray-700">Ваши данные успешно обновлены</p>
+              </div>
+            </div>
+          ) : activeTab === "profile" ? (
             <div className="space-y-4">
               <div className="p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
@@ -535,7 +589,12 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
         <div className="border-t-2 border-black p-4">
           <button
             onClick={handleSave}
-            className="w-full py-4 px-6 bg-[#FFEA00] hover:bg-[#FFF033] text-black font-black text-lg rounded-xl border-2 border-black shadow-brutal btn-press transition-all"
+            disabled={!isCheckoutFlow && !hasChanges()}
+            className={`w-full py-4 px-6 font-black text-lg rounded-xl border-2 border-black shadow-brutal btn-press transition-all ${
+              !isCheckoutFlow && !hasChanges()
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
+                : "bg-[#FFEA00] hover:bg-[#FFF033] text-black"
+            }`}
           >
             {isCheckoutFlow ? (
               <>
