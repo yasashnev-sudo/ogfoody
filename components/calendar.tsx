@@ -238,11 +238,11 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
       return "opacity-40 cursor-not-allowed"
     }
     
-    // ✅ ИСПРАВЛЕНО 2026-01-14: Добавлена слабо-фиолетовая заливка для текущей даты
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Более явная фиолетовая заливка для текущей даты
     const getTodayHighlight = () => {
       // Показываем только если это сегодня, нет еды, не выбрана, и это текущий месяц
       if (isDateToday && !hasFood && !isSelected && isCurrentMonth) {
-        return "bg-[#9D00FF]/10"
+        return "bg-[#9D00FF]/20 rounded-lg" // ✅ Более явная заливка (20% вместо 10%) и скругленные углы
       }
       return ""
     }
@@ -315,21 +315,13 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
               </span>
             ) : (
               // Empty Days - Black text on white background
-              <>
-                <span className={cn(
-                  "text-xs sm:text-sm font-bold leading-none z-10",
-                  !isCurrentMonth && "text-muted-foreground",
-                  "text-black"
-                )}>
-                  {format(date, "d")}
-                </span>
-                
-                {isDateToday && !hasDelivery && (
-                  <span className="text-[8px] sm:text-[9px] text-[#9D00FF] font-bold mt-0.5 z-10 leading-none absolute bottom-0.5">
-                    Сегодня
-                  </span>
-                )}
-              </>
+              <span className={cn(
+                "text-xs sm:text-sm font-bold leading-none z-10",
+                !isCurrentMonth && "text-muted-foreground",
+                "text-black"
+              )}>
+                {format(date, "d")}
+              </span>
             )}
           </>
         )}
