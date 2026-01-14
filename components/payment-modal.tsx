@@ -80,7 +80,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
                     onChange={(e) => {
                       setUsePoints(e.target.checked)
                       if (!e.target.checked) setPointsToUse(0)
-                      else setPointsToUse(maxPointsToUse)
+                      else setPointsToUse(Math.floor(maxPointsToUse / 2)) // ✅ ИСПРАВЛЕНО 2026-01-14: Устанавливаем на середину
                     }}
                     className="sr-only peer"
                   />
@@ -95,25 +95,14 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
                     <span className="text-sm text-muted-foreground">Макс: {maxPointsToUse} ₽</span>
                   </div>
                   {/* ✅ ИСПРАВЛЕНО 2026-01-14: Улучшен UX ползунка для iPhone - увеличена область клика */}
-                  {/* ✅ ИСПРАВЛЕНО 2026-01-14: Добавлена визуальная полоска прогресса */}
-                  <div className="py-3 px-1 -mx-1 relative"> {/* Увеличиваем область клика через padding */}
-                    {/* Полоска прогресса - показывается только если есть выбранные баллы */}
-                    {pointsToUse > 0 && maxPointsToUse > 0 && (
-                      <div 
-                        className="absolute top-1/2 left-1 -translate-y-1/2 h-2 bg-primary/40 rounded-full pointer-events-none z-0"
-                        style={{ 
-                          width: `calc(${((pointsToUse / maxPointsToUse) * 100)}% - 8px)`,
-                          transition: 'width 0.2s ease-out'
-                        }}
-                      />
-                    )}
+                  <div className="py-3 px-1 -mx-1"> {/* Увеличиваем область клика через padding */}
                     <input
                       type="range"
                       min="0"
                       max={maxPointsToUse}
                       value={pointsToUse}
                       onChange={(e) => handlePointsChange(Number(e.target.value))}
-                      className="w-full range-slider-mobile relative z-10"
+                      className="w-full range-slider-mobile"
                     />
                   </div>
                   <div className="text-center mt-2">
