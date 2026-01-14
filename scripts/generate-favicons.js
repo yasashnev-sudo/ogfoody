@@ -59,8 +59,8 @@ async function generateIcons() {
       console.log(`✅ Создан: ${filename} (${size}x${size})`);
     }
 
-    // Создаем favicon.ico (используем PNG, браузеры его поддерживают)
-    console.log('\n📦 Создаю favicon.ico...');
+    // Создаем favicon.ico и файлы для Next.js App Router
+    console.log('\n📦 Создаю favicon.ico и файлы для Next.js App Router...');
     const favicon32 = await sharp(LOGO_PATH)
       .resize(32, 32, {
         fit: 'contain',
@@ -80,12 +80,12 @@ async function generateIcons() {
       fs.mkdirSync(appIconDir, { recursive: true });
     }
     
-    // app/favicon.ico - классический фавикон
+    // app/favicon.ico - Next.js автоматически обработает
     await sharp(favicon32)
       .png()
       .toFile(path.join(appIconDir, 'favicon.ico'));
     
-    // app/icon.png - современный фавикон (32x32)
+    // app/icon.png - современный фавикон
     await sharp(favicon32)
       .png()
       .toFile(path.join(appIconDir, 'icon.png'));

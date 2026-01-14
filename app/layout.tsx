@@ -50,37 +50,23 @@ export const metadata: Metadata = {
     description: "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне.",
     images: ["/og-image.png"],
   },
+  // Иконки автоматически обрабатываются Next.js из app/ (favicon.ico, icon.png, apple-icon.png)
+  // Дополнительные размеры для обратной совместимости
   icons: {
     icon: [
       {
-        url: "/favicon-16x16.png?v=2",
+        url: "/favicon-16x16.png",
         sizes: "16x16",
         type: "image/png",
       },
       {
-        url: "/favicon-32x32.png?v=2",
-        sizes: "32x32",
-        type: "image/png",
-      },
-      {
-        url: "/favicon-96x96.png?v=2",
+        url: "/favicon-96x96.png",
         sizes: "96x96",
         type: "image/png",
       },
       {
-        url: "/favicon.ico?v=2",
-        sizes: "any",
-      },
-      {
         url: "/icon.svg",
         type: "image/svg+xml",
-      },
-    ],
-    apple: [
-      {
-        url: "/apple-touch-icon.png?v=2",
-        sizes: "180x180",
-        type: "image/png",
       },
     ],
     other: [
