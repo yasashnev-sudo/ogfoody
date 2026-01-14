@@ -22,6 +22,7 @@ import { SuccessOrderDialog } from "@/components/success-order-dialog"
 import { CancelOrderLoading } from "@/components/cancel-order-loading"
 import { DistrictSelectionModal } from "@/components/district-selection-modal"
 import { InfoBanner } from "@/components/info-banner"
+import { SuccessNotification } from "@/components/success-notification"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, History, LogOut, User, Zap, LogIn } from "lucide-react"
 import { isMealAvailable, isExtraAvailable } from "@/lib/meals-data"
@@ -317,6 +318,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     loyaltyPointsStatus: undefined,
     loyaltyPointsMessage: undefined,
   })
+  
+  // ✅ ИСПРАВЛЕНО 2026-01-14: Уведомление об успехе сохранения профиля
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false)
+  
+  // ✅ ИСПРАВЛЕНО 2026-01-14: Приветственное сообщение после входа
+  const [welcomeMessage, setWelcomeMessage] = useState<{ open: boolean; userName?: string }>({ open: false })
   
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
@@ -2439,6 +2446,11 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       console.log("✅ У пользователя уже есть район:", userDistrict)
       // Проверка профиля и автооформление теперь в useEffect
     }
+    
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Показываем приветственное сообщение после входа
+    if (profile.name) {
+      setWelcomeMessage({ open: true, userName: profile.name })
+    }
   }
 
   const handleLogout = () => {
@@ -2999,6 +3011,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // Обычный режим - закрываем сразу
       setShowProfile(false)
     }
+    // Уведомление об успехе показывается через onSaveSuccess callback из ProfileModal
   }
 
   const handleDistrictSelected = async (district: string) => {
@@ -3563,6 +3576,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           onSave={handleProfileSave} 
           userProfile={userProfile}
           isCheckoutFlow={shouldAutoCheckout}
+          onSaveSuccess={() => setProfileSaveSuccess(true)}
         />
       )}
 
@@ -3646,6 +3660,24 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
 
       {/* Debug Floating Button */}
       <DebugFloatingButton />
+
+      {/* ✅ ИСПРАВЛЕНО 2026-01-14: Уведомление об успехе сохранения профиля */}
+      <SuccessNotification
+        open={profileSaveSuccess}
+        onClose={() => setProfileSaveSuccess(false)}
+        title="Профиль сохранен!"
+        description="Ваши данные успешно обновлены"
+        duration={3000}
+      />
+
+      {/* ✅ ИСПРАВЛЕНО 2026-01-14: Приветственное сообщение после входа */}
+      <SuccessNotification
+        open={welcomeMessage.open}
+        onClose={() => setWelcomeMessage({ open: false })}
+        title={`Добро пожаловать${welcomeMessage.userName ? `, ${welcomeMessage.userName}` : ''}!`}
+        description="Рады видеть вас снова"
+        duration={4000}
+      />
     </div>
   )
 }

@@ -29,9 +29,10 @@ interface ProfileModalProps {
   onSave: (profile: UserProfile) => void
   userProfile?: UserProfile | null // Добавлен для синхронизации баллов
   isCheckoutFlow?: boolean // Флаг что это оформление заказа (нельзя закрыть)
+  onSaveSuccess?: () => void // ✅ ИСПРАВЛЕНО 2026-01-14: Callback для показа уведомления после сохранения
 }
 
-export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFlow = false }: ProfileModalProps) {
+export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFlow = false, onSaveSuccess }: ProfileModalProps) {
   const [profile, setProfile] = useState<UserProfile>({
     phone,
     additionalPhone: "",
@@ -51,7 +52,6 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
 
   const [activeTab, setActiveTab] = useState<"profile" | "loyalty">("profile")
   const [initialProfile, setInitialProfile] = useState<UserProfile | null>(null)
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const profileLoadedRef = useRef(false)
 
   // Синхронизация всех данных (включая ID!) с внешним userProfile
@@ -210,16 +210,16 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
     localStorage.setItem(`profile_${phone}`, JSON.stringify(profile))
     onSave(profile)
     
-    // ✅ ИСПРАВЛЕНО 2026-01-14: Показываем сообщение об успехе только если были изменения
-    if (!isCheckoutFlow && hasChanges()) {
-      setShowSuccessMessage(true)
-      // Закрываем модалку через 1.5 секунды после показа сообщения
-      setTimeout(() => {
-        onClose()
-      }, 1500)
-    } else if (!isCheckoutFlow) {
-      // Если изменений нет, закрываем сразу
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Закрываем модалку сразу, затем показываем уведомление
+    if (!isCheckoutFlow) {
       onClose()
+      // Показываем уведомление об успехе только если были изменения
+      if (hasChanges() && onSaveSuccess) {
+        // Небольшая задержка, чтобы модалка успела закрыться
+        setTimeout(() => {
+          onSaveSuccess()
+        }, 100)
+      }
     }
     // Если isCheckoutFlow, модалка закроется автоматически после оформления заказа
   }
@@ -288,17 +288,7 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
         )}
 
         <div className="flex-1 overflow-y-auto p-4">
-          {showSuccessMessage ? (
-            <div className="flex flex-col items-center justify-center h-full min-h-[300px] space-y-6">
-              <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center border-4 border-black shadow-brutal">
-                <CheckCircle2 className="w-10 h-10 text-white stroke-[3px]" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-2xl font-black text-black mb-2">Профиль сохранен!</h3>
-                <p className="text-base text-gray-700">Ваши данные успешно обновлены</p>
-              </div>
-            </div>
-          ) : activeTab === "profile" ? (
+          {activeTab === "profile" ? (
             <div className="space-y-4">
               <div className="p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
