@@ -1865,9 +1865,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       
       // Скрываем loading и показываем success
       setShowPaymentLoading(false)
+      // ✅ ИСПРАВЛЕНО 2026-01-14: Передаем undefined вместо 0, чтобы не показывать "0" в UI
       setSuccessDialog({
         open: true,
-        loyaltyPointsEarned: data.loyaltyPointsEarned || 0,
+        loyaltyPointsEarned: (data.loyaltyPointsEarned && data.loyaltyPointsEarned > 0) ? data.loyaltyPointsEarned : undefined,
         loyaltyPointsStatus: "earned",
       })
     } catch (error) {
