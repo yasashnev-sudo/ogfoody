@@ -8,7 +8,7 @@ import type { Order } from "@/lib/types"
 interface ReviewModalProps {
   order: Order
   onClose: () => void
-  onSubmit: (orderId: string, rating: number, text: string) => void
+  onSubmit: (order: Order, rating: number, text: string) => void // ✅ ИСПРАВЛЕНО: передаем объект Order вместо orderId
 }
 
 const formatDisplayDate = (date: Date | string): string => {
@@ -23,9 +23,7 @@ export function ReviewModal({ order, onClose, onSubmit }: ReviewModalProps) {
   const [hoveredRating, setHoveredRating] = useState(0)
 
   const handleSubmit = () => {
-    const orderDate = order.startDate instanceof Date ? order.startDate : new Date(order.startDate)
-    const orderId = `${orderDate.getFullYear()}-${(orderDate.getMonth() + 1).toString().padStart(2, "0")}-${orderDate.getDate().toString().padStart(2, "0")}`
-    onSubmit(orderId, rating, text)
+    onSubmit(order, rating, text) // ✅ ИСПРАВЛЕНО: передаем объект Order
     onClose()
   }
 

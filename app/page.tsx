@@ -2155,23 +2155,86 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     setPaymentOrder(null)
   }
 
-  const handleReviewSubmit = (orderId: string, rating: number, text: string) => {
-    const user = localStorage.getItem("currentUser")
-    const newReview: Review = {
-      orderId,
-      rating,
-      text,
-      createdAt: new Date().toISOString(),
-    }
-    setReviews((prev) => {
-      const newReviews = [...prev, newReview]
-      if (user) {
-        localStorage.setItem(`reviews_${user}`, JSON.stringify(newReviews))
+  const handleReviewSubmit = async (order: Order, rating: number, text: string) => {
+    try {
+      // ✅ ИСПРАВЛЕНО 2026-01-14: Сохраняем отзыв в NocoDB
+      if (!order.id) {
+        console.error('❌ Нельзя оставить отзыв для заказа без ID')
+        setWarningDialog({
+          open: true,
+          title: "Ошибка",
+          description: "Не удалось сохранить отзыв: заказ не найден",
+          variant: "error",
+        })
+        return
       }
-      return newReviews
-    })
-    // ✅ ИСПРАВЛЕНО 2026-01-14: Показываем уведомление об успехе после отправки отзыва
-    setReviewSubmitSuccess(true)
+
+      if (!userProfile?.id) {
+        console.error('❌ Нельзя оставить отзыв без авторизации')
+        setWarningDialog({
+          open: true,
+          title: "Ошибка",
+          description: "Необходимо авторизоваться для оставления отзыва",
+          variant: "error",
+        })
+        return
+      }
+
+      // ✅ ИСПРАВЛЕНО 2026-01-14: Сохраняем в NocoDB через API endpoint
+      const reviewData = {
+        order_id: order.id,
+        user_id: userProfile.id,
+        rating: rating,
+        text: text || "",
+      }
+
+      console.log('📝 Сохраняю отзыв в NocoDB:', reviewData)
+      
+      const response = await fetch('/api/db/Reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const createdReview = await response.json()
+      console.log('✅ Отзыв сохранен в NocoDB:', createdReview)
+
+      // Также сохраняем в localStorage для локального отображения
+      const user = localStorage.getItem("currentUser")
+      const orderDate = order.startDate instanceof Date ? order.startDate : new Date(order.startDate)
+      const orderId = `${orderDate.getFullYear()}-${(orderDate.getMonth() + 1).toString().padStart(2, "0")}-${orderDate.getDate().toString().padStart(2, "0")}`
+      
+      const newReview: Review = {
+        orderId,
+        rating,
+        text,
+        createdAt: new Date().toISOString(),
+      }
+      
+      setReviews((prev) => {
+        const newReviews = [...prev, newReview]
+        if (user) {
+          localStorage.setItem(`reviews_${user}`, JSON.stringify(newReviews))
+        }
+        return newReviews
+      })
+
+      // ✅ ИСПРАВЛЕНО 2026-01-14: Показываем уведомление об успехе после отправки отзыва
+      setReviewSubmitSuccess(true)
+    } catch (error) {
+      console.error('❌ Ошибка при сохранении отзыва:', error)
+      setWarningDialog({
+        open: true,
+        title: "Ошибка",
+        description: "Не удалось сохранить отзыв. Попробуйте позже.",
+        variant: "error",
+      })
+    }
   }
 
   const handleLogin = async (phone: string) => {
