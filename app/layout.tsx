@@ -50,28 +50,41 @@ export const metadata: Metadata = {
     description: "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне.",
     images: ["/og-image.png"],
   },
-  // Иконки автоматически обрабатываются Next.js из app/ (favicon.ico, icon.png, apple-icon.png)
-  // Дополнительные размеры для обратной совместимости
+  // Иконки с cache busting для решения проблем с кешированием
   icons: {
     icon: [
       {
-        url: "/favicon-16x16.png",
+        url: "/favicon.ico?v=2",
+      },
+      {
+        url: "/favicon-16x16.png?v=2",
         sizes: "16x16",
         type: "image/png",
       },
       {
-        url: "/favicon-96x96.png",
+        url: "/favicon-32x32.png?v=2",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/favicon-96x96.png?v=2",
         sizes: "96x96",
         type: "image/png",
       },
       {
-        url: "/icon.svg",
+        url: "/icon.svg?v=2",
         type: "image/svg+xml",
       },
     ],
+    shortcut: "/favicon.ico?v=2",
     apple: [
       {
-        url: "/apple-icon.png",
+        url: "/apple-touch-icon.png?v=2",
+        sizes: "180x180",
+        type: "image/png",
+      },
+      {
+        url: "/apple-icon.png?v=2",
         sizes: "180x180",
         type: "image/png",
       },
@@ -79,7 +92,7 @@ export const metadata: Metadata = {
     other: [
       {
         rel: "mask-icon",
-        url: "/safari-pinned-tab.svg",
+        url: "/safari-pinned-tab.svg?v=2",
         color: "#FFEA00",
       },
     ],
