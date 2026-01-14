@@ -2831,6 +2831,25 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       } else {
         console.log("🔄 Заказ с ID - обновляем его в БД")
         await handleSaveOrder(updatedOrder)
+        // ✅ ИСПРАВЛЕНО 2026-01-14: После обновления заказа открываем PaymentModal
+        // Ранее PaymentModal не открывался, потому что handleSaveOrder делает return
+        console.log("🎯 Открываем PaymentModal после обновления заказа: orderId =", updatedOrder.id, "userId =", userProfile.id)
+        debug.log("🎯 Opening PaymentModal after update", { orderId: updatedOrder.id, total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee })
+        
+        // ✅ ДОБАВЛЕНО 10.01.2026: Скрываем анимацию загрузки перед открытием PaymentModal
+        setShowOrderLoading(false)
+        
+        // Показываем модалку оплаты с обновленной суммой
+        setPaymentOrder({ 
+          order: updatedOrder, 
+          total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee,
+          isNewOrder: true // ✅ Помечаем как новый заказ для удаления при отмене
+        })
+        
+        // Очищаем pending checkout
+        setPendingCheckout(null)
+        setShouldAutoCheckout(false)
+        return // ✅ ВАЖНО: Выходим из функции, чтобы не выполнять код ниже
       }
       
       console.log("🎯 Открываем PaymentModal: orderId =", updatedOrder.id, "userId =", userProfile.id)
