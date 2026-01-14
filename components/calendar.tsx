@@ -208,12 +208,12 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
     const isLastDayOfOrder = isLastDayOfAnyOrder(date)
     const hasNextOrderForLastDay = hasNextOrder(date)
     
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Плюсик показывается ТОЛЬКО на последнем заказе (самом позднем)
     // CRITICAL: Yellow + button shows ONLY on last day of any order WITH food, NO delivery, and NO next order (gap exists)
     // Must have: hasFood AND isLastDayOfOrder AND !hasDelivery AND !hasNextOrderForLastDay
-    const shouldShowYellowPlus = hasFood && isLastDayOfOrder && !hasDelivery && !hasNextOrderForLastDay && isCurrentMonth
-    
-    // Check if this is the LATEST date with yellow plus (only this one should wiggle)
     const isLatestPlus = latestPlusDate && isSameDay(date, latestPlusDate)
+    // ✅ ИСПРАВЛЕНО: Показываем плюсик только на самом последнем заказе
+    const shouldShowYellowPlus = isLatestPlus && isCurrentMonth
     
     const canOrder = canOrderForDate(date)
     const isSaturday = getDay(date) === 6

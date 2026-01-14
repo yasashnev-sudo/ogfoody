@@ -1473,7 +1473,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         return filtered
       })
       setSelectedDate(null)
-      showWarning("Заказ отменен", "Несохраненный заказ успешно удален", "success")
+      showWarning("Заказ отменен", "Несохраненный заказ успешно удален", "info")
       return
     }
 
@@ -1584,11 +1584,17 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // Скрываем анимацию - заказ уже удален из UI
       setShowCancelLoading(false)
       
-      // Опционально: показываем тихое уведомление только для оплаченных заказов
+      // ✅ ИСПРАВЛЕНО 2026-01-14: Показываем оповещение всегда после отмены заказа
       if (wasPaid) {
         showWarning(
           "Заказ отменен",
           "Деньги вернутся на карту в течение 3 рабочих дней.",
+          "info"
+        )
+      } else {
+        showWarning(
+          "Заказ отменен",
+          "Заказ успешно отменен.",
           "info"
         )
       }
