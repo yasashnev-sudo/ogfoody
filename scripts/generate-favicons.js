@@ -14,7 +14,10 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
-const LOGO_PATH = path.join(__dirname, '../public/logo-small.png');
+// Пробуем использовать оригинальный логотип, если есть, иначе logo-small.png
+const ORIGINAL_LOGO = path.join(__dirname, '../public/OGFooDY логотип.png');
+const SMALL_LOGO = path.join(__dirname, '../public/logo-small.png');
+const LOGO_PATH = fs.existsSync(ORIGINAL_LOGO) ? ORIGINAL_LOGO : SMALL_LOGO;
 const OUTPUT_DIR = path.join(__dirname, '../public');
 
 // Размеры иконок для генерации
@@ -29,10 +32,13 @@ const ICON_SIZES = {
 
 // Проверяем наличие исходного логотипа
 if (!fs.existsSync(LOGO_PATH)) {
-  console.error('❌ Ошибка: файл logo-small.png не найден в папке public/');
-  console.error('   Убедитесь, что файл существует: ' + LOGO_PATH);
+  console.error('❌ Ошибка: логотип не найден в папке public/');
+  console.error('   Искали: OGFooDY логотип.png или logo-small.png');
+  console.error('   Убедитесь, что файл существует');
   process.exit(1);
 }
+
+console.log(`📸 Используется логотип: ${path.basename(LOGO_PATH)}`);
 
 console.log('🚀 Начинаю генерацию иконок из логотипа...\n');
 
