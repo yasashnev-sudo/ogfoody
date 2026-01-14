@@ -27,19 +27,9 @@ expect {
         send "npm install\r"
         expect "root@"
         
-        send "echo '=== Creating .env.local if not exists ==='\r"
-        expect "root@"
-        send "if \[\[ ! -f .env.local \]\]; then cat > .env.local << 'EOF'\nTELEGRAM_BOT_TOKEN=8581334096:AAG2-h00EDRFj9kXiYCf5jpRw6WQjheTpUY\nTELEGRAM_CHAT_ID=163996864\nEOF\nfi\r"
-        expect "root@"
-        
         send "echo '=== Building project ==='\r"
         expect "root@"
         send "npm run build\r"
-        expect "root@"
-        
-        send "echo '=== Creating debug_reports directory ==='\r"
-        expect "root@"
-        send "mkdir -p debug_reports && chmod 755 debug_reports\r"
         expect "root@"
         
         send "echo '=== Restarting application ==='\r"
