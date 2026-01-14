@@ -69,21 +69,40 @@ async function generateIcons() {
       .png()
       .toBuffer();
 
-    // Создаем favicon.ico (PNG формат, но с расширением .ico - браузеры поддерживают)
+    // Создаем favicon.ico в public/
     await sharp(favicon32)
       .png()
       .toFile(path.join(OUTPUT_DIR, 'favicon.ico'));
     
-    // Также создаем для Next.js app/icon.ico (Next.js автоматически использует файлы icon.* в app/)
+    // Создаем файлы для Next.js App Router в app/
     const appIconDir = path.join(__dirname, '../app');
     if (!fs.existsSync(appIconDir)) {
       fs.mkdirSync(appIconDir, { recursive: true });
     }
+    
+    // app/favicon.ico - классический фавикон
     await sharp(favicon32)
       .png()
-      .toFile(path.join(appIconDir, 'icon.ico'));
+      .toFile(path.join(appIconDir, 'favicon.ico'));
     
-    console.log('✅ Создан: favicon.ico и app/icon.ico');
+    // app/icon.png - современный фавикон (32x32)
+    await sharp(favicon32)
+      .png()
+      .toFile(path.join(appIconDir, 'icon.png'));
+    
+    // app/apple-icon.png - для iOS (180x180)
+    const appleIcon = await sharp(LOGO_PATH)
+      .resize(180, 180, {
+        fit: 'contain',
+        background: { r: 255, g: 234, b: 0, alpha: 1 }
+      })
+      .png()
+      .toBuffer();
+    await sharp(appleIcon)
+      .png()
+      .toFile(path.join(appIconDir, 'apple-icon.png'));
+    
+    console.log('✅ Создан: favicon.ico, app/favicon.ico, app/icon.png, app/apple-icon.png');
 
     // Создаем SVG иконку для Safari pinned tab
     console.log('\n🎨 Создаю safari-pinned-tab.svg...');
@@ -100,15 +119,25 @@ async function generateIcons() {
 
     // Создаем Open Graph изображение для социальных сетей
     console.log('\n🖼️  Создаю og-image.png для Open Graph...');
-    await sharp(LOGO_PATH)
+    const ogImage = await sharp(LOGO_PATH)
       .resize(1200, 630, {
         fit: 'contain',
         background: { r: 255, g: 234, b: 0, alpha: 1 } // #FFEA00
       })
       .png()
+      .toBuffer();
+    
+    // В public/ для обратной совместимости
+    await sharp(ogImage)
+      .png()
       .toFile(path.join(OUTPUT_DIR, 'og-image.png'));
     
-    console.log('✅ Создан: og-image.png (1200x630)');
+    // В app/ для Next.js App Router (автоматически используется)
+    await sharp(ogImage)
+      .png()
+      .toFile(path.join(appIconDir, 'opengraph-image.png'));
+    
+    console.log('✅ Создан: og-image.png (1200x630) в public/ и app/opengraph-image.png');
 
     console.log('\n✨ Все иконки успешно созданы!');
     console.log('\n📝 Следующие шаги:');
