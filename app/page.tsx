@@ -11,6 +11,7 @@ import { ProfileModal } from "@/components/profile-modal"
 import { PaymentModal } from "@/components/payment-modal"
 import { ReviewModal } from "@/components/review-modal"
 import { WarningDialog } from "@/components/warning-dialog"
+import { CancelPaymentDialog } from "@/components/cancel-payment-dialog"
 import { Preloader } from "@/components/preloader"
 import { DailyStatus } from "@/components/daily-status"
 import { FreshSection } from "@/components/fresh-section"
@@ -1934,14 +1935,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     setPaymentOrder(null)
   }
 
-  // ✅ ДОБАВЛЕНО 10.01.2026: Отмена отмены заказа (продолжить оформление)
-  const handleCancelPaymentDialogClose = async () => {
-    // Если закрываем диалог отмены - подтверждаем удаление
-    if (cancelPaymentDialog.orderId) {
-      await handleConfirmCancelPayment()
-    } else {
-      setCancelPaymentDialog({ open: false, orderId: null })
-    }
+  // ✅ ИСПРАВЛЕНО 2026-01-14: Отмена отмены заказа (продолжить оформление)
+  const handleCancelPaymentDialogCancel = () => {
+    // Пользователь нажал "Нет" - просто закрываем диалог, не удаляя заказ
+    setCancelPaymentDialog({ open: false, orderId: null })
   }
 
   const handlePaymentComplete = async (order: Order, pointsUsed: number, paymentMethod: "card" | "sbp" | "cash") => {
@@ -3603,13 +3600,13 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         variant={warningDialog.variant}
       />
 
-      {/* ✅ ДОБАВЛЕНО 10.01.2026: Диалог подтверждения отмены заказа */}
-      <WarningDialog
+      {/* ✅ ИСПРАВЛЕНО 2026-01-14: Диалог подтверждения отмены заказа с кнопками Да/Нет */}
+      <CancelPaymentDialog
         open={cancelPaymentDialog.open}
-        onClose={handleCancelPaymentDialogClose}
+        onConfirm={handleConfirmCancelPayment}
+        onCancel={handleCancelPaymentDialogCancel}
         title="Прекратить оформление заказа?"
         description="Заказ будет удален без возможности восстановления. Вы уверены?"
-        variant="warning"
       />
 
       {/* Dish Smart Modal */}
