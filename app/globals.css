@@ -339,4 +339,51 @@
   .animate-shimmer {
     animation: shimmer 2s infinite;
   }
+
+  /* ✅ ИСПРАВЛЕНО 2026-01-14: Улучшен UX ползунка для iPhone - увеличен размер thumb и область клика */
+  .range-slider-mobile {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 12px;
+    background: transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .range-slider-mobile::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 12px;
+    background: hsl(var(--muted));
+    border-radius: 0.5rem;
+  }
+
+  .range-slider-mobile::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px; /* ✅ Увеличен размер thumb для iPhone (было ~16px) */
+    height: 24px; /* ✅ Увеличен размер thumb для iPhone (было ~16px) */
+    background: hsl(var(--primary));
+    border-radius: 50%;
+    cursor: pointer;
+    margin-top: -6px; /* Центрируем thumb */
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .range-slider-mobile::-moz-range-track {
+    width: 100%;
+    height: 12px;
+    background: hsl(var(--muted));
+    border-radius: 0.5rem;
+  }
+
+  .range-slider-mobile::-moz-range-thumb {
+    width: 24px; /* ✅ Увеличен размер thumb для iPhone */
+    height: 24px; /* ✅ Увеличен размер thumb для iPhone */
+    background: hsl(var(--primary));
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
 }

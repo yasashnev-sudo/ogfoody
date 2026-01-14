@@ -2110,9 +2110,15 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // Скрываем loading (любой) и показываем success
       setShowPaymentLoading(false)
       setShowCashPaymentAnimation(false)
+      
+      // ✅ ИСПРАВЛЕНО 2026-01-14: Передаем undefined вместо 0 для loyaltyPointsEarned, чтобы не показывать "0" в UI
+      // Если баллы не начисляются (для наличных или когда pointsDifference <= 0), передаем undefined
+      const earnedPoints = pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0)
+      const earnedPointsToShow = earnedPoints > 0 ? earnedPoints : undefined
+      
       setSuccessDialog({
         open: true,
-        loyaltyPointsEarned: pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0),
+        loyaltyPointsEarned: earnedPointsToShow,
         // ✅ ИСПРАВЛЕНО 2026-01-13: Передаем undefined вместо 0, чтобы не показывать блок со списанными баллами
         loyaltyPointsUsed: pointsUsed > 0 ? pointsUsed : undefined,
         // ✅ ИСПРАВЛЕНО 10.01.2026: Для наличных баллы pending, для карты - earned
