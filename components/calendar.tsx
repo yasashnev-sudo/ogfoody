@@ -237,15 +237,25 @@ export function Calendar({ orders = [], onDateClick, onSelectDate, onMoveOrder, 
       
       return "opacity-40 cursor-not-allowed"
     }
+    
+    // ✅ ИСПРАВЛЕНО 2026-01-14: Добавлена слабо-фиолетовая заливка для текущей даты
+    const getTodayHighlight = () => {
+      // Показываем только если это сегодня, нет еды, не выбрана, и это текущий месяц
+      if (isDateToday && !hasFood && !isSelected && isCurrentMonth) {
+        return "bg-[#9D00FF]/10"
+      }
+      return ""
+    }
 
     return (
       <div
         key={date.toISOString()}
         onClick={() => isCurrentMonth && handleDateClick(date)}
         className={cn(
-          "relative min-h-[3rem] sm:min-h-[4rem] flex items-center justify-center rounded-lg transition-all p-1",
+          "relative min-h-[3rem] sm:min-h-[4rem] flex items-center justify-center transition-all p-1",
           !isCurrentMonth && "opacity-30",
           getBackgroundClass(),
+          getTodayHighlight(), // ✅ ИСПРАВЛЕНО 2026-01-14: Слабо-фиолетовая заливка для текущей даты
           !isCurrentMonth && "cursor-not-allowed",
         )}
       >
