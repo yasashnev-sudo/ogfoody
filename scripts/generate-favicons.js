@@ -69,7 +69,8 @@ async function generateIcons() {
       .png()
       .toBuffer();
 
-    // Создаем favicon.ico в public/
+    // Создаем favicon.ico в public/ (Next.js и современные браузеры поддерживают PNG как favicon.ico)
+    // Примечание: sharp не может создавать настоящий ICO формат, но PNG работает как favicon.ico
     await sharp(favicon32)
       .png()
       .toFile(path.join(OUTPUT_DIR, 'favicon.ico'));
@@ -80,13 +81,17 @@ async function generateIcons() {
       fs.mkdirSync(appIconDir, { recursive: true });
     }
     
-    // app/favicon.ico - Next.js автоматически обработает
+    // app/favicon.ico - Next.js автоматически обработает (PNG формат поддерживается)
     await sharp(favicon32)
       .png()
       .toFile(path.join(appIconDir, 'favicon.ico'));
     
-    // app/icon.png - современный фавикон
-    await sharp(favicon32)
+    // app/icon.png - современный фавикон (рекомендуемый размер 32x32 или больше)
+    await sharp(LOGO_PATH)
+      .resize(32, 32, {
+        fit: 'contain',
+        background: { r: 255, g: 234, b: 0, alpha: 1 }
+      })
       .png()
       .toFile(path.join(appIconDir, 'icon.png'));
     
