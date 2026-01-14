@@ -95,14 +95,30 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
                     <span className="text-sm text-muted-foreground">Макс: {maxPointsToUse} ₽</span>
                   </div>
                   {/* ✅ ИСПРАВЛЕНО 2026-01-14: Улучшен UX ползунка для iPhone - увеличена область клика */}
-                  <div className="py-3 px-1 -mx-1"> {/* Увеличиваем область клика через padding */}
+                  {/* ✅ ИСПРАВЛЕНО 2026-01-14: Добавлена шкала с делениями на ползунке */}
+                  <div className="py-3 px-1 -mx-1 relative">
+                    {/* Шкала с делениями */}
+                    <div className="absolute top-1 left-1 right-1 h-2 flex items-center justify-between pointer-events-none z-0">
+                      {[0, 25, 50, 75, 100].map((percent) => {
+                        return (
+                          <div key={percent} className="flex flex-col items-center">
+                            <div className="w-[1px] h-2 bg-muted-foreground/40" />
+                            {percent === 0 || percent === 100 ? (
+                              <span className="text-[9px] text-muted-foreground mt-0.5 font-bold leading-none">
+                                {percent === 0 ? '0' : maxPointsToUse}
+                              </span>
+                            ) : null}
+                          </div>
+                        )
+                      })}
+                    </div>
                     <input
                       type="range"
                       min="0"
                       max={maxPointsToUse}
                       value={pointsToUse}
                       onChange={(e) => handlePointsChange(Number(e.target.value))}
-                      className="w-full range-slider-mobile"
+                      className="w-full range-slider-mobile relative z-10"
                     />
                   </div>
                   <div className="text-center mt-2">

@@ -51,7 +51,8 @@ export function Preloader() {
             }}
             className="mb-8"
           >
-            <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-full border-4 border-black overflow-hidden flex items-center justify-center shadow-brutal">
+            <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-full border-4 border-black overflow-hidden flex items-center justify-center shadow-brutal bg-white">
+              {/* ✅ ИСПРАВЛЕНО 2026-01-14: Добавлен placeholder для логотипа, чтобы не было пустого места при загрузке */}
               <Image
                 src="/logo-small.png"
                 alt="OGFooDY Logo"
@@ -59,6 +60,8 @@ export function Preloader() {
                 height={128}
                 className="rounded-full object-cover"
                 priority
+                placeholder="blur"
+                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjRkZFRUEwIi8+CjxwYXRoIGQ9Ik02NCAzMkM0OC41MzYgMzIgMzYgNDQuNTM2IDM2IDYwQzM2IDc1LjQ2NCA0OC41MzYgODggNjQgODhDNzkuNDY0IDg4IDkyIDc1LjQ2NCA5MiA2MEM5MiA0NC41MzYgNzkuNDY0IDMyIDY0IDMyWiIgZmlsbD0iIzlEMDBGRiIvPgo8L3N2Zz4="
               />
             </div>
           </motion.div>
