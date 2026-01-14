@@ -51,10 +51,16 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   // Favicon - Next.js автоматически обработает файлы из app/ (favicon.ico, icon.png, apple-icon.png)
-  // Минимальная конфигурация для обратной совместимости
+  // Явные пути для закладок и телефонов с версией для обхода кеша
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   manifest: "/manifest.json",
   appleWebApp: {
