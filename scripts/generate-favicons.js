@@ -92,11 +92,22 @@ async function generateIcons() {
     );
     console.log('✅ Создан: safari-pinned-tab.svg');
 
+    // Создаем Open Graph изображение для социальных сетей
+    console.log('\n🖼️  Создаю og-image.png для Open Graph...');
+    await sharp(LOGO_PATH)
+      .resize(1200, 630, {
+        fit: 'contain',
+        background: { r: 255, g: 234, b: 0, alpha: 1 } // #FFEA00
+      })
+      .png()
+      .toFile(path.join(OUTPUT_DIR, 'og-image.png'));
+    
+    console.log('✅ Создан: og-image.png (1200x630)');
+
     console.log('\n✨ Все иконки успешно созданы!');
     console.log('\n📝 Следующие шаги:');
     console.log('   1. Проверьте созданные файлы в папке public/');
-    console.log('   2. При необходимости создайте og-image.png (1200x630) для Open Graph');
-    console.log('   3. Перезапустите приложение для применения изменений');
+    console.log('   2. Перезапустите приложение для применения изменений');
     
   } catch (error) {
     console.error('❌ Ошибка при генерации иконок:', error.message);
