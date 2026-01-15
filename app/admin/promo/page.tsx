@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Gift, Plus, Edit, Trash2 } from "lucide-react"
+import { Gift, Plus, Edit, Trash2, Checkbox } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Checkbox as UICheckbox } from "@/components/ui/checkbox"
 
 interface PromoCode {
   Id: number
@@ -17,6 +18,8 @@ interface PromoCode {
   discount_type?: string
   "Discount Value"?: number
   discount_value?: number
+  "Usage Type"?: string
+  usage_type?: string
   "Valid From"?: string
   valid_from?: string
   "Valid Until"?: string
@@ -29,10 +32,12 @@ export default function AdminPromoPage() {
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     code: "",
     discount_type: "percentage" as "percentage" | "fixed",
     discount_value: 0,
+    usage_type: "unlimited" as "unlimited" | "once_per_user" | "once_total",
     valid_from: "",
     valid_until: "",
     active: true,
@@ -63,32 +68,92 @@ export default function AdminPromoPage() {
         code: formData.code,
         discount_type: formData.discount_type,
         discount_value: formData.discount_value,
+        usage_type: formData.usage_type,
         active: formData.active,
         valid_from: formData.valid_from || null,
         valid_until: formData.valid_until || null,
       }
 
-      const response = await fetch("/api/db/Promo_Codes/records", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify([promoData]),
-      })
+      let response
+      if (editingId) {
+        // Редактирование
+        response = await fetch(`/api/db/Promo_Codes/records/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(promoData),
+        })
+      } else {
+        // Создание
+        response = await fetch("/api/db/Promo_Codes/records", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([promoData]),
+        })
+      }
 
       if (response.ok) {
         setFormData({
           code: "",
           discount_type: "percentage",
           discount_value: 0,
+          usage_type: "unlimited",
           valid_from: "",
           valid_until: "",
           active: true,
         })
         setShowForm(false)
+        setEditingId(null)
         loadPromoCodes()
       }
     } catch (error) {
-      console.error("Ошибка создания промокода:", error)
+      console.error("Ошибка сохранения промокода:", error)
     }
+  }
+
+  const handleEdit = (promo: PromoCode) => {
+    setEditingId(promo.Id)
+    setFormData({
+      code: promo["Code"] || promo.code || "",
+      discount_type: (promo["Discount Type"] || promo.discount_type || "percentage") as "percentage" | "fixed",
+      discount_value: promo["Discount Value"] || promo.discount_value || 0,
+      usage_type: (promo["Usage Type"] || promo.usage_type || "unlimited") as "unlimited" | "once_per_user" | "once_total",
+      valid_from: promo["Valid From"] || promo.valid_from || "",
+      valid_until: promo["Valid Until"] || promo.valid_until || "",
+      active: promo["Active"] || promo.active || false,
+    })
+    setShowForm(true)
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Вы уверены, что хотите удалить этот промокод?")) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/db/Promo_Codes/records/${id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        loadPromoCodes()
+      }
+    } catch (error) {
+      console.error("Ошибка удаления промокода:", error)
+    }
+  }
+
+  const handleCancel = () => {
+    setShowForm(false)
+    setEditingId(null)
+    setFormData({
+      code: "",
+      discount_type: "percentage",
+      discount_value: 0,
+      usage_type: "unlimited",
+      valid_from: "",
+      valid_until: "",
+      active: true,
+    })
   }
 
   if (loading) {
@@ -118,10 +183,12 @@ export default function AdminPromoPage() {
         </Button>
       </div>
 
-      {/* Форма создания */}
+      {/* Форма создания/редактирования */}
       {showForm && (
         <Card className="bg-white border-2 border-black rounded-xl shadow-brutal p-6">
-          <h2 className="text-xl font-black text-black mb-4">Новый промокод</h2>
+          <h2 className="text-xl font-black text-black mb-4">
+            {editingId ? "Редактировать промокод" : "Новый промокод"}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -165,17 +232,16 @@ export default function AdminPromoPage() {
                 </Label>
                 <Input
                   id="discount_value"
-                  type="number"
-                  min="1"
-                  max={formData.discount_type === "percentage" ? "100" : undefined}
-                  value={formData.discount_value}
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.discount_value || ""}
                   onChange={(e) => {
-                    const value = formData.discount_type === "percentage" 
-                      ? parseInt(e.target.value) || 0
-                      : parseFloat(e.target.value) || 0
+                    const input = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".")
+                    const value = input === "" ? 0 : parseFloat(input) || 0
                     setFormData({ ...formData, discount_value: value })
                   }}
                   className="border-2 border-black rounded-lg shadow-brutal"
+                  placeholder={formData.discount_type === "percentage" ? "10" : "1000"}
                   required
                 />
               </div>
@@ -206,17 +272,55 @@ export default function AdminPromoPage() {
                 />
               </div>
             </div>
+            <div className="space-y-2">
+              <Label className="text-black font-bold">Тип использования</Label>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <UICheckbox
+                    id="usage_unlimited"
+                    checked={formData.usage_type === "unlimited"}
+                    onCheckedChange={() => setFormData({ ...formData, usage_type: "unlimited" })}
+                    className="border-2 border-black"
+                  />
+                  <Label htmlFor="usage_unlimited" className="text-black font-medium cursor-pointer">
+                    Действует постоянно (без ограничений)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <UICheckbox
+                    id="usage_once_per_user"
+                    checked={formData.usage_type === "once_per_user"}
+                    onCheckedChange={() => setFormData({ ...formData, usage_type: "once_per_user" })}
+                    className="border-2 border-black"
+                  />
+                  <Label htmlFor="usage_once_per_user" className="text-black font-medium cursor-pointer">
+                    Один раз на пользователя
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <UICheckbox
+                    id="usage_once_total"
+                    checked={formData.usage_type === "once_total"}
+                    onCheckedChange={() => setFormData({ ...formData, usage_type: "once_total" })}
+                    className="border-2 border-black"
+                  />
+                  <Label htmlFor="usage_once_total" className="text-black font-medium cursor-pointer">
+                    Всего один раз (для всех)
+                  </Label>
+                </div>
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button
                 type="submit"
                 className="bg-[#9D00FF] text-white border-2 border-black shadow-brutal brutal-hover"
               >
-                Создать
+                {editingId ? "Сохранить" : "Создать"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowForm(false)}
+                onClick={handleCancel}
                 className="border-2 border-black shadow-brutal brutal-hover"
               >
                 Отмена
@@ -238,9 +342,23 @@ export default function AdminPromoPage() {
             const code = promo["Code"] || promo.code || ""
             const discountType = promo["Discount Type"] || promo.discount_type || "percentage"
             const discountValue = promo["Discount Value"] || promo.discount_value || 0
+            const usageType = promo["Usage Type"] || promo.usage_type || "unlimited"
             const validFrom = promo["Valid From"] || promo.valid_from || ""
             const validUntil = promo["Valid Until"] || promo.valid_until || ""
             const isActive = promo["Active"] || promo.active || false
+
+            const getUsageTypeLabel = (type: string) => {
+              switch (type) {
+                case "unlimited":
+                  return "Постоянно"
+                case "once_per_user":
+                  return "1 раз/пользователь"
+                case "once_total":
+                  return "Всего 1 раз"
+                default:
+                  return type
+              }
+            }
 
             const isValid = () => {
               if (!isActive) return false
@@ -280,6 +398,9 @@ export default function AdminPromoPage() {
                 </p>
 
                 <div className="space-y-1 text-sm text-black/70 mb-4">
+                  <p>
+                    <span className="font-bold">Использование:</span> {getUsageTypeLabel(usageType)}
+                  </p>
                   {validFrom && (
                     <p>
                       <span className="font-bold">С:</span>{" "}
@@ -296,6 +417,7 @@ export default function AdminPromoPage() {
 
                 <div className="flex gap-2">
                   <Button
+                    onClick={() => handleEdit(promo)}
                     variant="outline"
                     className="flex-1 border-2 border-black shadow-brutal brutal-hover"
                   >
@@ -303,6 +425,7 @@ export default function AdminPromoPage() {
                     Редактировать
                   </Button>
                   <Button
+                    onClick={() => handleDelete(promo.Id)}
                     variant="outline"
                     className="border-2 border-red-500 text-red-500 shadow-brutal hover:bg-red-50"
                   >

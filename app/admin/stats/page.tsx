@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { BarChart3, TrendingUp, DollarSign, Users, ShoppingCart } from "lucide-react"
+import { BarChart3, TrendingUp, DollarSign, Users, ShoppingCart, Gift } from "lucide-react"
 
 interface Stats {
   totalRevenue: number
@@ -11,6 +11,13 @@ interface Stats {
   averageOrderValue: number
   ordersByStatus: Record<string, number>
   revenueByMonth: { month: string; revenue: number }[]
+  promoStats: {
+    totalPromoCodes: number
+    activePromoCodes: number
+    totalDiscountGiven: number
+    ordersWithPromo: number
+    mostUsedPromo: { code: string; times: number } | null
+  }
 }
 
 export default function AdminStatsPage() {
@@ -21,6 +28,13 @@ export default function AdminStatsPage() {
     averageOrderValue: 0,
     ordersByStatus: {},
     revenueByMonth: [],
+    promoStats: {
+      totalPromoCodes: 0,
+      activePromoCodes: 0,
+      totalDiscountGiven: 0,
+      ordersWithPromo: 0,
+      mostUsedPromo: null,
+    },
   })
   const [loading, setLoading] = useState(true)
 
@@ -30,13 +44,15 @@ export default function AdminStatsPage() {
 
   const loadStats = async () => {
     try {
-      const [ordersRes, usersRes] = await Promise.all([
+      const [ordersRes, usersRes, promoCodesRes] = await Promise.all([
         fetch("/api/db/Orders/records?limit=1000"),
         fetch("/api/db/Users/records?limit=1000"),
+        fetch("/api/db/Promo_Codes/records?limit=1000"),
       ])
 
       const orders = await ordersRes.json()
       const users = await usersRes.json()
+      const promoCodes = await promoCodesRes.json()
 
       const ordersList = orders.list || []
       const totalRevenue = ordersList.reduce(
@@ -71,6 +87,33 @@ export default function AdminStatsPage() {
         ...Array.from(monthMap.entries()).map(([month, revenue]) => ({ month, revenue }))
       )
 
+      // Статистика по промокодам
+      const promoCodesList = promoCodes.list || []
+      const activePromoCodes = promoCodesList.filter(
+        (p: any) => p["Active"] || p.active
+      ).length
+
+      // Подсчет скидок и использований
+      let totalDiscountGiven = 0
+      let ordersWithPromo = 0
+      const promoUsageMap = new Map<string, number>()
+
+      ordersList.forEach((o: any) => {
+        const promoCode = o["Promo Code"] || o.promo_code
+        const promoDiscount = parseFloat(o["Promo Discount"] || o.promo_discount || 0)
+        
+        if (promoCode && promoDiscount > 0) {
+          ordersWithPromo++
+          totalDiscountGiven += promoDiscount
+          promoUsageMap.set(promoCode, (promoUsageMap.get(promoCode) || 0) + 1)
+        }
+      })
+
+      const mostUsedPromo = promoUsageMap.size > 0
+        ? Array.from(promoUsageMap.entries())
+            .sort((a, b) => b[1] - a[1])[0]
+        : null
+
       setStats({
         totalRevenue,
         totalOrders,
@@ -78,6 +121,15 @@ export default function AdminStatsPage() {
         averageOrderValue,
         ordersByStatus,
         revenueByMonth,
+        promoStats: {
+          totalPromoCodes: promoCodesList.length,
+          activePromoCodes,
+          totalDiscountGiven,
+          ordersWithPromo,
+          mostUsedPromo: mostUsedPromo
+            ? { code: mostUsedPromo[0], times: mostUsedPromo[1] }
+            : null,
+        },
       })
     } catch (error) {
       console.error("Ошибка загрузки статистики:", error)
@@ -182,6 +234,42 @@ export default function AdminStatsPage() {
           </div>
         </Card>
       )}
+
+      {/* Статистика по промокодам */}
+      <Card className="bg-white border-2 border-black rounded-xl shadow-brutal p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-[#9D00FF] border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
+            <Gift className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-xl font-black text-black">Статистика по промокодам</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 bg-gray-50 border-2 border-black rounded-lg">
+            <p className="text-sm text-black/70 font-medium mb-1">Всего промокодов</p>
+            <p className="text-2xl font-black text-black">{stats.promoStats.totalPromoCodes}</p>
+          </div>
+          <div className="p-4 bg-gray-50 border-2 border-black rounded-lg">
+            <p className="text-sm text-black/70 font-medium mb-1">Активных</p>
+            <p className="text-2xl font-black text-green-600">{stats.promoStats.activePromoCodes}</p>
+          </div>
+          <div className="p-4 bg-gray-50 border-2 border-black rounded-lg">
+            <p className="text-sm text-black/70 font-medium mb-1">Всего скидок выдано</p>
+            <p className="text-2xl font-black text-[#9D00FF]">{Math.round(stats.promoStats.totalDiscountGiven)}₽</p>
+          </div>
+          <div className="p-4 bg-gray-50 border-2 border-black rounded-lg">
+            <p className="text-sm text-black/70 font-medium mb-1">Заказов с промокодом</p>
+            <p className="text-2xl font-black text-black">{stats.promoStats.ordersWithPromo}</p>
+          </div>
+        </div>
+        {stats.promoStats.mostUsedPromo && (
+          <div className="mt-4 p-4 bg-[#FFEA00] border-2 border-black rounded-lg">
+            <p className="text-sm text-black/70 font-medium mb-1">Самый популярный промокод</p>
+            <p className="text-xl font-black text-black">
+              {stats.promoStats.mostUsedPromo.code} ({stats.promoStats.mostUsedPromo.times} использований)
+            </p>
+          </div>
+        )}
+      </Card>
     </div>
   )
 }
