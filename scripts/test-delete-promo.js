@@ -110,12 +110,12 @@ async function testDeleteMethod2(promoId) {
 
     const req = httpModule.request(options, (res) => {
       let data = '';
-      res.on('data', (chunk) => { data += chunk; });
+      res.on('data', (chunk) => { data += chunk.toString(); });
       res.on('end', () => {
         resolve({
           status: res.statusCode,
           statusText: res.statusMessage,
-          body: data,
+          body: data || '(пустой ответ)',
           method: 'DELETE /records с массивом ID [id]',
         });
       });
@@ -152,12 +152,12 @@ async function testDeleteMethod2b(promoId) {
 
     const req = httpModule.request(options, (res) => {
       let data = '';
-      res.on('data', (chunk) => { data += chunk; });
+      res.on('data', (chunk) => { data += chunk.toString(); });
       res.on('end', () => {
         resolve({
           status: res.statusCode,
           statusText: res.statusMessage,
-          body: data,
+          body: data || '(пустой ответ)',
           method: 'DELETE /records с массивом объектов [{Id: id}]',
         });
       });
