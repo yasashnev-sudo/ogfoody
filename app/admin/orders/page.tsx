@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Eye, Package, Edit, Trash2 } from "lucide-react"
+import { Search, Eye, Package, Edit } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { OrderDetailModal } from "@/components/admin/OrderDetailModal"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -147,29 +147,6 @@ export default function AdminOrdersPage() {
     }
   }
 
-  const handleDeleteOrder = async (id: number) => {
-    if (!confirm("Вы уверены, что хотите удалить этот заказ? Заказ будет отменен (статус: отменен).")) {
-      return
-    }
-
-    try {
-      // Используем отдельный API endpoint для удаления (мягкое удаление через отмену)
-      const response = await fetch(`/api/admin/orders/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      })
-
-      if (response.ok) {
-        loadOrders()
-      } else {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-        alert(`Ошибка удаления: ${errorData.error || response.statusText}`)
-      }
-    } catch (error) {
-      console.error("Ошибка удаления заказа:", error)
-      alert("Произошла ошибка при удалении заказа")
-    }
-  }
 
   if (loading) {
     return (
@@ -298,13 +275,6 @@ export default function AdminOrdersPage() {
                     >
                       <Edit className="w-4 h-4 mr-2" />
                       Статус
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteOrder(order.Id)}
-                      variant="outline"
-                      className="border-2 border-red-500 text-red-500 shadow-brutal hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
