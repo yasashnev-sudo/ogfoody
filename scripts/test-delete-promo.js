@@ -246,14 +246,20 @@ async function main() {
     console.log('🔍 Тестирование метода 2: DELETE /records с массивом ID [id]');
     const result2 = await testDeleteMethod2(testId);
     console.log(`   Статус: ${result2.status} ${result2.statusText || ''}`);
-    if (result2.body) console.log(`   Ответ: ${result2.body.substring(0, 200)}`);
+    if (result2.body) {
+      const bodyStr = result2.body.toString();
+      console.log(`   Ответ: ${bodyStr.substring(0, 500)}`);
+    }
     if (result2.error) console.log(`   Ошибка: ${result2.error}`);
     console.log('');
 
     console.log('🔍 Тестирование метода 2b: DELETE /records с массивом объектов [{Id: id}]');
     const result2b = await testDeleteMethod2b(testId);
     console.log(`   Статус: ${result2b.status} ${result2b.statusText || ''}`);
-    if (result2b.body) console.log(`   Ответ: ${result2b.body.substring(0, 200)}`);
+    if (result2b.body) {
+      const bodyStr = result2b.body.toString();
+      console.log(`   Ответ: ${bodyStr.substring(0, 500)}`);
+    }
     if (result2b.error) console.log(`   Ошибка: ${result2b.error}`);
     console.log('');
 
