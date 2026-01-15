@@ -115,138 +115,106 @@ async function createTable(baseId, tableName, columns) {
   });
 }
 
-// Определения колонок для Messages
+// Определения колонок для Messages (упрощенный формат)
 const messagesColumns = [
   {
     column_name: 'user_id',
     title: 'User ID',
-    uidt: 'LinkToAnotherRecord',
+    uidt: 'Number',
     dt: 'bigint',
     rqd: false,
-    meta: {
-      type: 'bt',
-      // Связь с таблицей Users будет настроена позже
-    },
   },
   {
     column_name: 'user_phone',
     title: 'User Phone',
     uidt: 'SingleLineText',
-    dt: 'varchar',
     rqd: false,
   },
   {
     column_name: 'user_name',
     title: 'User Name',
     uidt: 'SingleLineText',
-    dt: 'varchar',
     rqd: false,
   },
   {
     column_name: 'message',
     title: 'Message',
     uidt: 'LongText',
-    dt: 'text',
     rqd: true,
   },
   {
     column_name: 'is_admin',
     title: 'Is Admin',
     uidt: 'Checkbox',
-    dt: 'boolean',
-    rqd: true,
+    rqd: false,
     cdf: 'false',
   },
   {
     column_name: 'is_read',
     title: 'Is Read',
     uidt: 'Checkbox',
-    dt: 'boolean',
-    rqd: true,
+    rqd: false,
     cdf: 'false',
   },
   {
     column_name: 'created_at',
     title: 'Created At',
     uidt: 'DateTime',
-    dt: 'datetime',
-    rqd: true,
+    rqd: false,
   },
 ];
 
-// Определения колонок для Push_Notifications
+// Определения колонок для Push_Notifications (упрощенный формат)
 const notificationsColumns = [
   {
     column_name: 'title',
     title: 'Title',
     uidt: 'SingleLineText',
-    dt: 'varchar',
     rqd: true,
   },
   {
     column_name: 'message',
     title: 'Message',
     uidt: 'LongText',
-    dt: 'text',
     rqd: true,
   },
   {
     column_name: 'target_type',
     title: 'Target Type',
-    uidt: 'SingleSelect',
-    dt: 'varchar',
-    rqd: true,
-    meta: {
-      options: [
-        { title: 'all', order: 1 },
-        { title: 'user_id', order: 2 },
-        { title: 'user_phone', order: 3 },
-      ],
-    },
+    uidt: 'SingleLineText',
+    rqd: false,
+    cdf: "'all'",
   },
   {
     column_name: 'target_value',
     title: 'Target Value',
     uidt: 'SingleLineText',
-    dt: 'varchar',
     rqd: false,
   },
   {
     column_name: 'status',
     title: 'Status',
-    uidt: 'SingleSelect',
-    dt: 'varchar',
-    rqd: true,
-    meta: {
-      options: [
-        { title: 'pending', order: 1 },
-        { title: 'sent', order: 2 },
-        { title: 'scheduled', order: 3 },
-        { title: 'failed', order: 4 },
-      ],
-    },
+    uidt: 'SingleLineText',
+    rqd: false,
     cdf: "'pending'",
   },
   {
     column_name: 'scheduled_at',
     title: 'Scheduled At',
     uidt: 'DateTime',
-    dt: 'datetime',
     rqd: false,
   },
   {
     column_name: 'sent_at',
     title: 'Sent At',
     uidt: 'DateTime',
-    dt: 'datetime',
     rqd: false,
   },
   {
     column_name: 'created_at',
     title: 'Created At',
     uidt: 'DateTime',
-    dt: 'datetime',
-    rqd: true,
+    rqd: false,
   },
 ];
 
