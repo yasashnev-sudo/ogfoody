@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { X, Download, Share2, Home, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { X, Download, Share2, SquarePlus, MoreVertical, ArrowRight, CheckCircle2 } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -166,32 +166,35 @@ export function InstallPrompt() {
                 Установите OGFooDY на главный экран
               </DialogTitle>
               <DialogDescription className="text-base text-gray-700 text-center mb-6">
-                Следуйте простым шагам ниже
+                Инструкция для iOS 26. Следуйте простым шагам ниже
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Шаг 1 */}
+              {/* Шаг 1 - Три точки (меню) */}
               <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
                     1
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-black text-lg mb-2 text-black">Найдите кнопку "Поделиться"</h3>
+                    <h3 className="font-black text-lg mb-2 text-black">Найдите кнопку меню (три точки)</h3>
                     <p className="text-sm text-gray-700 mb-3">
-                      Внизу экрана (на iPhone) или вверху справа (на iPad) найдите кнопку с иконкой:
+                      В правом нижнем углу адресной строки Safari найдите кнопку с тремя точками:
                     </p>
                     <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-lg p-3">
-                      <Share2 className="w-8 h-8 text-black" />
+                      <MoreVertical className="w-8 h-8 text-black" />
                       <ArrowRight className="w-5 h-5 text-black" />
-                      <span className="font-bold text-black">Поделиться</span>
+                      <span className="font-bold text-black">Меню</span>
                     </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Это кнопка меню Safari в адресной строке
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Шаг 2 */}
+              {/* Шаг 2 - Поделиться */}
               <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
@@ -200,30 +203,35 @@ export function InstallPrompt() {
                   <div className="flex-1">
                     <h3 className="font-black text-lg mb-2 text-black">Нажмите на "Поделиться"</h3>
                     <p className="text-sm text-gray-700 mb-3">
-                      Откроется меню с разными вариантами действий
+                      В открывшемся меню найдите и нажмите на опцию "Поделиться":
                     </p>
-                    <div className="bg-gray-50 border-2 border-black rounded-lg p-3 text-center">
-                      <p className="text-sm font-bold text-black">Появится меню снизу</p>
+                    <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-lg p-3">
+                      <Share2 className="w-8 h-8 text-black" />
+                      <ArrowRight className="w-5 h-5 text-black" />
+                      <span className="font-bold text-black">Поделиться</span>
                     </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Иконка: квадрат со стрелкой вверх
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Шаг 3 */}
+              {/* Шаг 3 - Добавить на экран Домой */}
               <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
                     3
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-black text-lg mb-2 text-black">Выберите "На экран Домой"</h3>
+                    <h3 className="font-black text-lg mb-2 text-black">Выберите "Добавить на экран «Домой»"</h3>
                     <p className="text-sm text-gray-700 mb-3">
-                      Прокрутите меню вниз и найдите опцию с иконкой домика:
+                      В меню "Поделиться" найдите опцию с иконкой квадрата с плюсом:
                     </p>
                     <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-lg p-3">
-                      <Home className="w-8 h-8 text-black" />
+                      <SquarePlus className="w-8 h-8 text-black" />
                       <ArrowRight className="w-5 h-5 text-black" />
-                      <span className="font-bold text-black">На экран Домой</span>
+                      <span className="font-bold text-black">Добавить на экран «Домой»</span>
                     </div>
                     <p className="text-xs text-gray-600 mt-2 italic">
                       Если не видите эту опцию, прокрутите меню вниз
@@ -232,7 +240,7 @@ export function InstallPrompt() {
                 </div>
               </div>
 
-              {/* Шаг 4 */}
+              {/* Шаг 4 - Подтверждение */}
               <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
@@ -241,11 +249,14 @@ export function InstallPrompt() {
                   <div className="flex-1">
                     <h3 className="font-black text-lg mb-2 text-black">Подтвердите установку</h3>
                     <p className="text-sm text-gray-700 mb-3">
-                      Нажмите "Добавить" в правом верхнем углу
+                      Нажмите кнопку "Добавить" в правом верхнем углу экрана
                     </p>
                     <div className="bg-gray-50 border-2 border-black rounded-lg p-3 text-center">
                       <p className="text-sm font-bold text-black">Появится кнопка "Добавить"</p>
                     </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Приложение будет установлено на главный экран
+                    </p>
                   </div>
                 </div>
               </div>
