@@ -955,7 +955,13 @@ export function calculateCashbackPercent(totalSpent: number): number {
  * @returns Количество начисляемых баллов
  */
 export function calculateEarnedPoints(orderTotal: number, pointsUsed: number, totalSpent: number): number {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:957',message:'calculateEarnedPoints called',data:{orderTotal,pointsUsed,totalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+  // #endregion
   if (orderTotal <= 0) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:959',message:'calculateEarnedPoints: orderTotal <= 0',data:{orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     console.warn(`⚠️ calculateEarnedPoints: orderTotal <= 0 (${orderTotal}), возвращаем 0`)
     return 0
   }
@@ -964,6 +970,9 @@ export function calculateEarnedPoints(orderTotal: number, pointsUsed: number, to
   // ✅ ИСПРАВЛЕНО: Баллы начисляются на ПОЛНУЮ сумму заказа (orderTotal)
   // Использованные баллы (pointsUsed) не влияют на расчет начисления
   const earnedPoints = Math.floor(orderTotal * (cashbackPercent / 100))
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:966',message:'calculateEarnedPoints result',data:{orderTotal,pointsUsed,totalSpent,cashbackPercent,earnedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+  // #endregion
   
   console.log(`🔢 calculateEarnedPoints:`, {
     orderTotal,
@@ -1155,18 +1164,30 @@ export async function awardLoyaltyPoints(
   pointsEarned?: number,
   orderId?: number
 ): Promise<NocoDBUser> {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1151',message:'awardLoyaltyPoints called',data:{userId,orderTotal,pointsUsed,pointsEarned,orderId},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H2'})}).catch(()=>{});
+  // #endregion
   // ✅ ИСПРАВЛЕНО: Всегда загружаем свежие данные без кэша
   const user = await fetchUserById(userId, true)
   if (!user) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1159',message:'User not found',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
     throw new Error(`User with ID ${userId} not found`)
   }
 
   const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1164',message:'User loaded',data:{userId,currentTotalSpent,userLoyaltyPoints:user.loyalty_points},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H2'})}).catch(()=>{});
+  // #endregion
 
   // Рассчитываем баллы, если не указаны
   const earnedPoints = pointsEarned !== undefined 
     ? pointsEarned 
     : calculateEarnedPoints(orderTotal, pointsUsed, currentTotalSpent)
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1169',message:'Earned points calculated',data:{earnedPoints,pointsEarned,orderTotal,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+  // #endregion
 
   // Создаем транзакции для истории
   const now = new Date().toISOString()
@@ -1189,6 +1210,9 @@ export async function awardLoyaltyPoints(
 
   // Создаем транзакцию на начисление баллов
   if (earnedPoints > 0) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1191',message:'Creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     await createLoyaltyPointsTransaction({
       user_id: userId,
       order_id: orderId,
@@ -1200,7 +1224,14 @@ export async function awardLoyaltyPoints(
       updated_at: now,
       processed_at: now,
     })
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1203',message:'Earned transaction created',data:{userId,orderId,earnedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     console.log(`✅ Транзакция "earned" создана: +${earnedPoints} баллов`)
+  } else {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1206',message:'No earned transaction: earnedPoints is 0',data:{earnedPoints,orderTotal,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
   }
 
   // Обновляем total_spent
@@ -1226,7 +1257,13 @@ export async function awardLoyaltyPoints(
   await new Promise((resolve) => setTimeout(resolve, 500))
 
   // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций (единственный источник правды)
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1228',message:'Recalculating balance from transactions',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
   const recalculatedBalance = await calculateUserBalance(userId, true)
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1230',message:'Balance recalculated',data:{userId,recalculatedBalance},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
   console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
   
   // Обновляем баланс в БД на основе пересчитанного значения
@@ -1234,6 +1271,9 @@ export async function awardLoyaltyPoints(
     loyalty_points: recalculatedBalance,
     updated_at: now,
   })
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1237',message:'Balance updated in DB',data:{userId,recalculatedBalance},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
   console.log(`✅ Баланс обновлен в БД: ${recalculatedBalance} баллов`)
 
   // Возвращаем пользователя с актуальным балансом

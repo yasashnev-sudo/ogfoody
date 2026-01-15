@@ -227,9 +227,9 @@ export async function POST(request: Request) {
       
       // Новые статусы оплаты
       // Определяем статус оплаты: если явно указан paymentStatus, используем его, иначе на основе paid
-      payment_status: order.paymentStatus || (order.paid ? "paid" : "pending"),
+      payment_status: order.paymentStatus || (order.paid === true || String(order.paid).toLowerCase() === 'true' ? "paid" : "pending"),
       payment_method: order.paymentMethod || "cash",
-      paid: order.paid || false,
+      paid: order.paid === true || String(order.paid).toLowerCase() === 'true' || order.paymentStatus === 'paid' || String(order.paymentStatus).toLowerCase() === 'paid',
       paid_at: order.paidAt || (order.paid ? now : undefined),
       payment_id: order.paymentId || undefined,
       
@@ -657,6 +657,10 @@ export async function POST(request: Request) {
             })
             
             console.log(`💰 Рассчитано баллов: ${actualPointsEarned}`)
+            console.log(`🔍 [POST] КРИТИЧНО: actualPointsEarned = ${actualPointsEarned}, orderTotalNum = ${orderTotalNum}, currentTotalSpent = ${currentTotalSpent}`)
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:659',message:'Points calculated',data:{actualPointsEarned,orderTotalNum,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+            // #endregion
             
             // Проверяем, не были ли баллы уже начислены для этого заказа
             const existingPointsEarned = typeof nocoOrder.loyalty_points_earned === 'number' 
@@ -664,22 +668,58 @@ export async function POST(request: Request) {
               : parseInt(String(nocoOrder.loyalty_points_earned)) || 0
             
             if (existingPointsEarned > 0) {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:666',message:'Points already earned',data:{existingPointsEarned,orderId:nocoOrder.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
               console.warn(`⚠️ Баллы уже начислены для заказа ${nocoOrder.Id}: ${existingPointsEarned}. Пропускаем начисление.`)
               actualPointsEarned = existingPointsEarned
             } else if (actualPointsEarned > 0) {
               // ✅ ИСПРАВЛЕНО 2026-01-11: Начисляем баллы только если указан способ оплаты
+              // Проверяем также значения из БД (nocoOrder), так как они могут отличаться от order
+              const dbPaid = nocoOrder.paid === true || String(nocoOrder.paid).toLowerCase() === 'true'
+              const dbPaymentStatus = nocoOrder.payment_status === 'paid' || String(nocoOrder.payment_status).toLowerCase() === 'paid'
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:669',message:'Checking loyalty points award conditions',data:{hasPaymentMethod:!!order.paymentMethod,paymentMethod:order.paymentMethod,paid:order.paid,paidType:typeof order.paid,paymentStatus:order.paymentStatus,paymentStatusType:typeof order.paymentStatus,dbPaid,dbPaymentStatus,nocoOrderPaid:nocoOrder.paid,nocoOrderPaymentStatus:nocoOrder.payment_status,actualPointsEarned},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H1'})}).catch(()=>{});
+              // #endregion
               console.log(`🔍 [POST] 6️⃣ Проверка условий начисления баллов:`, {
                 hasPaymentMethod: !!order.paymentMethod,
                 paymentMethod: order.paymentMethod,
+                paid: order.paid,
+                paidType: typeof order.paid,
+                paidString: String(order.paid),
+                paymentStatus: order.paymentStatus,
+                paymentStatusType: typeof order.paymentStatus,
+                paymentStatusString: String(order.paymentStatus),
+                dbPaid,
+                dbPaymentStatus,
+                nocoOrderPaid: nocoOrder.paid,
+                nocoOrderPaymentStatus: nocoOrder.payment_status,
                 actualPointsEarned,
               })
               
               if (!order.paymentMethod) {
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:677',message:'Condition failed: no payment method',data:{paymentMethod:order.paymentMethod},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
                 console.log(`🔍 [POST] ❌ Условие НЕ выполнено: Способ оплаты не указан - баллы будут начислены при оплате`)
                 console.log(`ℹ️ Способ оплаты не указан - баллы будут начислены при оплате`)
                 actualPointsEarned = 0 // Сбрасываем, чтобы не записать в БД
-              } else if ((order.paymentMethod === 'card' || order.paymentMethod === 'sbp') && (order.paid === true || order.paymentStatus === 'paid')) {
+              } else if ((order.paymentMethod === 'card' || order.paymentMethod === 'sbp')) {
+                // Проверяем условие оплаты более тщательно
+                // Используем значения из БД (nocoOrder), так как они могут отличаться от order
+                const isPaidBool = order.paid === true || String(order.paid).toLowerCase() === 'true' || dbPaid
+                const isPaymentStatusPaid = order.paymentStatus === 'paid' || String(order.paymentStatus).toLowerCase() === 'paid' || dbPaymentStatus
+                const isPaid = isPaidBool || isPaymentStatusPaid
+                
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:690',message:'Checking payment condition for card/sbp',data:{paymentMethod:order.paymentMethod,paid:order.paid,paidType:typeof order.paid,isPaidBool,paymentStatus:order.paymentStatus,isPaymentStatusPaid,isPaid},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
+                
+                if (isPaid) {
                 // ✅ ИСПРАВЛЕНО: Онлайн-оплата И заказ оплачен - начисляем сразу
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:682',message:'Condition met: calling awardLoyaltyPoints',data:{userId,orderTotalNum,actualPointsEarned,orderId:nocoOrder.Id,paymentMethod:order.paymentMethod,paid:order.paid,paymentStatus:order.paymentStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H2'})}).catch(()=>{});
+                // #endregion
                 console.log(`🔍 [POST] ✅ Условие выполнено: Онлайн-оплата (${order.paymentMethod}) И заказ оплачен (paid=${order.paid}, paymentStatus=${order.paymentStatus})`)
                 console.log(`💳 Онлайн-оплата: начисление баллов сразу`)
                 
@@ -692,18 +732,42 @@ export async function POST(request: Request) {
                 })
                 
                 // ✅ ИСПРАВЛЕНО: НЕ передаем pointsUsed, так как списание уже произошло выше
-                await awardLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id)
-                
-                console.log(`🔍 [POST] 8️⃣ Результат awardLoyaltyPoints: успешно`)
-                console.log(`✅ Начислено ${actualPointsEarned} баллов пользователю ${userId} за заказ ${nocoOrder.Id}`)
-                
-                // ✅ Проверяем обновленный профиль
-                const updatedUserAfterAward = await fetchUserById(userId, true)
-                console.log(`🔍 Проверка профиля после awardLoyaltyPoints:`, {
-                  userId: updatedUserAfterAward?.Id,
-                  loyaltyPoints: updatedUserAfterAward?.loyalty_points,
-                  totalSpent: updatedUserAfterAward?.total_spent,
-                })
+                try {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:695',message:'Before awardLoyaltyPoints call',data:{userId,orderTotalNum,actualPointsEarned,orderId:nocoOrder.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H2'})}).catch(()=>{});
+                  // #endregion
+                  await awardLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id)
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:697',message:'After awardLoyaltyPoints call',data:{userId,orderTotalNum,actualPointsEarned,orderId:nocoOrder.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H2'})}).catch(()=>{});
+                  // #endregion
+                  console.log(`🔍 [POST] 8️⃣ Результат awardLoyaltyPoints: успешно`)
+                  console.log(`✅ Начислено ${actualPointsEarned} баллов пользователю ${userId} за заказ ${nocoOrder.Id}`)
+                  
+                  // ✅ Проверяем обновленный профиль
+                  const updatedUserAfterAward = await fetchUserById(userId, true)
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:702',message:'User profile after awardLoyaltyPoints',data:{userId:updatedUserAfterAward?.Id,loyaltyPoints:updatedUserAfterAward?.loyalty_points,totalSpent:updatedUserAfterAward?.total_spent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+                  // #endregion
+                  console.log(`🔍 Проверка профиля после awardLoyaltyPoints:`, {
+                    userId: updatedUserAfterAward?.Id,
+                    loyaltyPoints: updatedUserAfterAward?.loyalty_points,
+                    totalSpent: updatedUserAfterAward?.total_spent,
+                  })
+                } catch (error: any) {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:710',message:'Error in awardLoyaltyPoints',data:{error:String(error),errorStack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H2'})}).catch(()=>{});
+                  // #endregion
+                  console.error(`❌ Ошибка при начислении баллов:`, error)
+                    throw error
+                  }
+                } else {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:742',message:'Card/SBP but not paid - creating pending',data:{paymentMethod:order.paymentMethod,paid:order.paid,paidType:typeof order.paid,paymentStatus:order.paymentStatus,paymentStatusType:typeof order.paymentStatus,isPaidBool,isPaymentStatusPaid,isPaid},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H1'})}).catch(()=>{});
+                  // #endregion
+                  console.log(`🔍 [POST] ⚠️ Онлайн-оплата, но заказ не оплачен - создаем pending транзакцию`)
+                  console.log(`🔍 [POST] ДЕТАЛИ: paid=${order.paid} (${typeof order.paid}), paymentStatus=${order.paymentStatus} (${typeof order.paymentStatus}), isPaidBool=${isPaidBool}, isPaymentStatusPaid=${isPaymentStatusPaid}, isPaid=${isPaid}`)
+                  await createPendingLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id)
+                }
               } else if (order.paymentMethod === 'cash' && !order.paid) {
                 // ✅ ИСПРАВЛЕНО: Наличные И заказ НЕ оплачен - создаем pending транзакцию
                 console.log(`🔍 [POST] ✅ Условие выполнено: Оплата наличными И заказ не оплачен`)
@@ -723,7 +787,10 @@ export async function POST(request: Request) {
                 console.log(`🔍 [POST] 8️⃣ Результат createPendingLoyaltyPoints: успешно`)
                 console.log(`⏳ Pending: ${actualPointsEarned} баллов будут начислены на следующий день после доставки`)
               } else {
-                // Неизвестный способ оплаты - для безопасности делаем pending
+                // Неизвестный способ оплаты или условие не выполнено - для безопасности делаем pending
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:768',message:'Unknown payment method or condition not met',data:{paymentMethod:order.paymentMethod,paid:order.paid,paymentStatus:order.paymentStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
                 console.log(`🔍 [POST] ⚠️ Условие: Неизвестный способ оплаты (${order.paymentMethod})`)
                 console.log(`❓ Неизвестный способ оплаты (${order.paymentMethod}): создание pending транзакции`)
                 
@@ -742,8 +809,11 @@ export async function POST(request: Request) {
                 console.log(`⏳ Pending: ${actualPointsEarned} баллов будут начислены на следующий день после доставки`)
               }
             } else {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:775',message:'No points earned: actualPointsEarned is 0 or negative',data:{actualPointsEarned,orderTotalNum,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
               console.log(`🔍 [POST] ❌ Баллы не начислены: actualPointsEarned = ${actualPointsEarned}`)
-              console.log(`ℹ️ Баллы не начислены: actualPointsEarned = ${actualPointsEarned}`)
+              console.log(`ℹ️ Баллы не начислены: actualPointsEarned = ${actualPointsEarned}, orderTotalNum = ${orderTotalNum}, pointsUsed = ${pointsUsed}, currentTotalSpent = ${currentTotalSpent}`)
             }
             
             // ✅ ИСПРАВЛЕНО 2026-01-11: Обновляем заказ ТОЛЬКО если баллы были начислены
