@@ -1,6 +1,6 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card } from "@/components/ui/card"
 import { Package, Calendar, MapPin, DollarSign, CreditCard, User } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -101,6 +101,9 @@ export function OrderDetailModal({ open, onClose, order }: OrderDetailModalProps
             <Package className="w-6 h-6 text-[#9D00FF]" />
             Заказ {orderNumber}
           </DialogTitle>
+          <DialogDescription className="text-black/70">
+            Детальная информация о заказе
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

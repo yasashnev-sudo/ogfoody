@@ -1,6 +1,6 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card } from "@/components/ui/card"
 import { User, Phone, Star, DollarSign, Calendar, MapPin } from "lucide-react"
 
@@ -51,6 +51,9 @@ export function UserDetailModal({ open, onClose, user }: UserDetailModalProps) {
       <DialogContent className="bg-white border-2 border-black rounded-xl shadow-brutal max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-black text-black">Детали пользователя</DialogTitle>
+          <DialogDescription className="text-black/70">
+            Полная информация о пользователе системы
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
