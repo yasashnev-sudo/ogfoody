@@ -32,28 +32,18 @@ export async function DELETE(
       )
     }
 
-    // Пробуем сначала прямой DELETE с ID в пути
-    let url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_ORDERS}/records/${orderId}`
+    // Используем "мягкое удаление" через PATCH (установка order_status=cancelled)
+    // В этой версии NocoDB DELETE не поддерживается, но можно отменить заказ
+    const url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_ORDERS}/records`
     
-    let response = await fetch(url, {
-      method: "DELETE",
+    const response = await fetch(url, {
+      method: "PATCH",
       headers: {
         "xc-token": NOCODB_TOKEN,
         "Content-Type": "application/json",
       },
+      body: JSON.stringify([{ Id: orderId, order_status: "cancelled" }]),
     })
-
-    // Если не работает, пробуем bulk delete с where
-    if (!response.ok && response.status === 404) {
-      url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_ORDERS}/records?where=(Id,eq,${orderId})`
-      response = await fetch(url, {
-        method: "DELETE",
-        headers: {
-          "xc-token": NOCODB_TOKEN,
-          "Content-Type": "application/json",
-        },
-      })
-    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error")
@@ -64,7 +54,7 @@ export async function DELETE(
     }
 
     return NextResponse.json(
-      { success: true, message: "Order deleted" },
+      { success: true, message: "Order cancelled (soft delete)" },
       { headers: noCacheHeaders }
     )
   } catch (error: any) {

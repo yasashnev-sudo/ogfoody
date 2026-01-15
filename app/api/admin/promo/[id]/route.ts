@@ -32,28 +32,18 @@ export async function DELETE(
       )
     }
 
-    // Пробуем сначала прямой DELETE с ID в пути
-    let url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_PROMO_CODES}/records/${promoId}`
+    // Используем "мягкое удаление" через PATCH (установка active=false)
+    // В этой версии NocoDB DELETE не поддерживается, но можно деактивировать запись
+    const url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_PROMO_CODES}/records`
     
-    let response = await fetch(url, {
-      method: "DELETE",
+    const response = await fetch(url, {
+      method: "PATCH",
       headers: {
         "xc-token": NOCODB_TOKEN,
         "Content-Type": "application/json",
       },
+      body: JSON.stringify([{ Id: promoId, active: false }]),
     })
-
-    // Если не работает, пробуем bulk delete с where
-    if (!response.ok && response.status === 404) {
-      url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_PROMO_CODES}/records?where=(Id,eq,${promoId})`
-      response = await fetch(url, {
-        method: "DELETE",
-        headers: {
-          "xc-token": NOCODB_TOKEN,
-          "Content-Type": "application/json",
-        },
-      })
-    }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error")
@@ -70,7 +60,7 @@ export async function DELETE(
     }
 
     return NextResponse.json(
-      { success: true, message: "Promo code deleted" },
+      { success: true, message: "Promo code deactivated (soft delete)" },
       { headers: noCacheHeaders }
     )
   } catch (error: any) {

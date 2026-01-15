@@ -148,12 +148,12 @@ export default function AdminOrdersPage() {
   }
 
   const handleDeleteOrder = async (id: number) => {
-    if (!confirm("Вы уверены, что хотите удалить этот заказ? Это действие нельзя отменить.")) {
+    if (!confirm("Вы уверены, что хотите удалить этот заказ? Заказ будет отменен (статус: отменен).")) {
       return
     }
 
     try {
-      // Создаем отдельный API endpoint для удаления заказов
+      // Используем отдельный API endpoint для удаления (мягкое удаление через отмену)
       const response = await fetch(`/api/admin/orders/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },

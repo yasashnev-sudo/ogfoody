@@ -129,12 +129,12 @@ export default function AdminPromoPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Вы уверены, что хотите удалить этот промокод?")) {
+    if (!confirm("Вы уверены, что хотите удалить этот промокод? Промокод будет деактивирован.")) {
       return
     }
 
     try {
-      // Используем отдельный API endpoint для удаления
+      // Используем отдельный API endpoint для удаления (мягкое удаление через деактивацию)
       const response = await fetch(`/api/admin/promo/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
