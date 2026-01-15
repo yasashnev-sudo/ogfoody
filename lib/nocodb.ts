@@ -1701,7 +1701,11 @@ export async function fetchOrdersWithDetails(userId: number, noCache: boolean = 
           deliveryDistrict: order.delivery_district || order["Delivery District"],
           deliveryAddress: order.delivery_address || order["Delivery Address"],
           promoCode: order.promo_code || order["Promo Code"],
-          promoDiscount: order.promo_discount || order["Promo Discount"] || 0,
+          promoDiscount: (() => {
+            const discount = order.promo_discount || order["Promo Discount"]
+            if (discount === undefined || discount === null) return 0
+            return typeof discount === 'number' ? discount : (Number(discount) || 0)
+          })(),
           loyaltyPointsUsed: order.loyalty_points_used || order["Loyalty Points Used"] || 0,
           loyaltyPointsEarned: order.loyalty_points_earned || order["Loyalty Points Earned"] || 0,
           persons,
@@ -1725,7 +1729,11 @@ export async function fetchOrdersWithDetails(userId: number, noCache: boolean = 
           deliveryDistrict: order.delivery_district || order["Delivery District"],
           deliveryAddress: order.delivery_address || order["Delivery Address"],
           promoCode: order.promo_code || order["Promo Code"],
-          promoDiscount: order.promo_discount || order["Promo Discount"] || 0,
+          promoDiscount: (() => {
+            const discount = order.promo_discount || order["Promo Discount"]
+            if (discount === undefined || discount === null) return 0
+            return typeof discount === 'number' ? discount : (Number(discount) || 0)
+          })(),
           loyaltyPointsUsed: order.loyalty_points_used || order["Loyalty Points Used"] || 0,
           loyaltyPointsEarned: order.loyalty_points_earned || order["Loyalty Points Earned"] || 0,
           persons: [],

@@ -546,7 +546,11 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                   deliveryDistrict: db.deliveryDistrict ?? db.delivery_district ?? db["Delivery District"],
                   deliveryAddress: db.deliveryAddress ?? db.delivery_address ?? db["Delivery Address"],
                   promoCode: db.promoCode ?? db.promo_code ?? db["Promo Code"],
-                  promoDiscount: db.promoDiscount ?? db.promo_discount ?? db["Promo Discount"] ?? 0,
+                  promoDiscount: (() => {
+                    const discount = db.promoDiscount ?? db.promo_discount ?? db["Promo Discount"]
+                    if (discount === undefined || discount === null) return 0
+                    return typeof discount === 'number' ? discount : (Number(discount) || 0)
+                  })(),
                   loyaltyPointsUsed: db.loyaltyPointsUsed ?? db.loyalty_points_used ?? db["Loyalty Points Used"] ?? 0,
                   loyaltyPointsEarned: db.loyaltyPointsEarned ?? db.loyalty_points_earned ?? db["Loyalty Points Earned"] ?? 0,
                   persons: db.persons ?? [],

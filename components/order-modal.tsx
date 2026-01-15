@@ -1073,14 +1073,14 @@ export function OrderModal({
                         </div>
                       )}
                       
-                      {existingOrder.promoCode && existingOrder.promoDiscount !== undefined && existingOrder.promoDiscount > 0 && (
+                      {existingOrder.promoCode && (existingOrder.promoDiscount !== undefined && existingOrder.promoDiscount !== null) && Number(existingOrder.promoDiscount) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-[#9D00FF] dark:text-purple-400 flex items-center gap-1">
                             <Tag className="w-4 h-4" />
                             Промокод {existingOrder.promoCode}:
                           </span>
                           <span className="font-bold text-[#9D00FF] dark:text-purple-400">
-                            -{existingOrder.promoDiscount.toLocaleString()} ₽
+                            -{Number(existingOrder.promoDiscount).toLocaleString()} ₽
                           </span>
                         </div>
                       )}
