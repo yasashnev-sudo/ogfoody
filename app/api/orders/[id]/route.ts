@@ -370,6 +370,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               
               console.log(`🔍 [PATCH ${id}] 9️⃣ Результат awardLoyaltyPoints: успешно`)
               console.log(`✅ Начислено ${loyaltyPointsEarned} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
+              
+              // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем заказ с правильным значением loyalty_points_earned
+              await updateOrder(Number(id), {
+                loyalty_points_earned: loyaltyPointsEarned,
+              })
+              console.log(`✅ [PATCH full] Обновлен заказ ${id} с loyalty_points_earned: ${loyaltyPointsEarned}`)
             }
           }
           console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH full order) ==========\n`)
@@ -480,6 +486,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                     await awardLoyaltyPoints(currentOrder.user_id, orderTotalForPoints, 0, calculatedPoints, Number(id))
                     console.log(`✅ [PATCH full] Начислено ${calculatedPoints} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
                     loyaltyPointsEarned = calculatedPoints
+                    
+                    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем заказ с правильным значением loyalty_points_earned
+                    await updateOrder(Number(id), {
+                      loyalty_points_earned: calculatedPoints,
+                    })
+                    console.log(`✅ [PATCH full] Обновлен заказ ${id} с loyalty_points_earned: ${calculatedPoints}`)
                   }
                 }
               } catch (error) {
