@@ -52,6 +52,11 @@ export default function AdminLayout({
     }
   }, [isAuthenticated, isLoading, pathname, router])
 
+  // На странице входа всегда показываем содержимое
+  if (pathname === "/admin/login") {
+    return <>{children}</>
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -65,11 +70,6 @@ export default function AdminLayout({
 
   if (!isAuthenticated) {
     return null
-  }
-
-  // На странице входа не показываем сайдбар
-  if (pathname === "/admin/login") {
-    return <>{children}</>
   }
 
   return (
