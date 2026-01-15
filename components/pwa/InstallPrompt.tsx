@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { X, Download, Share2, SquarePlus, MoreVertical, ArrowRight, CheckCircle2, Home } from 'lucide-react'
+import { X, Download, Share2, SquarePlus, MoreHorizontal, ArrowRight, CheckCircle2, Home, Plus } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -124,18 +124,18 @@ export function InstallPrompt() {
     return (
       <>
         <div 
-          className="fixed top-0 left-0 right-0 z-40 bg-[#FFEA00] border-b-4 border-black shadow-brutal animate-slide-down-fade cursor-pointer"
+          className="fixed top-0 left-0 right-0 z-40 bg-[#FFEA00] border-b-3 border-black shadow-brutal animate-slide-down-fade cursor-pointer"
           onClick={handleIOSBannerClick}
         >
-          <div className="max-w-7xl mx-auto px-4 py-2.5 sm:py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-white border-2 border-black shadow-brutal flex-shrink-0">
-                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
+          <div className="max-w-7xl mx-auto px-3 py-2">
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-7 h-7 flex items-center justify-center rounded-md bg-white border-2 border-black shadow-brutal flex-shrink-0">
+                  <Share2 className="w-4 h-4 text-black" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-bold text-black leading-tight">
-                    <span className="underline">Нажмите здесь</span> чтобы установить приложение на главный экран
+                  <p className="text-xs font-bold text-black leading-tight">
+                    <span className="underline">Нажмите здесь</span> чтобы установить приложение
                   </p>
                 </div>
               </div>
@@ -144,10 +144,10 @@ export function InstallPrompt() {
                   e.stopPropagation()
                   handleDismiss()
                 }}
-                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg border-2 border-black bg-white hover:bg-gray-100 transition-colors brutal-hover flex-shrink-0"
+                className="w-6 h-6 flex items-center justify-center rounded-md border-2 border-black bg-white hover:bg-gray-100 transition-colors brutal-hover flex-shrink-0"
                 aria-label="Закрыть"
               >
-                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -155,133 +155,130 @@ export function InstallPrompt() {
 
         {/* Модальное окно с подробной инструкцией */}
         <Dialog open={showIOSModal} onOpenChange={setShowIOSModal}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <div className="flex justify-center mb-4">
-                <div className="w-20 h-20 rounded-xl bg-[#FFEA00] flex items-center justify-center border-4 border-black shadow-brutal">
-                  <Home className="w-10 h-10 text-black" />
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto p-0">
+            <DialogHeader className="px-4 pt-4 pb-2">
+              <div className="flex justify-center mb-3">
+                <div className="w-16 h-16 rounded-lg bg-[#FFEA00] flex items-center justify-center border-3 border-black shadow-brutal">
+                  <Home className="w-8 h-8 text-black" />
                 </div>
               </div>
-              <DialogTitle className="text-2xl font-black text-black text-center mb-2">
-                Установите OGFooDY на главный экран
+              <DialogTitle className="text-xl font-black text-black text-center mb-1">
+                Установите OGFooDY
               </DialogTitle>
-              <DialogDescription className="text-base text-gray-700 text-center mb-6">
-                Инструкция для iOS 26. Следуйте простым шагам ниже
+              <DialogDescription className="text-sm text-gray-700 text-center">
+                Инструкция для iOS 26
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-3 px-4 pb-4">
               {/* Шаг 1 - Три точки (меню) */}
-              <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
+              <div className="bg-white border-2 border-black rounded-lg p-3 shadow-brutal">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-md bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-sm">
                     1
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-black text-lg mb-2 text-black">Найдите кнопку меню (три точки)</h3>
-                    <p className="text-sm text-gray-700 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-base mb-1.5 text-black leading-tight">Найдите кнопку меню</h3>
+                    <p className="text-xs text-gray-700 mb-2 leading-relaxed">
                       В правом нижнем углу адресной строки Safari найдите кнопку с тремя точками:
                     </p>
-                    <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-lg p-3">
-                      <MoreVertical className="w-8 h-8 text-black" />
-                      <ArrowRight className="w-5 h-5 text-black" />
-                      <span className="font-bold text-black">Меню</span>
+                    <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-md p-2">
+                      <MoreHorizontal className="w-6 h-6 text-black" />
+                      <ArrowRight className="w-4 h-4 text-black" />
+                      <span className="font-bold text-sm text-black">Меню</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">
-                      Это кнопка меню Safari в адресной строке
-                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Шаг 2 - Поделиться */}
-              <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
+              <div className="bg-white border-2 border-black rounded-lg p-3 shadow-brutal">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-md bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-sm">
                     2
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-black text-lg mb-2 text-black">Нажмите на "Поделиться"</h3>
-                    <p className="text-sm text-gray-700 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-base mb-1.5 text-black leading-tight">Нажмите "Поделиться"</h3>
+                    <p className="text-xs text-gray-700 mb-2 leading-relaxed">
                       В открывшемся меню найдите и нажмите на опцию "Поделиться":
                     </p>
-                    <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-lg p-3">
-                      <Share2 className="w-8 h-8 text-black" />
-                      <ArrowRight className="w-5 h-5 text-black" />
-                      <span className="font-bold text-black">Поделиться</span>
+                    <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-md p-2">
+                      <Share2 className="w-6 h-6 text-black" />
+                      <ArrowRight className="w-4 h-4 text-black" />
+                      <span className="font-bold text-sm text-black">Поделиться</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">
-                      Иконка: квадрат со стрелкой вверх
-                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Шаг 3 - Добавить на экран Домой */}
-              <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
+              <div className="bg-white border-2 border-black rounded-lg p-3 shadow-brutal">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-md bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-sm">
                     3
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-black text-lg mb-2 text-black">Выберите "Добавить на экран «Домой»"</h3>
-                    <p className="text-sm text-gray-700 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-base mb-1.5 text-black leading-tight">Выберите "Добавить на экран «Домой»"</h3>
+                    <p className="text-xs text-gray-700 mb-2 leading-relaxed">
                       В меню "Поделиться" найдите опцию с иконкой квадрата с плюсом:
                     </p>
-                    <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-lg p-3">
-                      <SquarePlus className="w-8 h-8 text-black" />
-                      <ArrowRight className="w-5 h-5 text-black" />
-                      <span className="font-bold text-black">Добавить на экран «Домой»</span>
+                    <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-md p-2">
+                      <SquarePlus className="w-6 h-6 text-black" />
+                      <ArrowRight className="w-4 h-4 text-black" />
+                      <span className="font-bold text-sm text-black">Добавить на экран «Домой»</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2 italic">
-                      Если не видите эту опцию, прокрутите меню вниз
+                    <p className="text-xs text-gray-600 mt-1.5 italic">
+                      Если не видите, прокрутите меню вниз
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Шаг 4 - Подтверждение */}
-              <div className="bg-white border-2 border-black rounded-xl p-4 shadow-brutal">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-lg">
+              <div className="bg-white border-2 border-black rounded-lg p-3 shadow-brutal">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-md bg-[#FFEA00] border-2 border-black flex items-center justify-center flex-shrink-0 font-black text-sm">
                     4
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-black text-lg mb-2 text-black">Подтвердите установку</h3>
-                    <p className="text-sm text-gray-700 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-base mb-1.5 text-black leading-tight">Подтвердите установку</h3>
+                    <p className="text-xs text-gray-700 mb-2 leading-relaxed">
                       Нажмите кнопку "Добавить" в правом верхнем углу экрана
                     </p>
-                    <div className="bg-gray-50 border-2 border-black rounded-lg p-3 text-center">
-                      <p className="text-sm font-bold text-black">Появится кнопка "Добавить"</p>
+                    <div className="bg-gray-50 border-2 border-black rounded-md p-2 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Plus className="w-5 h-5 text-black" />
+                        <span className="text-xs font-bold text-black">Добавить</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-600 mt-2">
-                      Приложение будет установлено на главный экран
+                    <p className="text-xs text-gray-600 mt-1.5">
+                      Приложение появится на главном экране
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Готово */}
-              <div className="bg-[#FFEA00] border-4 border-black rounded-xl p-4 shadow-brutal">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-8 h-8 text-black flex-shrink-0" />
+              <div className="bg-[#FFEA00] border-3 border-black rounded-lg p-3 shadow-brutal">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-6 h-6 text-black flex-shrink-0" />
                   <div>
-                    <p className="font-black text-lg text-black">Готово!</p>
-                    <p className="text-sm text-black/80">
-                      Приложение появится на главном экране вашего iPhone или iPad
+                    <p className="font-black text-base text-black leading-tight">Готово!</p>
+                    <p className="text-xs text-black/80 leading-relaxed">
+                      Приложение появится на главном экране
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="mt-6">
+            <DialogFooter className="px-4 pb-4 pt-2">
               <Button
                 onClick={() => {
                   setShowIOSModal(false)
                   handleDismiss()
                 }}
-                className="w-full bg-[#FFEA00] text-black border-2 border-black shadow-brutal brutal-hover font-black"
+                className="w-full bg-[#FFEA00] text-black border-2 border-black shadow-brutal brutal-hover font-black text-sm py-2.5"
               >
                 Понятно, спасибо!
               </Button>
