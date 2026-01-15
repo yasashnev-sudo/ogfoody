@@ -825,11 +825,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
       // Проверяем изменение способа оплаты с наличных на онлайн (для partial update)
       const oldPaymentMethodPartial = currentOrder.payment_method || (currentOrder as any)["Payment Method"]
-      const newPaymentMethod = updateData.payment_method
+      const newPaymentMethod = updateData.payment_method || (body.order && body.order.paymentMethod)
+      const isPaymentMethodChangedFromCash = oldPaymentMethodPartial === 'cash' && 
+          (newPaymentMethod === 'card' || newPaymentMethod === 'sbp')
       
-      if (oldPaymentMethodPartial === 'cash' && 
-          (newPaymentMethod === 'card' || newPaymentMethod === 'sbp')) {
-        
+      if (isPaymentMethodChangedFromCash) {
         console.log(`💳 Partial update: Заказ ${id} оплачен онлайн (было: ${oldPaymentMethodPartial}, стало: ${newPaymentMethod}), обрабатываем pending баллы`)
         
         try {
@@ -842,16 +842,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             console.log(`✅ Pending транзакции обработаны, начислено ${earnedPoints} баллов`)
           } else {
             console.log(`ℹ️ Pending транзакции не найдены или уже обработаны`)
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если pending транзакций не было, но заказ оплачен онлайн,
+            // нужно начислить баллы как при обычной оплате онлайн
+            // Это происходит, когда заказ создан с cash, но сразу оплачен картой
+            console.log(`💡 Pending транзакций не было, но заказ оплачен онлайн - начисляем баллы как при обычной оплате`)
+            // Флаг для пропуска обычного начисления баллов ниже (чтобы не дублировать)
+            // Но мы все равно начислим баллы в блоке ниже, если условие выполнится
           }
         } catch (error) {
           console.error(`❌ Ошибка при обработке pending транзакций для заказа ${id}:`, error)
         }
       }
       
-      // Начисление баллов при оплате заказа (если это не наличные, ставшие онлайн)
-      // Если заказ уже был оплачен при создании, баллы уже начислены
-      // Начисляем только если заказ переходит из неоплаченного в оплаченный
-      // И если это НЕ случай с pending транзакциями (они уже обработаны выше)
+      // Начисление баллов при оплате заказа
+      // ✅ ИСПРАВЛЕНО: Начисляем баллы если:
+      // 1. Заказ переходит из неоплаченного в оплаченный (!wasPaid && willBePaid)
+      // 2. И это НЕ случай с pending транзакциями (они уже обработаны выше, pendingPointsEarned > 0)
+      // 3. ИЛИ это смена способа оплаты с cash на card/sbp, но pending транзакций не было
       
       // ✅ ЗАЩИТА: Проверяем, не были ли баллы уже начислены при создании
       const existingPointsEarnedPartial = typeof currentOrder.loyalty_points_earned === 'number' 
@@ -879,7 +886,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ (partial update): Баллы уже начислены для заказа ${id}: ${existingPointsEarnedPartial}. Пропускаем начисление.`)
         // Сохраняем существующее значение в updateData
         updateData.loyalty_points_earned = existingPointsEarnedPartial
-      } else if (!wasPaid && willBePaid && currentOrder.user_id && pendingPointsEarned === 0 && existingPointsEarnedPartial === 0) {
+      } else if ((!wasPaid && willBePaid) || (isPaymentMethodChangedFromCash && willBePaid && pendingPointsEarned === 0)) {
+        // ✅ ИСПРАВЛЕНО: Начисляем баллы если:
+        // 1. Заказ переходит из неоплаченного в оплаченный (!wasPaid && willBePaid)
+        // 2. ИЛИ это смена способа оплаты с cash на card/sbp, заказ оплачен, но pending транзакций не было
+        if (!currentOrder.user_id || existingPointsEarnedPartial > 0) {
+          console.log(`ℹ️ PATCH ${id}: Пропускаем начисление баллов:`, {
+            hasUserId: !!currentOrder.user_id,
+            existingPointsEarnedPartial,
+            reason: !currentOrder.user_id ? 'Нет user_id' : 'Баллы уже начислены'
+          })
+        } else if (pendingPointsEarned > 0) {
+          console.log(`ℹ️ PATCH ${id}: Пропускаем начисление баллов - уже обработаны pending транзакции: ${pendingPointsEarned}`)
+        } else {
         console.log(`\n🔍 ========== НАЧАЛО ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========`)
         console.log(`🔍 [PATCH partial ${id}] 1️⃣ Входящий payload (updateData):`, {
           paid: updateData.paid,
