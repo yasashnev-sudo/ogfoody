@@ -415,7 +415,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           : (typeof currentOrder.loyalty_points_used === 'number'
               ? currentOrder.loyalty_points_used
               : parseInt(String(currentOrder.loyalty_points_used)) || 0),
-        loyalty_points_earned: loyaltyPointsEarned,
+        loyalty_points_earned: loyaltyPointsEarned !== undefined ? loyaltyPointsEarned : (typeof currentOrder.loyalty_points_earned === 'number' ? currentOrder.loyalty_points_earned : parseInt(String(currentOrder.loyalty_points_earned)) || 0),
         subtotal: (order.subtotal !== undefined && order.subtotal !== null) ? order.subtotal : existingSubtotal,
         total: (order.total !== undefined && order.total !== null) ? order.total : existingTotal,
         guest_phone: order.guestPhone !== undefined ? order.guestPhone : currentOrder.guest_phone,
@@ -460,11 +460,25 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                   }
                   const pointsUsed = order.loyaltyPointsUsed || 0
                   const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
-                  loyaltyPointsEarned = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)
-                  console.log(`💰 [PATCH full] Рассчитано ${loyaltyPointsEarned} баллов для заказа ${id} (orderTotal: ${orderTotalForPoints}, promoDiscount: ${promoDiscount})`)
+                  const calculatedPoints = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)
+                  console.log(`💰 [PATCH full] Рассчитано ${calculatedPoints} баллов для заказа ${id} (orderTotal: ${orderTotalForPoints}, promoDiscount: ${promoDiscount})`)
+                  
+                  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Начисляем баллы пользователю
+                  if (calculatedPoints > 0) {
+                    console.log(`🔍 [PATCH full] Вызов awardLoyaltyPoints с параметрами:`, {
+                      userId: currentOrder.user_id,
+                      orderTotal: orderTotalForPoints,
+                      pointsUsed: 0,
+                      loyaltyPointsEarned: calculatedPoints,
+                      orderId: id,
+                    })
+                    await awardLoyaltyPoints(currentOrder.user_id, orderTotalForPoints, 0, calculatedPoints, Number(id))
+                    console.log(`✅ [PATCH full] Начислено ${calculatedPoints} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
+                    loyaltyPointsEarned = calculatedPoints
+                  }
                 }
               } catch (error) {
-                console.error(`❌ Ошибка при расчете баллов для заказа ${id}:`, error)
+                console.error(`❌ Ошибка при расчете и начислении баллов для заказа ${id}:`, error)
               }
             }
           }
