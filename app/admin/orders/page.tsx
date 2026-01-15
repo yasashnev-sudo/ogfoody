@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Eye, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { OrderDetailModal } from "@/components/admin/OrderDetailModal"
 
 interface Order {
   Id: number
@@ -34,6 +35,8 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     loadOrders()
@@ -217,12 +220,32 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
                   </div>
+                  <Button
+                    onClick={() => {
+                      setSelectedOrder(order)
+                      setIsModalOpen(true)
+                    }}
+                    variant="outline"
+                    className="border-2 border-black shadow-brutal brutal-hover"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Подробнее
+                  </Button>
                 </div>
               </Card>
             )
           })
         )}
       </div>
+
+      <OrderDetailModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedOrder(null)
+        }}
+        order={selectedOrder}
+      />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, User, Phone, Star, Ban } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { UserDetailModal } from "@/components/admin/UserDetailModal"
 
 interface User {
   Id: number
@@ -28,6 +29,8 @@ export default function AdminUsersPage() {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     loadUsers()
@@ -149,11 +152,33 @@ export default function AdminUsersPage() {
                     </div>
                   )}
                 </div>
+
+                <div className="mt-4">
+                  <Button
+                    onClick={() => {
+                      setSelectedUser(user)
+                      setIsModalOpen(true)
+                    }}
+                    variant="outline"
+                    className="w-full border-2 border-black shadow-brutal brutal-hover"
+                  >
+                    Подробнее
+                  </Button>
+                </div>
               </Card>
             )
           })
         )}
       </div>
+
+      <UserDetailModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedUser(null)
+        }}
+        user={selectedUser}
+      />
     </div>
   )
 }
