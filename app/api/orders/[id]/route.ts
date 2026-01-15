@@ -992,16 +992,24 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         ? currentOrder.loyalty_points_earned 
         : parseInt(String(currentOrder.loyalty_points_earned)) || 0
       
+      // ✅ ИСПРАВЛЕНО: Проверяем также, оплачен ли заказ онлайн, но баллы не начислены
+      const isPaidOnline = willBePaid && (updateData.payment_method === 'card' || updateData.payment_method === 'sbp' || 
+                                          (body.order && (body.order.paymentMethod === 'card' || body.order.paymentMethod === 'sbp')) ||
+                                          currentOrder.payment_method === 'card' || currentOrder.payment_method === 'sbp' ||
+                                          (currentOrder as any)['Payment Method'] === 'card' || (currentOrder as any)['Payment Method'] === 'sbp')
+      
       console.log(`🔍 Проверка начисления баллов при оплате ${id}:`, {
         wasPaid,
         willBePaid,
+        isPaidOnline,
         'currentOrder.user_id': currentOrder.user_id,
         'currentOrder.loyalty_points_earned': existingPointsEarnedPartial,
         pendingPointsEarned,
         'currentOrder.total': currentOrder.total || (currentOrder as any).Total,
         'currentOrder.subtotal': currentOrder.subtotal || (currentOrder as any).Subtotal,
         'currentOrder.promo_discount': currentOrder.promo_discount || (currentOrder as any)['Promo Discount'],
-        condition: !wasPaid && willBePaid && currentOrder.user_id && pendingPointsEarned === 0 && existingPointsEarnedPartial === 0,
+        'currentOrder.payment_method': currentOrder.payment_method || (currentOrder as any)['Payment Method'],
+        condition: (!wasPaid && willBePaid) || (isPaymentMethodChangedFromCash && willBePaid && pendingPointsEarned === 0) || (willBePaid && existingPointsEarnedPartial === 0 && pendingPointsEarned === 0 && isPaidOnline),
         '!wasPaid': !wasPaid,
         'willBePaid': willBePaid,
         'hasUserId': !!currentOrder.user_id,
@@ -1013,7 +1021,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ (partial update): Баллы уже начислены для заказа ${id}: ${existingPointsEarnedPartial}. Пропускаем начисление.`)
         // Сохраняем существующее значение в updateData
         updateData.loyalty_points_earned = existingPointsEarnedPartial
-      } else if ((!wasPaid && willBePaid) || (isPaymentMethodChangedFromCash && willBePaid && pendingPointsEarned === 0) || (willBePaid && existingPointsEarnedPartial === 0 && pendingPointsEarned === 0 && (updateData.payment_method === 'card' || updateData.payment_method === 'sbp' || (body.order && (body.order.paymentMethod === 'card' || body.order.paymentMethod === 'sbp'))))) {
+      } else if ((!wasPaid && willBePaid) || (isPaymentMethodChangedFromCash && willBePaid && pendingPointsEarned === 0) || (willBePaid && existingPointsEarnedPartial === 0 && pendingPointsEarned === 0 && isPaidOnline)) {
         // ✅ ИСПРАВЛЕНО: Начисляем баллы если:
         // 1. Заказ переходит из неоплаченного в оплаченный (!wasPaid && willBePaid)
         // 2. ИЛИ это смена способа оплаты с cash на card/sbp, заказ оплачен, но pending транзакций не было
