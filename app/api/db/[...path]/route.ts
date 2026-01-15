@@ -3,6 +3,13 @@
 
 import { type NextRequest, NextResponse } from "next/server"
 
+// Заголовки для предотвращения кеширования на клиенте
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+}
+
 function getNocoDBUrl(): string {
   return process.env.NOCODB_URL || ""
 }
@@ -88,12 +95,12 @@ async function proxyToNocoDB(request: NextRequest, path: string, method: string)
   if (!nocodbUrl || !nocodbToken) {
     return NextResponse.json(
       { error: "NocoDB not configured", details: { urlSet: !!nocodbUrl, tokenSet: !!nocodbToken } },
-      { status: 503 },
+      { status: 503, headers: noCacheHeaders },
     )
   }
 
   if (!isAllowedPath(path)) {
-    return NextResponse.json({ error: "Access denied to this resource" }, { status: 403 })
+    return NextResponse.json({ error: "Access denied to this resource" }, { status: 403, headers: noCacheHeaders })
   }
 
   const tableName = path.split("/")[0]
@@ -106,7 +113,7 @@ async function proxyToNocoDB(request: NextRequest, path: string, method: string)
         tableName,
         hint: "Go to NocoDB, open the table, and copy the ID from the URL (e.g., md_xxxxx)",
       },
-      { status: 503 },
+      { status: 503, headers: noCacheHeaders },
     )
   }
 
@@ -114,7 +121,7 @@ async function proxyToNocoDB(request: NextRequest, path: string, method: string)
   try {
     targetUrl = buildTargetUrl(nocodbUrl, path)
   } catch (error) {
-    return NextResponse.json({ error: "Failed to build URL", details: String(error) }, { status: 503 })
+    return NextResponse.json({ error: "Failed to build URL", details: String(error) }, { status: 503, headers: noCacheHeaders })
   }
 
   const searchParams = request.nextUrl.searchParams.toString()
@@ -147,27 +154,22 @@ async function proxyToNocoDB(request: NextRequest, path: string, method: string)
     } catch {
       return new NextResponse(responseText, {
         status: response.status,
-        headers: { "Content-Type": "text/plain" },
+        headers: { 
+          "Content-Type": "text/plain",
+          ...noCacheHeaders,
+        },
       })
     }
 
     return NextResponse.json(data, { 
       status: response.status,
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
+      headers: noCacheHeaders,
     })
   } catch (error) {
     console.error("NocoDB proxy error:", error)
     return NextResponse.json({ error: "Failed to proxy request to NocoDB", details: String(error) }, { 
       status: 500,
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
+      headers: noCacheHeaders,
     })
   }
 }
