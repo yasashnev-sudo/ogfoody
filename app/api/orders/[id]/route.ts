@@ -439,6 +439,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если pending транзакций не было, но заказ оплачен онлайн,
             // нужно начислить баллы как при обычной оплате онлайн
             console.log(`💡 Pending транзакций не было, но заказ оплачен онлайн - начисляем баллы как при обычной оплате`)
+            console.log(`🔍 [PATCH full ${id}] Проверка условий для начисления баллов:`, {
+              'order.paid': order.paid,
+              'order.paymentMethod': order.paymentMethod,
+              'condition': order.paid && (order.paymentMethod === 'card' || order.paymentMethod === 'sbp'),
+            })
             if (order.paid && (order.paymentMethod === 'card' || order.paymentMethod === 'sbp')) {
               try {
                 const user = await fetchUserById(currentOrder.user_id, true)
