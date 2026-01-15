@@ -155,6 +155,11 @@
     animation-fill-mode: both; /* Применяем начальные стили сразу, даже с задержкой */
   }
 
+  .animate-slide-down-fade {
+    animation: slideDownFade 0.3s ease-out;
+    animation-fill-mode: both; /* Применяем начальные стили сразу, даже с задержкой */
+  }
+
   .animate-scale-in {
     animation: scaleIn 0.2s ease-out;
   }
@@ -228,6 +233,17 @@
     from {
       opacity: 0;
       transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideDownFade {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
     }
     to {
       opacity: 1;

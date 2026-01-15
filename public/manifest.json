@@ -4,7 +4,7 @@
   "description": "Сервис доставки готовых домашних обедов на 2 дня. Сбалансированное питание, бесплатная доставка в синей зоне.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFEA00",
+  "background_color": "#FFFFFF",
   "theme_color": "#FFEA00",
   "orientation": "portrait-primary",
   "icons": [
@@ -43,5 +43,7 @@
   ],
   "categories": ["food", "lifestyle", "shopping"],
   "lang": "ru",
-  "dir": "ltr"
+  "dir": "ltr",
+  "scope": "/",
+  "id": "/"
 }

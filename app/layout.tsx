@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 // import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Footer } from "@/components/footer"
+import { InstallPrompt } from "@/components/pwa/InstallPrompt"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -64,12 +65,13 @@ export const metadata: Metadata = {
   },
 }
 
-// ✅ Настройка viewport для мобильных устройств
+// ✅ Настройка viewport для мобильных устройств и PWA
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#FFEA00', // Brand Yellow для PWA
 }
 
 export default function RootLayout({
@@ -84,6 +86,8 @@ export default function RootLayout({
           {children}
         </div>
         <Footer />
+        {/* PWA Install Prompt */}
+        <InstallPrompt />
         {/* ✅ ИСПРАВЛЕНО 2026-01-13: Убран Vercel Analytics (проект не на Vercel) */}
         {/* <Analytics /> */}
       </body>
