@@ -2115,12 +2115,13 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       const newLoyaltyPoints = data.userProfile?.loyaltyPoints || userProfile.loyaltyPoints || 0
       const pointsDifference = newLoyaltyPoints - oldLoyaltyPoints
       
-      // ✅ ИСПРАВЛЕНО 2026-01-13: Учитываем использованные баллы при расчете фактически начисленных
-      // pointsDifference = начислено - использовано
-      // actualPointsAwarded = pointsDifference + pointsUsed = начислено
-      const actualPointsAwarded = pointsDifference > 0 
-        ? pointsDifference + pointsUsed  // Учитываем использованные баллы
-        : (data.loyaltyPointsEarned || 0)
+      // ✅ ИСПРАВЛЕНО 2026-01-15: Используем loyaltyPointsEarned из ответа API напрямую
+      // Проблема: pointsDifference уже учитывает изменение баланса (начислено - использовано)
+      // Если мы добавляем pointsUsed к pointsDifference, получаем двойной учет списания
+      // Правильно: использовать data.loyaltyPointsEarned, который приходит с сервера
+      const actualPointsAwarded = data.loyaltyPointsEarned !== undefined && data.loyaltyPointsEarned !== null
+        ? data.loyaltyPointsEarned  // Используем значение с сервера
+        : (pointsDifference > 0 ? pointsDifference + pointsUsed : 0)  // Fallback только если нет данных с сервера
       
       console.log('🎁 Расчет начисленных баллов:', {
         oldLoyaltyPoints,
@@ -2129,7 +2130,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         pointsUsed,
         actualPointsAwarded,
         'data.loyaltyPointsEarned': data.loyaltyPointsEarned,
-        'расчет': `pointsDifference (${pointsDifference}) + pointsUsed (${pointsUsed}) = ${actualPointsAwarded}`
+        'расчет': data.loyaltyPointsEarned !== undefined 
+          ? `Используем data.loyaltyPointsEarned: ${data.loyaltyPointsEarned}`
+          : `Fallback: pointsDifference (${pointsDifference}) + pointsUsed (${pointsUsed}) = ${actualPointsAwarded}`
       })
       
       // 🔥 АВТОПРОВЕРКА: Проверяем корректность начисления баллов
