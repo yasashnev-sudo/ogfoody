@@ -10,6 +10,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:promo": "tsx test-promo-codes-api.ts",
     "generate-favicons": "node scripts/generate-favicons.js"
   },
   "dependencies": {
@@ -79,12 +80,14 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.3",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "node-fetch": "^2.7.0",
     "postcss": "^8.5",
     "sharp": "^0.33.0",
     "tailwindcss": "^4.1.9",
+    "tsx": "^4.21.0",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
   }

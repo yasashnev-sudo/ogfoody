@@ -17,8 +17,10 @@ interface CaptureErrorOptions {
 
 export function useDebugRecorder(userId?: string, userEmail?: string) {
   const logsRef = useRef<LogEntry[]>([]);
-  const maxLogs = 100; // Храним последние 100 логов
+  const maxLogs = 1000; // Храним последние 1000 логов (увеличено для полной записи)
   const [isCapturing, setIsCapturing] = useState(false);
+  // Состояние для принудительного обновления компонентов при изменении логов
+  const [logsVersion, setLogsVersion] = useState(0);
   
   // 🔥 НОВОЕ: Режим записи логов браузера (по умолчанию выключен)
   const [isLoggingEnabled, setIsLoggingEnabledState] = useState(() => {
@@ -150,8 +152,8 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
       // ❌ УБРАНО: Создание скриншота (экономим время)
       const screenshot: string | null = null;
 
-      // Получаем последние 50 логов (увеличено для лучшего контекста)
-      const recentLogs = logsRef.current.slice(-50).map(log => 
+      // Получаем ВСЕ накопленные логи
+      const recentLogs = logsRef.current.map(log => 
         `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}${
           log.data ? `\nData: ${JSON.stringify(log.data, null, 2)}` : ''
         }`
@@ -306,8 +308,10 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
   // Очистить логи
   const clearLogs = useCallback(() => {
     logsRef.current = [];
-    addLog('info', 'Logs cleared');
-  }, [addLog]);
+    setLogsVersion(prev => prev + 1); // Принудительно обновляем компоненты
+    // Не добавляем лог о очистке, чтобы не создавать новый лог после очистки
+    // Пользователь увидит, что логи очищены через UI
+  }, []);
 
   // Методы для логирования (альтернатива перехвату консоли)
   const log = useCallback((message: string, data?: any) => {
@@ -372,6 +376,7 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     
     // Состояние
     isCapturing,
+    logsVersion, // Версия логов для принудительного обновления компонентов
   };
 }
 

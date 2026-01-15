@@ -18,6 +18,7 @@ interface DebugContextType {
   isLoggingEnabled: boolean;
   enableLogging: () => void;
   disableLogging: () => void;
+  logsVersion: number; // Версия логов для принудительного обновления
 }
 
 const DebugContext = createContext<DebugContextType | null>(null);

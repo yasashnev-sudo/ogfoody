@@ -56,8 +56,15 @@ export function DebugFloatingButton() {
     }
   };
 
+  // Получаем логи и принудительно обновляем компонент при изменении
   const logs = debug.getLogs();
   const errorCount = logs.filter(l => l.level === 'error').length;
+  
+  // Принудительно обновляем компонент при изменении логов (для работы clearLogs)
+  // Используем logsVersion для отслеживания изменений
+  useEffect(() => {
+    // Этот эффект заставляет компонент перерендериться когда логи очищаются
+  }, [debug.logsVersion]);
 
   return (
     <>
