@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Gift, Plus, Edit, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Checkbox } from "@/components/ui/checkbox"
 
 interface PromoCode {
   Id: number
@@ -274,41 +273,21 @@ export default function AdminPromoPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-black font-bold">Тип использования</Label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <UICheckbox
-                    id="usage_unlimited"
-                    checked={formData.usage_type === "unlimited"}
-                    onCheckedChange={() => setFormData({ ...formData, usage_type: "unlimited" })}
-                    className="border-2 border-black"
-                  />
-                  <Label htmlFor="usage_unlimited" className="text-black font-medium cursor-pointer">
-                    Действует постоянно (без ограничений)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <UICheckbox
-                    id="usage_once_per_user"
-                    checked={formData.usage_type === "once_per_user"}
-                    onCheckedChange={() => setFormData({ ...formData, usage_type: "once_per_user" })}
-                    className="border-2 border-black"
-                  />
-                  <Label htmlFor="usage_once_per_user" className="text-black font-medium cursor-pointer">
-                    Один раз на пользователя
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <UICheckbox
-                    id="usage_once_total"
-                    checked={formData.usage_type === "once_total"}
-                    onCheckedChange={() => setFormData({ ...formData, usage_type: "once_total" })}
-                    className="border-2 border-black"
-                  />
-                  <Label htmlFor="usage_once_total" className="text-black font-medium cursor-pointer">
-                    Всего один раз (для всех)
-                  </Label>
-                </div>
-              </div>
+              <Select
+                value={formData.usage_type}
+                onValueChange={(value: "unlimited" | "once_per_user" | "once_total") =>
+                  setFormData({ ...formData, usage_type: value })
+                }
+              >
+                <SelectTrigger className="border-2 border-black rounded-lg shadow-brutal">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unlimited">Действует постоянно (без ограничений)</SelectItem>
+                  <SelectItem value="once_per_user">Один раз на пользователя</SelectItem>
+                  <SelectItem value="once_total">Всего один раз (для всех)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex gap-2">
               <Button
