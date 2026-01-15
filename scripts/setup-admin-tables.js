@@ -83,17 +83,28 @@ async function createTable(baseId, tableName, columns) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        console.log(`📤 [${tableName}] HTTP ${res.statusCode}, ответ:`, data.substring(0, 300));
         try {
-          const result = JSON.parse(data);
-          resolve(result);
-        } catch (e) {
-          // Если таблица уже существует, это нормально
-          if (res.statusCode === 400 && data.includes('already exists')) {
-            console.log(`⚠️  Таблица ${tableName} уже существует`);
-            resolve({ exists: true });
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            const result = JSON.parse(data);
+            console.log(`✅ [${tableName}] Создана, ID: ${result.id || result.Id || 'N/A'}, table_name: ${result.table_name || result.tableName || 'N/A'}`);
+            resolve(result);
+          } else if (res.statusCode === 400) {
+            // Если таблица уже существует, это нормально
+            if (data.includes('already exists') || data.includes('duplicate') || data.includes('unique constraint')) {
+              console.log(`⚠️  [${tableName}] Уже существует`);
+              resolve({ exists: true });
+            } else {
+              console.error(`❌ [${tableName}] Ошибка 400:`, data);
+              reject(new Error(`Ошибка создания таблицы (400): ${data.substring(0, 200)}`));
+            }
           } else {
-            reject(new Error(`Ошибка создания таблицы: ${data}`));
+            console.error(`❌ [${tableName}] Неожиданный статус ${res.statusCode}:`, data.substring(0, 200));
+            reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 200)}`));
           }
+        } catch (e) {
+          console.error(`❌ [${tableName}] Ошибка парсинга:`, e.message, 'Данные:', data.substring(0, 200));
+          reject(new Error(`Ошибка парсинга: ${e.message}`));
         }
       });
     });
@@ -255,7 +266,9 @@ async function main() {
       if (messagesResult.exists) {
         console.log('✅ Таблица Messages уже существует\n');
       } else {
-        console.log('✅ Таблица Messages создана\n');
+        console.log('✅ Таблица Messages создана, ожидание синхронизации...\n');
+        // Даем время на синхронизацию в базе
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error('❌ Ошибка создания таблицы Messages:', error.message);
@@ -269,7 +282,9 @@ async function main() {
       if (notificationsResult.exists) {
         console.log('✅ Таблица Push_Notifications уже существует\n');
       } else {
-        console.log('✅ Таблица Push_Notifications создана\n');
+        console.log('✅ Таблица Push_Notifications создана, ожидание синхронизации...\n');
+        // Даем время на синхронизацию в базе
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error('❌ Ошибка создания таблицы Push_Notifications:', error.message);
