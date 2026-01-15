@@ -1524,7 +1524,11 @@ export async function fetchOrders(userId?: number): Promise<NocoDBOrder[]> {
     "Payment Status": (rawOrder["Payment Status"] ?? rawOrder.payment_status ?? "pending") as "pending" | "paid" | "refunded" | "failed",
     payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? "cash") as "cash" | "card" | "sbp" | "online",
     "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? "cash") as "cash" | "card" | "sbp" | "online",
-    paid: rawOrder.paid !== undefined ? rawOrder.paid : (rawOrder["Paid"] === true || rawOrder["Paid"] === "True"),
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно нормализуем paid как boolean для всех форматов
+    paid: (() => {
+      const paidValue = rawOrder.paid !== undefined ? rawOrder.paid : rawOrder["Paid"]
+      return paidValue === true || String(paidValue).toLowerCase() === 'true' || String(paidValue) === '1'
+    })(),
     Paid: rawOrder["Paid"] !== undefined ? rawOrder["Paid"] : rawOrder.paid,
     paid_at: rawOrder.paid_at ?? rawOrder["Paid At"],
     "Paid At": rawOrder["Paid At"] ?? rawOrder.paid_at,
@@ -1867,7 +1871,11 @@ export async function fetchOrderById(id: number, noCache: boolean = false): Prom
     "Payment Status": (rawOrder["Payment Status"] ?? rawOrder.payment_status ?? "pending") as "pending" | "paid" | "refunded" | "failed",
     payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? "cash") as "cash" | "card" | "sbp" | "online",
     "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? "cash") as "cash" | "card" | "sbp" | "online",
-    paid: rawOrder.paid !== undefined ? rawOrder.paid : (rawOrder["Paid"] === true || rawOrder["Paid"] === "True"),
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно нормализуем paid как boolean для всех форматов
+    paid: (() => {
+      const paidValue = rawOrder.paid !== undefined ? rawOrder.paid : rawOrder["Paid"]
+      return paidValue === true || String(paidValue).toLowerCase() === 'true' || String(paidValue) === '1'
+    })(),
     Paid: rawOrder["Paid"] !== undefined ? rawOrder["Paid"] : rawOrder.paid,
     paid_at: rawOrder.paid_at ?? rawOrder["Paid At"],
     "Paid At": rawOrder["Paid At"] ?? rawOrder.paid_at,
@@ -1924,7 +1932,11 @@ export async function fetchOrderByNumber(orderNumber: string): Promise<NocoDBOrd
     "Payment Status": (rawOrder["Payment Status"] ?? rawOrder.payment_status ?? "pending") as "pending" | "paid" | "refunded" | "failed",
     payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? "cash") as "cash" | "card" | "sbp" | "online",
     "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? "cash") as "cash" | "card" | "sbp" | "online",
-    paid: rawOrder.paid !== undefined ? rawOrder.paid : (rawOrder["Paid"] === true || rawOrder["Paid"] === "True"),
+    // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно нормализуем paid как boolean для всех форматов
+    paid: (() => {
+      const paidValue = rawOrder.paid !== undefined ? rawOrder.paid : rawOrder["Paid"]
+      return paidValue === true || String(paidValue).toLowerCase() === 'true' || String(paidValue) === '1'
+    })(),
     Paid: rawOrder["Paid"] !== undefined ? rawOrder["Paid"] : rawOrder.paid,
     paid_at: rawOrder.paid_at ?? rawOrder["Paid At"],
     "Paid At": rawOrder["Paid At"] ?? rawOrder.paid_at,
