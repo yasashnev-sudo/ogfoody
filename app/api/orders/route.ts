@@ -588,10 +588,25 @@ export async function POST(request: Request) {
           const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
           
           // ✅ Приводим orderTotal к числу для избежания ошибок типов
-          const orderTotalNum = typeof orderTotal === 'number' ? orderTotal : parseFloat(String(orderTotal)) || 0
+          // ✅ ИСПРАВЛЕНО: Учитываем промокод при расчете orderTotal для начисления баллов
+          let orderTotalNum = typeof orderTotal === 'number' ? orderTotal : parseFloat(String(orderTotal)) || 0
+          
+          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если orderTotal не учитывает промокод, пересчитываем
+          const promoDiscount = order.promoDiscount || 0
+          if (promoDiscount > 0 && orderTotalNum > 0) {
+            const subtotal = order.subtotal || calculatedTotal || 0
+            const deliveryFee = nocoOrder.delivery_fee || (nocoOrder as any)['Delivery Fee'] || 0
+            const expectedTotal = subtotal + deliveryFee - promoDiscount
+            // Если текущий total не совпадает с ожидаемым (с учетом промокода), используем ожидаемый
+            if (Math.abs(orderTotalNum - expectedTotal) > 0.01) {
+              console.log(`⚠️ [POST] orderTotal не учитывает промокод, пересчитываем для начисления баллов: ${orderTotalNum} → ${expectedTotal}`)
+              orderTotalNum = expectedTotal
+            }
+          }
           
           console.log(`📊 Данные для расчета баллов:`, {
             orderTotal: orderTotalNum,
+            promoDiscount,
             pointsUsed,
             currentTotalSpent,
             loyaltyLevel: currentTotalSpent >= 50000 ? "gold" : currentTotalSpent >= 20000 ? "silver" : "bronze",

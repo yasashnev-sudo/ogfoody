@@ -879,7 +879,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ (partial update): Баллы уже начислены для заказа ${id}: ${existingPointsEarnedPartial}. Пропускаем начисление.`)
         // Сохраняем существующее значение в updateData
         updateData.loyalty_points_earned = existingPointsEarnedPartial
-      } else if (!wasPaid && willBePaid && currentOrder.user_id && pendingPointsEarned === 0) {
+      } else if (!wasPaid && willBePaid && currentOrder.user_id && pendingPointsEarned === 0 && existingPointsEarnedPartial === 0) {
         console.log(`\n🔍 ========== НАЧАЛО ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========`)
         console.log(`🔍 [PATCH partial ${id}] 1️⃣ Входящий payload (updateData):`, {
           paid: updateData.paid,
@@ -1031,7 +1031,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                   orderId: id,
                   loyalty_points_earned: loyaltyPointsEarned,
                 })
+                // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем loyalty_points_earned в updateData ПЕРЕД вызовом updateOrder
                 updateData.loyalty_points_earned = loyaltyPointsEarned
+                
+                // ✅ ИСПРАВЛЕНО: Обновляем заказ сразу после начисления баллов
+                try {
+                  await updateOrder(Number(id), { loyalty_points_earned: loyaltyPointsEarned })
+                  console.log(`✅ Заказ ${id} обновлен с loyalty_points_earned: ${loyaltyPointsEarned}`)
+                } catch (error) {
+                  console.error(`❌ Ошибка обновления заказа с баллами:`, error)
+                }
                 
                 console.log(`✅ Начислено ${loyaltyPointsEarned} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
               } else {
@@ -1082,7 +1091,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         promo_discount: updateData.promo_discount,
         loyalty_points_earned: updateData.loyalty_points_earned,
         hasUpdateData: Object.keys(updateData).length > 0,
+        updateDataKeys: Object.keys(updateData),
       })
+      
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, что updateData не пустой
+      if (Object.keys(updateData).length === 0) {
+        console.warn(`⚠️ [PATCH /api/orders/${id}] updateData пустой! Проверяем body:`, {
+          hasBodyOrder: !!body.order,
+          bodyOrderKeys: body.order ? Object.keys(body.order) : [],
+          bodyKeys: Object.keys(body),
+        })
+      }
       
       try {
         await updateOrder(Number(id), updateData)
@@ -1116,7 +1135,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         
         const mergedOrder = {
           ...fullOrder,
-          // Перезаписываем только те поля, которые мы обновили
+          // ✅ ИСПРАВЛЕНО: Перезаписываем ВСЕ поля из updateData, чтобы ответ API отражал актуальное состояние
+          ...(updateData.paid !== undefined && { paid: updateData.paid }),
+          ...(updateData.paid_at !== undefined && { paid_at: updateData.paid_at }),
+          ...(updateData.payment_status !== undefined && { payment_status: updateData.payment_status }),
+          ...(updateData.payment_method !== undefined && { payment_method: updateData.payment_method }),
+          ...(updateData.promo_code !== undefined && { promo_code: updateData.promo_code }),
+          ...(updateData.promo_discount !== undefined && { promo_discount: updateData.promo_discount }),
           ...(updateData.loyalty_points_used !== undefined && { 
             loyalty_points_used: updateData.loyalty_points_used 
           }),
