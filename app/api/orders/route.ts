@@ -3,6 +3,7 @@ import {
   fetchOrdersByUser,
   createOrder,
   updateOrder,
+  fetchOrderById,
   createOrderPerson,
   createOrderMeal,
   createOrderExtra,
@@ -255,6 +256,15 @@ export async function POST(request: Request) {
     try {
       nocoOrder = await createOrder(orderData)
       console.log("✅ Created NocoDB order - full response:", JSON.stringify(nocoOrder, null, 2))
+      
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перезагружаем заказ из БД, чтобы получить актуальные значения paid и payment_status
+      if (nocoOrder?.Id) {
+        const reloadedOrder = await fetchOrderById(nocoOrder.Id, true)
+        if (reloadedOrder) {
+          console.log("🔄 Перезагруженный заказ из БД:", JSON.stringify(reloadedOrder, null, 2))
+          nocoOrder = reloadedOrder
+        }
+      }
     } catch (error) {
       console.error("❌ Failed to create order in NocoDB:", error)
       throw error

@@ -1988,7 +1988,9 @@ export async function createOrder(order: Omit<NocoDBOrder, "Id" | "created_at" |
   const paymentMethod = order.payment_method ?? order["Payment Method"]
   if (paymentMethod !== undefined && paymentMethod !== null) mappedOrder["Payment Method"] = paymentMethod
   
-  mappedOrder["Paid"] = order.paid ?? order.Paid ?? false
+  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно сохраняем paid как boolean
+  const paidValue = order.paid ?? order.Paid
+  mappedOrder["Paid"] = paidValue === true || String(paidValue).toLowerCase() === 'true' || order.payment_status === 'paid' || String(order.payment_status).toLowerCase() === 'paid'
   
   const paidAt = order.paid_at ?? order["Paid At"]
   if (paidAt !== undefined && paidAt !== null) mappedOrder["Paid At"] = paidAt
