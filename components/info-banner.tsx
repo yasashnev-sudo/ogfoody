@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, MapPin, Calendar, LogIn, Smartphone, Share2 } from "lucide-react"
+import { X, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePWA } from "@/hooks/usePWA"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -31,91 +31,46 @@ export function InfoBanner({ isAuthenticated, onAuthClick, onClose }: InfoBanner
 
   if (!isVisible) return null
 
+  // Показываем только баннер о приложении (если не установлено)
+  if (isStandalone) {
+    return null
+  }
+
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 mb-6 relative shadow-sm">
-      <button
-        onClick={handleClose}
-        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
-        aria-label="Закрыть"
-      >
-        <X className="h-5 w-5" />
-      </button>
-
-      <div className="pr-8">
-        <div className="flex items-start gap-3 mb-4">
-          <MapPin className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Мы доставляем по всему Санкт-Петербургу
-            </h3>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              Проверьте ваш район при оформлении заказа
-            </p>
-          </div>
-        </div>
-
-        {!isAuthenticated && (
-          <div className="space-y-4">
-            {/* Баннер о приложении (если не установлено) */}
-            {!isStandalone && (
-              <div 
-                className="bg-[#FFEA00] rounded-lg p-4 border-2 border-black shadow-brutal cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={handlePWAInstallClick}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center rounded-md bg-white border-2 border-black flex-shrink-0">
-                    <Share2 className="w-5 h-5 text-black" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-black leading-tight">
-                      <span className="underline">С приложением удобнее</span> — установите на главный экран
-                    </p>
-                    <p className="text-xs text-black/70 mt-1">
-                      {isIOS ? "Нажмите для инструкции" : "Быстрый доступ и работа офлайн"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Сообщение для входа */}
-            <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-              <div className="flex items-start gap-3">
-                <LogIn className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-800 leading-relaxed mb-2">
-                    <span className="font-medium">Уже зарегистрированы?</span> Войдите в свой аккаунт для быстрого оформления
-                  </p>
-                  <Button
-                    onClick={onAuthClick}
-                    variant="outline"
-                    size="sm"
-                    className="bg-white hover:bg-blue-50 border-blue-300 text-blue-700 font-medium"
-                  >
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Войти
-                  </Button>
-                </div>
-              </div>
+    <>
+      <div className="mb-6">
+        <div 
+          className="bg-[#FFEA00] rounded-xl p-5 border-3 border-black shadow-brutal cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={handlePWAInstallClick}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-white border-3 border-black flex-shrink-0">
+              <Share2 className="w-6 h-6 text-black" />
             </div>
-          </div>
-        )}
-
-        {isAuthenticated && (
-          <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-gray-800 leading-relaxed">
-                Выберите дату в календаре, чтобы создать новый заказ или изменить существующий
+            <div className="flex-1">
+              <p className="text-base font-black text-black leading-tight mb-1">
+                <span className="underline">С приложением удобнее</span> — установите на главный экран
+              </p>
+              <p className="text-sm text-black/70">
+                {isIOS ? "Нажмите для подробной инструкции" : "Быстрый доступ и работа офлайн"}
               </p>
             </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleClose()
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border-2 border-black bg-white hover:bg-gray-100 transition-colors flex-shrink-0"
+              aria-label="Закрыть"
+            >
+              <X className="w-4 h-4 text-black" />
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Модальное окно с инструкцией по установке для iOS */}
-      {isIOS && (
-        <Dialog open={showIOSModal} onOpenChange={setShowIOSModal}>
+      {/* Модальное окно с инструкцией по установке */}
+      <Dialog open={showIOSModal} onOpenChange={setShowIOSModal}>
           <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto p-0">
             <DialogHeader className="px-4 pt-4 pb-2">
               <div className="flex justify-center mb-3">
@@ -243,8 +198,7 @@ export function InfoBanner({ isAuthenticated, onAuthClick, onClose }: InfoBanner
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
-    </div>
+    </>
   )
 }
 
