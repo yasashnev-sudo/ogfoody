@@ -6,7 +6,7 @@
 
 const https = require('https');
 const http = require('http');
-const { URL } = require('url');
+const url = require('url');
 
 const NOCODB_URL = process.env.NOCODB_URL || 'https://noco.povarnakolesah.ru';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN;
@@ -17,14 +17,17 @@ if (!NOCODB_TOKEN) {
   process.exit(1);
 }
 
-const urlObj = new URL(NOCODB_URL);
+const urlObj = url.parse(NOCODB_URL);
 const httpModule = urlObj.protocol === 'https:' ? https : http;
 
 // Получаем информацию о таблице
 async function getTableInfo() {
   return new Promise((resolve, reject) => {
-    const url = new URL(`${NOCODB_URL}/api/v2/meta/tables/${PROMO_TABLE_ID}`);
+    const requestUrl = url.parse(`${NOCODB_URL}/api/v2/meta/tables/${PROMO_TABLE_ID}`);
     const options = {
+      hostname: requestUrl.hostname,
+      port: requestUrl.port || (requestUrl.protocol === 'https:' ? 443 : 80),
+      path: requestUrl.path,
       method: 'GET',
       headers: {
         'xc-token': NOCODB_TOKEN,
@@ -32,7 +35,7 @@ async function getTableInfo() {
       },
     };
 
-    const req = httpModule.request(url, options, (res) => {
+    const req = httpModule.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
@@ -53,8 +56,11 @@ async function getTableInfo() {
 // Добавляем колонку
 async function addColumn(columnData) {
   return new Promise((resolve, reject) => {
-    const url = new URL(`${NOCODB_URL}/api/v2/meta/tables/${PROMO_TABLE_ID}/columns`);
+    const requestUrl = url.parse(`${NOCODB_URL}/api/v2/meta/tables/${PROMO_TABLE_ID}/columns`);
     const options = {
+      hostname: requestUrl.hostname,
+      port: requestUrl.port || (requestUrl.protocol === 'https:' ? 443 : 80),
+      path: requestUrl.path,
       method: 'POST',
       headers: {
         'xc-token': NOCODB_TOKEN,
@@ -62,7 +68,7 @@ async function addColumn(columnData) {
       },
     };
 
-    const req = httpModule.request(url, options, (res) => {
+    const req = httpModule.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
