@@ -5,7 +5,8 @@ import { X, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePWA } from "@/hooks/usePWA"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { SquarePlus, MoreHorizontal, ArrowRight, CheckCircle2, Home, Plus } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Home, Plus } from 'lucide-react'
+import { IOSMenuIcon, IOSShareIcon, IOSAddToHomeIcon } from '@/components/icons/ios-icons'
 
 interface InfoBannerProps {
   isAuthenticated: boolean
@@ -99,7 +100,7 @@ export function InfoBanner({ isAuthenticated, onAuthClick, onClose }: InfoBanner
                       В правом нижнем углу адресной строки Safari найдите кнопку с тремя точками:
                     </p>
                     <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-md p-2">
-                      <MoreHorizontal className="w-6 h-6 text-black" />
+                      <IOSMenuIcon className="w-6 h-6 text-black" size={24} />
                       <ArrowRight className="w-4 h-4 text-black" />
                       <span className="font-bold text-sm text-black">Меню</span>
                     </div>
@@ -119,7 +120,7 @@ export function InfoBanner({ isAuthenticated, onAuthClick, onClose }: InfoBanner
                       В открывшемся меню найдите и нажмите на опцию "Поделиться":
                     </p>
                     <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-md p-2">
-                      <Share2 className="w-6 h-6 text-black" />
+                      <IOSShareIcon className="w-6 h-6 text-black" size={24} />
                       <ArrowRight className="w-4 h-4 text-black" />
                       <span className="font-bold text-sm text-black">Поделиться</span>
                     </div>
@@ -139,7 +140,7 @@ export function InfoBanner({ isAuthenticated, onAuthClick, onClose }: InfoBanner
                       В меню "Поделиться" найдите опцию с иконкой квадрата с плюсом:
                     </p>
                     <div className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-black rounded-md p-2">
-                      <SquarePlus className="w-6 h-6 text-black" />
+                      <IOSAddToHomeIcon className="w-6 h-6 text-black" size={24} />
                       <ArrowRight className="w-4 h-4 text-black" />
                       <span className="font-bold text-sm text-black">Добавить на экран «Домой»</span>
                     </div>
