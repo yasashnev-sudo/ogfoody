@@ -19,6 +19,11 @@ export function InstallPrompt() {
   const [showIOSModal, setShowIOSModal] = useState(false)
 
   useEffect(() => {
+    // Проверяем iOS
+    const userAgent = window.navigator.userAgent.toLowerCase()
+    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent)
+    setIsIOS(isIOSDevice)
+
     // Проверяем, запущено ли приложение в standalone режиме (уже установлено)
     const checkStandalone = () => {
       const isStandaloneMode =
@@ -32,22 +37,17 @@ export function InstallPrompt() {
       if (isStandaloneMode) {
         setIsVisible(false)
         setIsDismissed(true)
+        return true
       }
+      return false
     }
 
-    checkStandalone()
-
-    // Проверяем периодически (на случай если пользователь установил приложение)
-    const interval = setInterval(checkStandalone, 1000)
-
-    // Проверяем iOS
-    const userAgent = window.navigator.userAgent.toLowerCase()
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent)
-    setIsIOS(isIOSDevice)
-
-    // Если уже установлено, не показываем промпт
-    if (isStandalone) {
-      return () => clearInterval(interval)
+    // Первая проверка
+    const isAlreadyInstalled = checkStandalone()
+    
+    // Если уже установлено, не продолжаем
+    if (isAlreadyInstalled) {
+      return
     }
 
     // Проверяем, был ли промпт уже отклонен (в localStorage)
@@ -58,9 +58,14 @@ export function InstallPrompt() {
       // Показываем снова через 7 дней
       if (daysSinceDismissed < 7) {
         setIsDismissed(true)
-        return () => clearInterval(interval)
+        return
       }
     }
+
+    // Проверяем периодически (на случай если пользователь установил приложение)
+    const interval = setInterval(() => {
+      checkStandalone()
+    }, 1000)
 
     // Слушаем событие beforeinstallprompt (Android/Desktop)
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -72,17 +77,26 @@ export function InstallPrompt() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
     // Для iOS показываем баннер через небольшую задержку
-    if (isIOSDevice && !isStandalone) {
-      setTimeout(() => {
-        setIsVisible(true)
+    if (isIOSDevice) {
+      const timer = setTimeout(() => {
+        // Проверяем еще раз перед показом
+        if (!checkStandalone()) {
+          setIsVisible(true)
+        }
       }, 3000) // Показываем через 3 секунды после загрузки
+
+      return () => {
+        clearInterval(interval)
+        clearTimeout(timer)
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      }
     }
 
     return () => {
       clearInterval(interval)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     }
-  }, [isStandalone])
+  }, [])
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return
@@ -135,7 +149,7 @@ export function InstallPrompt() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-black leading-tight">
-                    <span className="underline">Нажмите здесь</span> чтобы установить приложение
+                    <span className="underline">С приложением удобнее</span> — установите на главный экран
                   </p>
                 </div>
               </div>
