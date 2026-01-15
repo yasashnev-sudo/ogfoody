@@ -998,6 +998,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                                           currentOrder.payment_method === 'card' || currentOrder.payment_method === 'sbp' ||
                                           (currentOrder as any)['Payment Method'] === 'card' || (currentOrder as any)['Payment Method'] === 'sbp')
       
+      console.log(`\n🔍 ========== НАЧАЛО ПРОВЕРКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial ${id}) ==========`)
       console.log(`🔍 Проверка начисления баллов при оплате ${id}:`, {
         wasPaid,
         willBePaid,
