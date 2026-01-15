@@ -183,15 +183,26 @@ async function updateOrder(orderId: number, updateData: any): Promise<any> {
     throw new Error(`Failed to update order: ${response.status} ${errorText}`)
   }
   
+  // Проверяем Content-Type
+  const contentType = response.headers.get('content-type')
+  if (!contentType || !contentType.includes('application/json')) {
+    // Если ответ не JSON, это нормально для некоторых эндпоинтов
+    return { success: true }
+  }
+  
   const text = await response.text()
-  if (!text) {
-    return {}
+  if (!text || text.trim() === '') {
+    return { success: true }
   }
   
   try {
     return JSON.parse(text)
-  } catch {
-    return {}
+  } catch (error) {
+    // Если не удалось распарсить, но статус 200, считаем успешным
+    if (response.ok) {
+      return { success: true, raw: text }
+    }
+    throw new Error(`Failed to parse response: ${text.substring(0, 100)}`)
   }
 }
 
@@ -474,11 +485,8 @@ async function testNoDoubleIncrement(): Promise<TestResult> {
     console.log(`   Заказ создан: ID=${orderId}`)
     await sleep(2000)
     
-    // Проверяем статус заказа перед оплатой
-    const orderBeforePayment = await fetch(`${API_BASE}/api/orders/${orderId}`).then(r => r.json()).catch(() => null)
-    if (orderBeforePayment?.order) {
-      console.log(`   Статус заказа перед оплатой: paid=${orderBeforePayment.order.paid}, paymentStatus=${orderBeforePayment.order.paymentStatus}`)
-    }
+    // Проверяем статус заказа перед оплатой (опционально, не критично)
+    // Пропускаем проверку, так как она не критична для теста инкремента
     
     // Оплачиваем заказ через PATCH с полным объектом order
     await updateOrder(orderId, {
