@@ -134,8 +134,9 @@ export default function AdminPromoPage() {
     }
 
     try {
-      // Используем формат с ID в URL пути, как в других местах кода
-      const response = await fetch(`/api/db/Promo_Codes/records/${id}`, {
+      // Используем bulk delete формат с where условием, как в cleanup-test-data
+      // NocoDB API требует where параметр для bulk delete
+      const response = await fetch(`/api/db/Promo_Codes/records?where=(Id,eq,${id})`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       })
