@@ -832,6 +832,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           orderNumber: existingOrder.orderNumber,
           subtotal: existingOrder.subtotal,
           total: existingOrder.total,
+          promoCode: order.promoCode,
+          promoDiscount: order.promoDiscount,
         }
         
         const response = await fetch(`/api/orders/${existingOrder.id}`, {
