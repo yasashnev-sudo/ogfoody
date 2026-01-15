@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Loader2,
   MessageCircle,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -677,8 +678,23 @@ export function OrderHistory({
                     </Button>
 
                     {repeatMenuOpen === orderKey && (
-                      <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-10 min-w-[280px] max-w-[95vw]">
-                        <div className="text-[10px] font-black mb-2 text-gray-600">📅 ВЫБЕРИТЕ ДАТУ ДОСТАВКИ:</div>
+                      <>
+                        {/* Backdrop для закрытия по клику вне окна */}
+                        <div 
+                          className="fixed inset-0 z-[5]"
+                          onClick={() => setRepeatMenuOpen(null)}
+                        />
+                        <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-10 min-w-[280px] max-w-[95vw] relative">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-[10px] font-black text-gray-600">📅 ВЫБЕРИТЕ ДАТУ ДОСТАВКИ:</div>
+                            <button
+                              onClick={() => setRepeatMenuOpen(null)}
+                              className="w-5 h-5 flex items-center justify-center rounded-md border border-black hover:bg-gray-100 transition-colors"
+                              aria-label="Закрыть"
+                            >
+                              <X className="w-3 h-3 text-black" />
+                            </button>
+                          </div>
                         {!allItemsAvailable && (
                           <div className="mb-2 p-2 bg-orange-100 rounded-lg border border-orange-500 text-[10px]">
                             <div className="flex items-start gap-1">
@@ -770,7 +786,8 @@ export function OrderHistory({
                             })}
                           </div>
                         )}
-                      </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
