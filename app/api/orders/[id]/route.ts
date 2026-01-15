@@ -841,7 +841,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         'currentOrder.user_id': currentOrder.user_id,
         'currentOrder.loyalty_points_earned': existingPointsEarnedPartial,
         pendingPointsEarned,
-        condition: !wasPaid && willBePaid && currentOrder.user_id && pendingPointsEarned === 0 && existingPointsEarnedPartial === 0
+        'currentOrder.total': currentOrder.total || (currentOrder as any).Total,
+        'currentOrder.subtotal': currentOrder.subtotal || (currentOrder as any).Subtotal,
+        'currentOrder.promo_discount': currentOrder.promo_discount || (currentOrder as any)['Promo Discount'],
+        condition: !wasPaid && willBePaid && currentOrder.user_id && pendingPointsEarned === 0 && existingPointsEarnedPartial === 0,
+        '!wasPaid': !wasPaid,
+        'willBePaid': willBePaid,
+        'hasUserId': !!currentOrder.user_id,
+        'pendingPointsEarned === 0': pendingPointsEarned === 0,
+        'existingPointsEarnedPartial === 0': existingPointsEarnedPartial === 0,
       })
       
       if (existingPointsEarnedPartial > 0) {
