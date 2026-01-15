@@ -57,8 +57,14 @@ export async function DELETE(
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error")
+      console.error(`❌ Ошибка удаления промокода ${promoId}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        url: url,
+      })
       return NextResponse.json(
-        { error: "Failed to delete promo code", details: errorText },
+        { error: "Failed to delete promo code", details: errorText, status: response.status },
         { status: response.status, headers: noCacheHeaders }
       )
     }
