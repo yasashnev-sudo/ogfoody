@@ -890,16 +890,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         // ✅ ИСПРАВЛЕНО: Начисляем баллы если:
         // 1. Заказ переходит из неоплаченного в оплаченный (!wasPaid && willBePaid)
         // 2. ИЛИ это смена способа оплаты с cash на card/sbp, заказ оплачен, но pending транзакций не было
-        if (!currentOrder.user_id || existingPointsEarnedPartial > 0) {
-          console.log(`ℹ️ PATCH ${id}: Пропускаем начисление баллов:`, {
-            hasUserId: !!currentOrder.user_id,
-            existingPointsEarnedPartial,
-            reason: !currentOrder.user_id ? 'Нет user_id' : 'Баллы уже начислены'
-          })
+        if (!currentOrder.user_id) {
+          console.log(`ℹ️ PATCH ${id}: Пропускаем начисление баллов - нет user_id`)
+        } else if (existingPointsEarnedPartial > 0) {
+          console.log(`ℹ️ PATCH ${id}: Пропускаем начисление баллов - баллы уже начислены: ${existingPointsEarnedPartial}`)
         } else if (pendingPointsEarned > 0) {
           console.log(`ℹ️ PATCH ${id}: Пропускаем начисление баллов - уже обработаны pending транзакции: ${pendingPointsEarned}`)
         } else {
-        console.log(`\n🔍 ========== НАЧАЛО ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========`)
+          console.log(`\n🔍 ========== НАЧАЛО ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========`)
         console.log(`🔍 [PATCH partial ${id}] 1️⃣ Входящий payload (updateData):`, {
           paid: updateData.paid,
           payment_status: updateData.payment_status,
@@ -1067,6 +1065,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           // Но логируем ошибку для отладки
         }
         console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========\n`)
+        }
       } else {
         // ✅ ДОБАВЛЕНО: Логируем, почему баллы не начисляются
         console.log(`ℹ️ PATCH ${id}: Баллы не начисляются, причина:`, {
