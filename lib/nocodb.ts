@@ -1334,13 +1334,20 @@ export async function refundLoyaltyPoints(
   })
 
   // ✅ ИСПРАВЛЕНО 2026-01-15: Откатываем total_spent при возврате баллов
-  const currentTotalSpent = typeof user.total_spent === 'number' 
-    ? user.total_spent 
-    : parseFloat(String(user.total_spent)) || 0
+  // ✅ КРИТИЧНО: Загружаем свежие данные пользователя для получения актуального total_spent
+  const freshUser = await fetchUserById(userId, true)
+  if (!freshUser) {
+    throw new Error(`User with ID ${userId} not found`)
+  }
+  
+  const currentTotalSpent = typeof freshUser.total_spent === 'number' 
+    ? freshUser.total_spent 
+    : parseFloat(String(freshUser.total_spent)) || 0
 
   // Формула отката: newTotalSpent = currentTotalSpent - orderTotal + pointsUsed
   // (откатываем сумму заказа, но возвращаем использованные баллы)
-  const newTotalSpent = currentTotalSpent - orderTotal + pointsUsed
+  // ✅ ЗАЩИТА: Не позволяем total_spent стать отрицательным
+  const newTotalSpent = Math.max(0, currentTotalSpent - orderTotal + pointsUsed)
 
   console.log(`💳 refundLoyaltyPoints - откат total_spent:`, {
     currentTotalSpent,

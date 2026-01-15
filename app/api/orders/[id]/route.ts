@@ -1077,7 +1077,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ (partial update): Баллы уже начислены для заказа ${id}: ${existingPointsEarnedPartial}. Пропускаем начисление.`)
         // Сохраняем существующее значение в updateData
         updateData.loyalty_points_earned = existingPointsEarnedPartial
-      } else if ((!wasPaid && willBePaid) || (isPaymentMethodChangedFromCash && willBePaid && pendingPointsEarned === 0) || (willBePaid && existingPointsEarnedPartial === 0 && pendingPointsEarned === 0 && isPaidOnline)) {
+      } else if (currentOrder.user_id && ((!wasPaid && willBePaid && pendingPointsEarned === 0 && existingPointsEarnedPartial === 0) || 
+                 (isPaymentMethodChangedFromCash && willBePaid && pendingPointsEarned === 0) || 
+                 (willBePaid && existingPointsEarnedPartial === 0 && pendingPointsEarned === 0 && isPaidOnline))) {
         // ✅ ИСПРАВЛЕНО: Начисляем баллы если:
         // 1. Заказ переходит из неоплаченного в оплаченный (!wasPaid && willBePaid)
         // 2. ИЛИ это смена способа оплаты с cash на card/sbp, заказ оплачен, но pending транзакций не было
