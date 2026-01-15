@@ -124,6 +124,9 @@ export function DebugFloatingButton() {
         onClearLogs={debug.clearLogs}
         onSendReport={handleSendReport}
         isSending={debug.isCapturing}
+        isLoggingEnabled={debug.isLoggingEnabled}
+        onEnableLogging={debug.enableLogging}
+        onDisableLogging={debug.disableLogging}
       />
     </>
   );

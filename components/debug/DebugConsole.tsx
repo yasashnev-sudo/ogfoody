@@ -17,6 +17,10 @@ interface DebugConsoleProps {
   onClearLogs: () => void;
   onSendReport: (comment: string) => void;
   isSending: boolean;
+  // 🔥 НОВОЕ: Управление записью логов браузера
+  isLoggingEnabled?: boolean;
+  onEnableLogging?: () => void;
+  onDisableLogging?: () => void;
 }
 
 export function DebugConsole({
@@ -26,6 +30,9 @@ export function DebugConsole({
   onClearLogs,
   onSendReport,
   isSending,
+  isLoggingEnabled = false,
+  onEnableLogging,
+  onDisableLogging,
 }: DebugConsoleProps) {
   const [filter, setFilter] = useState<'all' | 'log' | 'error' | 'warn' | 'info'>('all');
   const [comment, setComment] = useState('');
@@ -129,6 +136,25 @@ export function DebugConsole({
             </button>
           ))}
           <div className="flex-1" />
+          
+          {/* 🔥 НОВОЕ: Переключатель записи логов браузера */}
+          {onEnableLogging && onDisableLogging && (
+            <div className="flex items-center gap-2 mr-2">
+              <span className="text-xs text-gray-600">Запись логов:</span>
+              <button
+                onClick={isLoggingEnabled ? onDisableLogging : onEnableLogging}
+                className={`px-3 py-1 text-xs rounded-lg transition-colors font-medium ${
+                  isLoggingEnabled
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                }`}
+                title={isLoggingEnabled ? 'Выключить запись логов браузера' : 'Включить запись логов браузера'}
+              >
+                {isLoggingEnabled ? '🟢 ВКЛ' : '⚪ ВЫКЛ'}
+              </button>
+            </div>
+          )}
+          
           <button
             onClick={onClearLogs}
             className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"

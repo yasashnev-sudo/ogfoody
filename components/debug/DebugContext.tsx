@@ -14,6 +14,10 @@ interface DebugContextType {
   warn: (message: string, data?: any) => void;
   info: (message: string, data?: any) => void;
   isCapturing: boolean;
+  // 🔥 НОВОЕ: Управление записью логов браузера
+  isLoggingEnabled: boolean;
+  enableLogging: () => void;
+  disableLogging: () => void;
 }
 
 const DebugContext = createContext<DebugContextType | null>(null);

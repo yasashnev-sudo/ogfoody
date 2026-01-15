@@ -19,6 +19,15 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
   const logsRef = useRef<LogEntry[]>([]);
   const maxLogs = 100; // Храним последние 100 логов
   const [isCapturing, setIsCapturing] = useState(false);
+  
+  // 🔥 НОВОЕ: Режим записи логов браузера (по умолчанию выключен)
+  const [isLoggingEnabled, setIsLoggingEnabledState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('debug_logging_enabled');
+      return saved === 'true';
+    }
+    return false;
+  });
 
   // Добавляем лог в массив
   const addLog = useCallback((level: LogEntry['level'], message: string, data?: any) => {
@@ -50,8 +59,8 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     }
   }, []);
 
-  // Перехватываем консоль при монтировании
-  useEffect(() => {
+  // 🔥 НОВОЕ: Функция для установки перехвата консоли
+  const setupConsoleInterception = useCallback((enabled: boolean) => {
     // Сохраняем оригинальные методы консоли
     if (!(window as any).__originalConsole) {
       (window as any).__originalConsole = {
@@ -64,37 +73,53 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
 
     const originalConsole = (window as any).__originalConsole;
 
-    // Перехватываем методы
-    console.log = (...args: any[]) => {
-      addLog('log', args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' '));
-      originalConsole.log(...args);
-    };
+    if (enabled) {
+      // Перехватываем методы только если логирование включено
+      console.log = (...args: any[]) => {
+        addLog('log', args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' '));
+        originalConsole.log(...args);
+      };
 
-    console.error = (...args: any[]) => {
-      addLog('error', args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' '));
-      originalConsole.error(...args);
-    };
+      console.error = (...args: any[]) => {
+        addLog('error', args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' '));
+        originalConsole.error(...args);
+      };
 
-    console.warn = (...args: any[]) => {
-      addLog('warn', args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' '));
-      originalConsole.warn(...args);
-    };
+      console.warn = (...args: any[]) => {
+        addLog('warn', args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' '));
+        originalConsole.warn(...args);
+      };
 
-    console.info = (...args: any[]) => {
-      addLog('info', args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' '));
-      originalConsole.info(...args);
-    };
+      console.info = (...args: any[]) => {
+        addLog('info', args.map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' '));
+        originalConsole.info(...args);
+      };
+    } else {
+      // Восстанавливаем оригинальные методы если логирование выключено
+      if (originalConsole) {
+        console.log = originalConsole.log;
+        console.error = originalConsole.error;
+        console.warn = originalConsole.warn;
+        console.info = originalConsole.info;
+      }
+    }
+  }, [addLog]);
+
+  // Перехватываем консоль при монтировании и при изменении isLoggingEnabled
+  useEffect(() => {
+    setupConsoleInterception(isLoggingEnabled);
 
     // Восстанавливаем при размонтировании
     return () => {
+      const originalConsole = (window as any).__originalConsole;
       if (originalConsole) {
         console.log = originalConsole.log;
         console.error = originalConsole.error;
@@ -102,7 +127,7 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
         console.info = originalConsole.info;
       }
     };
-  }, [addLog]);
+  }, [isLoggingEnabled, setupConsoleInterception]);
 
   // ❌ УБРАНО: Функция создания скриншота (тратила время, не всегда работала)
   // Screenshots disabled to save time and improve reliability
@@ -307,6 +332,23 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     return null;
   }, []);
 
+  // 🔥 НОВОЕ: Методы для включения/выключения записи логов браузера
+  const enableLogging = useCallback(() => {
+    setIsLoggingEnabledState(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('debug_logging_enabled', 'true');
+    }
+    addLog('info', '✅ Запись логов браузера включена');
+  }, [addLog]);
+
+  const disableLogging = useCallback(() => {
+    setIsLoggingEnabledState(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('debug_logging_enabled', 'false');
+    }
+    addLog('info', '⏸️ Запись логов браузера выключена');
+  }, [addLog]);
+
   return {
     // Основные методы
     captureError,
@@ -322,6 +364,11 @@ export function useDebugRecorder(userId?: string, userEmail?: string) {
     error,
     warn,
     info,
+    
+    // 🔥 НОВОЕ: Управление записью логов браузера
+    isLoggingEnabled,
+    enableLogging,
+    disableLogging,
     
     // Состояние
     isCapturing,
