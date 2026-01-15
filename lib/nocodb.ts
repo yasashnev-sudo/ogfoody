@@ -1333,6 +1333,31 @@ export async function refundLoyaltyPoints(
     explanation: `Баланс будет пересчитан из транзакций автоматически при следующем fetchUserById`,
   })
 
+  // ✅ ИСПРАВЛЕНО 2026-01-15: Откатываем total_spent при возврате баллов
+  const currentTotalSpent = typeof user.total_spent === 'number' 
+    ? user.total_spent 
+    : parseFloat(String(user.total_spent)) || 0
+
+  // Формула отката: newTotalSpent = currentTotalSpent - orderTotal + pointsUsed
+  // (откатываем сумму заказа, но возвращаем использованные баллы)
+  const newTotalSpent = currentTotalSpent - orderTotal + pointsUsed
+
+  console.log(`💳 refundLoyaltyPoints - откат total_spent:`, {
+    currentTotalSpent,
+    orderTotal,
+    pointsUsed,
+    newTotalSpent,
+    calculation: `${currentTotalSpent} - ${orderTotal} + ${pointsUsed} = ${newTotalSpent}`,
+  })
+
+  // Обновляем total_spent в БД
+  await updateUser(userId, {
+    total_spent: newTotalSpent,
+    updated_at: now,
+  })
+
+  console.log(`✅ total_spent откачен: ${currentTotalSpent} → ${newTotalSpent}`)
+
   // Возвращаем пользователя с актуальным балансом (пересчитанным из транзакций)
   const updatedUser = await fetchUserById(userId, true) // noCache для свежих данных
   if (!updatedUser) {

@@ -786,6 +786,21 @@ export async function POST(request: Request) {
     
     console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (POST) ==========\n`)
 
+    // ✅ ИСПРАВЛЕНО 2026-01-15: Инкремент счетчика использования промокода при создании заказа
+    if (order.promoCode && nocoOrder?.Id) {
+      try {
+        const { fetchPromoCode, incrementPromoCodeUsage } = await import("@/lib/nocodb")
+        const promo = await fetchPromoCode(order.promoCode)
+        if (promo) {
+          await incrementPromoCodeUsage(promo.Id)
+          console.log(`✅ Счетчик промокода "${order.promoCode}" инкрементирован при создании заказа`)
+        }
+      } catch (error) {
+        console.error(`❌ Ошибка при инкременте промокода:`, error)
+        // Не прерываем создание заказа
+      }
+    }
+
     // Убеждаемся, что номер заказа есть в ответе - это критично!
     // Используем сгенерированный номер, если finalOrderNumber пустой
     const orderNumberToReturn = finalOrderNumber || orderNumber

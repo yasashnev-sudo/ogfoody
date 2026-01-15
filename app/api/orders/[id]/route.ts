@@ -379,6 +379,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             }
           }
           console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH full order) ==========\n`)
+          
+          // ✅ ИСПРАВЛЕНО 2026-01-15: Инкремент счетчика промокода при оплате заказа (full order)
+          if (!wasPaid && willBePaid && currentOrder.promo_code) {
+            try {
+              const { fetchPromoCode, incrementPromoCodeUsage } = await import("@/lib/nocodb")
+              const promo = await fetchPromoCode(currentOrder.promo_code)
+              if (promo) {
+                await incrementPromoCodeUsage(promo.Id)
+                console.log(`✅ Счетчик промокода "${currentOrder.promo_code}" инкрементирован при оплате заказа (full order)`)
+              }
+            } catch (error) {
+              console.error(`❌ Ошибка при инкременте промокода:`, error)
+            }
+          }
         } catch (error) {
           console.error(`❌ Ошибка при начислении баллов при оплате:`, error)
           // Не прерываем процесс обновления заказа
@@ -1243,6 +1257,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           // Но логируем ошибку для отладки
         }
         console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========\n`)
+        
+        // ✅ ИСПРАВЛЕНО 2026-01-15: Инкремент счетчика промокода при оплате заказа (partial)
+        if (!wasPaid && willBePaid && currentOrder.promo_code) {
+          try {
+            const { fetchPromoCode, incrementPromoCodeUsage } = await import("@/lib/nocodb")
+            const promo = await fetchPromoCode(currentOrder.promo_code)
+            if (promo) {
+              await incrementPromoCodeUsage(promo.Id)
+              console.log(`✅ Счетчик промокода "${currentOrder.promo_code}" инкрементирован при оплате заказа (partial)`)
+            }
+          } catch (error) {
+            console.error(`❌ Ошибка при инкременте промокода:`, error)
+          }
+        }
         }
       } else {
         // ✅ ДОБАВЛЕНО: Логируем, почему баллы не начисляются
