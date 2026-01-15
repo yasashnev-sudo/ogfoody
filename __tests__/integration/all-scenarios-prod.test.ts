@@ -13,7 +13,7 @@
 import fetch from 'node-fetch'
 
 // ⚠️ ПРОДАКШН КОНФИГУРАЦИЯ
-const API_BASE = process.env.API_BASE || 'https://povarnakolesah.ru'
+const API_BASE = process.env.API_BASE || 'https://ogfoody.ru'
 const TEST_USER_ID = 5 // Тестовый пользователь на проде
 const NOCODB_URL = process.env.NOCODB_URL || 'https://noco.povarnakolesah.ru'
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || 'eppmI3qJq8ahGaCzPmjmZGIze9NgJxEFQzu6Ps1r'
