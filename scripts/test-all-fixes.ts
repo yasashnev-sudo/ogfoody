@@ -223,10 +223,10 @@ async function deleteOrder(orderId: number, userId: number): Promise<any> {
 
 function getUniqueDate(daysOffset: number = 0): string {
   const date = new Date()
-  // Используем более уникальную дату с timestamp для избежания конфликтов
-  date.setDate(date.getDate() + daysOffset + Math.floor(Math.random() * 365))
-  // Добавляем случайное число дней для большей уникальности
-  const randomDays = Math.floor(Math.random() * 1000)
+  // Используем timestamp для гарантированной уникальности
+  const timestamp = Date.now()
+  // Используем последние 6 цифр timestamp как дни (максимум ~273 года)
+  const randomDays = (timestamp % 100000) + daysOffset
   date.setDate(date.getDate() + randomDays)
   return date.toISOString().split('T')[0]
 }
@@ -391,9 +391,25 @@ async function testPromoCodeIncrementOnUnpaidOrder(): Promise<TestResult> {
     
     console.log(`   ✅ Инкремент не произошел при создании: ${timesUsedAfterCreate}`)
     
-    // Проверяем статус заказа перед оплатой
-    const orderBeforePayment = await fetch(`${API_BASE}/api/orders/${orderId}`).then(r => r.json())
-    console.log(`   Статус заказа перед оплатой: paid=${orderBeforePayment.order?.paid}, paymentStatus=${orderBeforePayment.order?.paymentStatus}`)
+    // Проверяем статус заказа перед оплатой (опционально)
+    try {
+      const orderBeforePayment = await fetch(`${API_BASE}/api/orders/${orderId}`).then(async r => {
+        if (!r.ok) return null
+        const text = await r.text()
+        if (!text) return null
+        try {
+          return JSON.parse(text)
+        } catch {
+          return null
+        }
+      })
+      if (orderBeforePayment?.order) {
+        console.log(`   Статус заказа перед оплатой: paid=${orderBeforePayment.order.paid}, paymentStatus=${orderBeforePayment.order.paymentStatus}`)
+      }
+    } catch (error) {
+      // Игнорируем ошибку, это не критично для теста
+      console.log(`   ⚠️ Не удалось получить заказ перед оплатой (не критично)`)
+    }
     
     // Оплачиваем заказ
     await updateOrder(orderId, {

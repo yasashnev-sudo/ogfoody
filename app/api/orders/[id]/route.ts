@@ -25,6 +25,66 @@ import {
 } from "@/lib/nocodb"
 import type { Order, Meal, PortionSize } from "@/lib/types"
 
+// GET /api/orders/[id] - получение заказа по ID
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:33',message:'GET order by id',data:{orderId:id},timestamp:Date.now(),sessionId:'debug-session',runId:'fix-get-endpoint',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    
+    const order = await fetchOrderById(Number(id), true)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:36',message:'fetchOrderById result',data:{orderId:id,found:!!order},timestamp:Date.now(),sessionId:'debug-session',runId:'fix-get-endpoint',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
+    
+    // Получаем детали заказа
+    const persons = await fetchOrderPersons(Number(id))
+    const meals = await fetchOrderMeals(Number(id))
+    const extras = await fetchOrderExtras(Number(id))
+    
+    // Формируем полный объект заказа
+    const fullOrder = {
+      id: order.Id,
+      orderNumber: order.order_number || order["Order Number"],
+      startDate: order.start_date || order["Start Date"],
+      deliveryTime: order.delivery_time || order["Delivery Time"],
+      paymentMethod: order.payment_method || order["Payment Method"],
+      paid: order.paid ?? order.Paid ?? false,
+      paidAt: order.paid_at || order["Paid At"],
+      paymentStatus: order.payment_status || order["Payment Status"] || "pending",
+      orderStatus: order.order_status || order["Order Status"] || "pending",
+      total: order.total || order.Total || 0,
+      subtotal: order.subtotal || order.Subtotal || 0,
+      deliveryFee: order.delivery_fee || order["Delivery Fee"] || 0,
+      deliveryDistrict: order.delivery_district || order["Delivery District"],
+      deliveryAddress: order.delivery_address || order["Delivery Address"],
+      promoCode: order.promo_code || order["Promo Code"],
+      promoDiscount: order.promo_discount || order["Promo Discount"] || 0,
+      loyaltyPointsUsed: order.loyalty_points_used || order["Loyalty Points Used"] || 0,
+      loyaltyPointsEarned: order.loyalty_points_earned || order["Loyalty Points Earned"] || 0,
+      persons,
+      extras,
+    }
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:62',message:'Returning full order',data:{orderId:id,hasPersons:!!persons.length,hasExtras:!!extras.length},timestamp:Date.now(),sessionId:'debug-session',runId:'fix-get-endpoint',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    
+    return NextResponse.json({ order: fullOrder })
+  } catch (error: any) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:67',message:'GET order error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'fix-get-endpoint',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    console.error(`[GET /api/orders/[id]] Error:`, error)
+    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 })
+  }
+}
+
 // PATCH /api/orders/[id] - обновление заказа
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
