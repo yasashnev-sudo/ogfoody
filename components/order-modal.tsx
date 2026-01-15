@@ -51,7 +51,7 @@ import type {
 } from "@/lib/types"
 // Added getMealPrice helper
 import { getMealPrice } from "@/lib/types"
-import { fetchPromoCode, type NocoDBPromoCode } from "@/lib/nocodb"
+import { fetchPromoCode, fetchOrders, type NocoDBPromoCode } from "@/lib/nocodb"
 import { useToast } from "@/hooks/use-toast"
 import { WarningDialog } from "@/components/warning-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -819,6 +819,68 @@ export function OrderModal({
           "error"
         )
         return
+      }
+
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:812',message:'Checking usage_type',data:{promoCode:code,usageType:promo["Usage Type"]||promo.usage_type,isAuthenticated,userId:userProfile?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+
+      // Проверка типа использования промокода
+      const usageType = promo["Usage Type"] || promo.usage_type || "unlimited"
+      
+      // Проверка once_per_user: промокод можно использовать только один раз на пользователя
+      if (usageType === "once_per_user" && isAuthenticated && userProfile?.id) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:818',message:'Checking once_per_user',data:{promoCode:code,userId:userProfile.id},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
+        
+        try {
+          const userOrders = await fetchOrders(userProfile.id)
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:822',message:'Fetched user orders',data:{promoCode:code,userId:userProfile.id,ordersCount:userOrders.length},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
+          // #endregion
+          
+          const hasUsedPromo = userOrders.some(
+            (order) => (order.promo_code || order["Promo Code"]) === code
+          )
+          
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:828',message:'Checked if promo used before',data:{promoCode:code,hasUsedPromo},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
+          // #endregion
+          
+          if (hasUsedPromo) {
+            setAppliedPromo(null)
+            showWarning(
+              "Промокод уже использован",
+              "Этот промокод можно использовать только один раз на одного пользователя.",
+              "error"
+            )
+            return
+          }
+        } catch (error) {
+          console.error("Ошибка при проверке истории заказов:", error)
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:840',message:'Error checking user orders',data:{promoCode:code,error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
+          // #endregion
+          // Не блокируем применение промокода при ошибке загрузки истории
+        }
+      }
+
+      // Проверка once_total: промокод можно использовать только один раз (для всех)
+      if (usageType === "once_total") {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:850',message:'Checking once_total',data:{promoCode:code,timesUsed},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
+        
+        if (timesUsed >= 1) {
+          setAppliedPromo(null)
+          showWarning(
+            "Промокод уже использован",
+            "Этот промокод можно использовать только один раз.",
+            "error"
+          )
+          return
+        }
       }
 
       // Рассчитываем скидку

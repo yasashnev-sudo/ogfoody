@@ -48,6 +48,8 @@ export default function AdminPromoPage() {
     valid_until: "",
     active: true,
     comment: "",
+    min_order_amount: 0,
+    max_discount: 0,
   })
 
   useEffect(() => {
@@ -123,14 +125,16 @@ export default function AdminPromoPage() {
 
     try {
       const promoData: any = {
-        code: formData.code,
-        discount_type: formData.discount_type,
-        discount_value: formData.discount_value,
-        usage_type: formData.usage_type,
-        active: formData.active,
-        valid_from: formData.valid_from || null,
-        valid_until: formData.valid_until || null,
-        comment: formData.comment || null,
+        Code: formData.code,
+        "Discount Type": formData.discount_type,
+        "Discount Value": formData.discount_value,
+        "Usage Type": formData.usage_type,
+        Active: formData.active,
+        "Valid From": formData.valid_from || null,
+        "Valid Until": formData.valid_until || null,
+        Comment: formData.comment || null,
+        "Min Order Amount": formData.min_order_amount > 0 ? formData.min_order_amount : null,
+        "Max Discount": formData.max_discount > 0 ? formData.max_discount : null,
       }
 
       let response
@@ -158,6 +162,8 @@ export default function AdminPromoPage() {
           valid_until: "",
           active: true,
           comment: "",
+          min_order_amount: 0,
+          max_discount: 0,
         })
         setShowForm(false)
         setEditingId(null)
@@ -183,6 +189,8 @@ export default function AdminPromoPage() {
       valid_until: promo["Valid Until"] || promo.valid_until || "",
       active: promo["Active"] || promo.active || false,
       comment: promo["Comment"] || promo.comment || "",
+      min_order_amount: Number(promo["Min Order Amount"] || promo.min_order_amount || 0),
+      max_discount: Number(promo["Max Discount"] || promo.max_discount || 0),
     })
     setShowForm(true)
   }
@@ -493,6 +501,50 @@ export default function AdminPromoPage() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="min_order_amount" className="text-black font-bold">
+                  Минимальная сумма заказа (₽)
+                </Label>
+                <Input
+                  id="min_order_amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.min_order_amount || ""}
+                  onChange={(e) => {
+                    const input = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".")
+                    const value = input === "" ? 0 : parseFloat(input) || 0
+                    setFormData({ ...formData, min_order_amount: value })
+                  }}
+                  className="border-2 border-black rounded-lg shadow-brutal"
+                  placeholder="1000"
+                />
+                <p className="text-sm text-gray-600">
+                  Промокод будет применяться только к заказам на сумму от указанной
+                </p>
+              </div>
+              {formData.discount_type === "percentage" && (
+                <div className="space-y-2">
+                  <Label htmlFor="max_discount" className="text-black font-bold">
+                    Максимальная скидка (₽)
+                  </Label>
+                  <Input
+                    id="max_discount"
+                    type="text"
+                    inputMode="decimal"
+                    value={formData.max_discount || ""}
+                    onChange={(e) => {
+                      const input = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".")
+                      const value = input === "" ? 0 : parseFloat(input) || 0
+                      setFormData({ ...formData, max_discount: value })
+                    }}
+                    className="border-2 border-black rounded-lg shadow-brutal"
+                    placeholder="500"
+                  />
+                  <p className="text-sm text-gray-600">
+                    Максимальная сумма скидки для процентных промокодов
+                  </p>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

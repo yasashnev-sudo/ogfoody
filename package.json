@@ -11,6 +11,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:promo": "tsx test-promo-codes-api.ts",
+    "test:fixes": "tsx scripts/test-all-fixes.ts",
+    "test:fixes:local": "NODE_ENV=development tsx scripts/test-all-fixes.ts",
+    "test:fixes:prod": "NODE_ENV=production API_BASE=https://ogfoody.ru tsx scripts/test-all-fixes.ts",
     "generate-favicons": "node scripts/generate-favicons.js"
   },
   "dependencies": {

@@ -786,19 +786,81 @@ export async function POST(request: Request) {
     
     console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (POST) ==========\n`)
 
-    // ✅ ИСПРАВЛЕНО 2026-01-15: Инкремент счетчика использования промокода при создании заказа
-    if (order.promoCode && nocoOrder?.Id) {
+    // ✅ ИСПРАВЛЕНО 2026-01-15: Инкремент счетчика использования промокода
+    // Инкремент происходит только если заказ сразу оплачен (paid=true)
+    // Если заказ не оплачен, инкремент произойдет при оплате в PATCH
+    // Проверяем наличие Id в разных форматах (поддерживаем оба варианта)
+    const nocoOrderId = nocoOrder?.Id ?? (nocoOrder as any)?.["Id"]
+    const isPaid = order.paid === true || order.paid === "true" || String(order.paid).toLowerCase() === "true"
+    const isPaymentStatusPaid = order.paymentStatus === 'paid' || String(order.paymentStatus).toLowerCase() === 'paid'
+    const shouldIncrement = order.promoCode && nocoOrderId && (isPaid || isPaymentStatusPaid)
+    
+    console.log(`🔍 [POST] Проверка инкремента промокода:`, {
+      hasPromoCode: !!order.promoCode,
+      promoCode: order.promoCode,
+      hasNocoOrder: !!nocoOrder,
+      nocoOrderKeys: nocoOrder ? Object.keys(nocoOrder) : [],
+      hasNocoOrderId: !!nocoOrderId,
+      nocoOrderId: nocoOrderId,
+      paid: order.paid,
+      paidType: typeof order.paid,
+      paidString: String(order.paid),
+      isPaid,
+      paymentStatus: order.paymentStatus,
+      paymentStatusType: typeof order.paymentStatus,
+      paymentStatusString: String(order.paymentStatus),
+      isPaymentStatusPaid,
+      condition1: isPaid,
+      condition2: isPaymentStatusPaid,
+      conditionOr: (isPaid || isPaymentStatusPaid),
+      shouldIncrement,
+    })
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:790',message:'Checking promo increment condition',data:{hasPromoCode:!!order.promoCode,promoCode:order.promoCode,hasNocoOrderId:!!nocoOrder?.Id,nocoOrderId:nocoOrder?.Id,paid:order.paid,paidType:typeof order.paid,paymentStatus:order.paymentStatus,paymentStatusType:typeof order.paymentStatus,conditionResult:order.promoCode && nocoOrder?.Id && (order.paid === true || order.paymentStatus === 'paid')},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
+    if (shouldIncrement) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:793',message:'Incrementing promo code usage at order creation',data:{promoCode:order.promoCode,orderId:nocoOrder.Id,paid:order.paid,paymentStatus:order.paymentStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       try {
         const { fetchPromoCode, incrementPromoCodeUsage } = await import("@/lib/nocodb")
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:797',message:'Calling fetchPromoCode',data:{promoCode:order.promoCode},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         const promo = await fetchPromoCode(order.promoCode)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:799',message:'fetchPromoCode result',data:{promoCode:order.promoCode,found:!!promo,promoId:promo?.Id,promoActive:promo?.Active || promo?.active},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         if (promo) {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:802',message:'Calling incrementPromoCodeUsage',data:{promoCode:order.promoCode,promoId:promo.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+          // #endregion
           await incrementPromoCodeUsage(promo.Id)
-          console.log(`✅ Счетчик промокода "${order.promoCode}" инкрементирован при создании заказа`)
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:805',message:'Promo code usage incremented at creation',data:{promoCode:order.promoCode,promoId:promo.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+          // #endregion
+          console.log(`✅ Счетчик промокода "${order.promoCode}" инкрементирован при создании оплаченного заказа`)
+        } else {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:809',message:'Promo code not found',data:{promoCode:order.promoCode},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
         }
       } catch (error) {
         console.error(`❌ Ошибка при инкременте промокода:`, error)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:813',message:'Error incrementing promo code at creation',data:{promoCode:order.promoCode,error:String(error),errorStack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
         // Не прерываем создание заказа
       }
+    } else if (order.promoCode && nocoOrder?.Id) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:818',message:'Skipping promo increment at creation - order not paid',data:{promoCode:order.promoCode,orderId:nocoOrder.Id,paid:order.paid,paymentStatus:order.paymentStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
+      console.log(`ℹ️ Промокод "${order.promoCode}" будет инкрементирован при оплате заказа`)
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:822',message:'Skipping promo increment - missing data',data:{hasPromoCode:!!order.promoCode,promoCode:order.promoCode,hasNocoOrderId:!!nocoOrder?.Id,nocoOrderId:nocoOrder?.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
     }
 
     // Убеждаемся, что номер заказа есть в ответе - это критично!

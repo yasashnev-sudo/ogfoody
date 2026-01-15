@@ -2476,21 +2476,100 @@ export async function fetchPromoCode(code: string): Promise<NocoDBPromoCode | nu
   // NocoDB API v2 использует заголовки колонок в where-условиях
   // В таблице Promo_Codes колонки code и active имеют заголовки "Code" и "Active"
   // ✅ Используем nocoFetchNoCache чтобы всегда получать свежие данные (без кэша)
+  // ✅ ИСПРАВЛЕНО: Ищем промокод без условия Active, так как промокод может быть неактивен, но нам нужно его найти для инкремента
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2475',message:'fetchPromoCode called',data:{code,codeType:typeof code},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
+  // Экранируем код для безопасности (убираем специальные символы)
+  const escapedCode = String(code).replace(/[()~&|]/g, '')
+  const whereClause = `(Code,eq,${escapedCode})`
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2483',message:'fetchPromoCode query',data:{code,escapedCode,whereClause},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
   const response = await nocoFetchNoCache<NocoDBResponse<NocoDBPromoCode>>("Promo_Codes", {
-    where: `(Code,eq,${code})~and(Active,eq,true)`,
+    where: whereClause,
   })
-  return response.list?.[0] || null
+  const promo = response.list?.[0] || null
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2485',message:'fetchPromoCode result',data:{code,found:!!promo,promoId:promo?.Id,promoCode:promo?.Code || promo?.code,promoActive:promo?.Active || promo?.active,listLength:response.list?.length || 0},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
+  // Проверяем активность только если промокод найден
+  if (promo && (promo.Active === false || promo.active === false)) {
+    console.warn(`⚠️ Промокод ${code} найден, но неактивен`)
+  }
+  return promo
 }
 
 export async function incrementPromoCodeUsage(id: number): Promise<void> {
-  await clientFetch(
-    "Promo_Codes",
-    {},
-    {
-      method: "PATCH",
-      body: JSON.stringify({ Id: id, times_used: { increment: 1 } }),
-    },
-  )
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2491',message:'incrementPromoCodeUsage called',data:{id,idType:typeof id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+  // #endregion
+  // Получаем текущее значение times_used
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2494',message:'Calling fetchPromoCodeById',data:{id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
+  const promo = await fetchPromoCodeById(id)
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2496',message:'fetchPromoCodeById result',data:{id,found:!!promo,promoId:promo?.Id,promoTimesUsed:promo?.times_used,promoTimesUsedTitle:promo?.['Times Used']},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
+  if (!promo) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2498',message:'Promo code not found by ID',data:{id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
+    throw new Error(`Promo code with ID ${id} not found`)
+  }
+  
+  const currentTimesUsed = typeof promo.times_used === 'number' 
+    ? promo.times_used 
+    : typeof promo['Times Used'] === 'number'
+    ? promo['Times Used']
+    : parseInt(String(promo.times_used || promo['Times Used'] || 0))
+  
+  // Увеличиваем на 1
+  const newTimesUsed = currentTimesUsed + 1
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2507',message:'Calculated new times_used',data:{id,currentTimesUsed,newTimesUsed},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+  // #endregion
+  
+  // Обновляем через bulk update (массив)
+  const updateBody = JSON.stringify([{ Id: id, "Times Used": newTimesUsed }])
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2511',message:'Calling clientFetch to update',data:{id,newTimesUsed,updateBody},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+  // #endregion
+  try {
+    await clientFetch(
+      "Promo_Codes",
+      {},
+      {
+        method: "PATCH",
+        body: updateBody,
+      },
+    )
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2522',message:'clientFetch update completed',data:{id,newTimesUsed},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
+  } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2525',message:'clientFetch update error',data:{id,newTimesUsed,error:String(error),errorStack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
+    throw error
+  }
+}
+
+async function fetchPromoCodeById(id: number): Promise<NocoDBPromoCode | null> {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2516',message:'fetchPromoCodeById called',data:{id,idType:typeof id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
+  // Используем nocoFetchNoCache для получения свежих данных
+  const whereClause = `(Id,eq,${id})`
+  const response = await nocoFetchNoCache<NocoDBResponse<NocoDBPromoCode>>("Promo_Codes", {
+    where: whereClause,
+  })
+  const promo = response.list?.[0] || null
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2522',message:'fetchPromoCodeById result',data:{id,found:!!promo,promoId:promo?.Id,promoTimesUsed:promo?.times_used,promoTimesUsedTitle:promo?.['Times Used'],listLength:response.list?.length || 0},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
+  return promo
 }
 
 // === REVIEWS ===

@@ -381,16 +381,42 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH full order) ==========\n`)
           
           // ✅ ИСПРАВЛЕНО 2026-01-15: Инкремент счетчика промокода при оплате заказа (full order)
+          // Инкремент происходит только при первой оплате (если заказ был создан без оплаты)
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:385',message:'Checking promo increment condition (full)',data:{orderId:id,hasPromoCode:!!currentOrder.promo_code,promoCode:currentOrder.promo_code,wasPaid,willBePaid,conditionResult:!wasPaid && willBePaid && currentOrder.promo_code},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+          // #endregion
           if (!wasPaid && willBePaid && currentOrder.promo_code) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:388',message:'Incrementing promo code usage at payment (full)',data:{orderId:id,promoCode:currentOrder.promo_code,wasPaid,willBePaid},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+            // #endregion
             try {
               const { fetchPromoCode, incrementPromoCodeUsage } = await import("@/lib/nocodb")
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:392',message:'Calling fetchPromoCode (full)',data:{promoCode:currentOrder.promo_code},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+              // #endregion
               const promo = await fetchPromoCode(currentOrder.promo_code)
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:394',message:'fetchPromoCode result (full)',data:{promoCode:currentOrder.promo_code,found:!!promo,promoId:promo?.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+              // #endregion
               if (promo) {
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:397',message:'Calling incrementPromoCodeUsage (full)',data:{promoCode:currentOrder.promo_code,promoId:promo.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+                // #endregion
                 await incrementPromoCodeUsage(promo.Id)
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:400',message:'Promo code usage incremented at payment (full)',data:{orderId:id,promoCode:currentOrder.promo_code,promoId:promo.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+                // #endregion
                 console.log(`✅ Счетчик промокода "${currentOrder.promo_code}" инкрементирован при оплате заказа (full order)`)
+              } else {
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:405',message:'Promo code not found (full)',data:{promoCode:currentOrder.promo_code},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
               }
             } catch (error) {
               console.error(`❌ Ошибка при инкременте промокода:`, error)
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:410',message:'Error incrementing promo code at payment (full)',data:{orderId:id,promoCode:currentOrder.promo_code,error:String(error),errorStack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
             }
           }
         } catch (error) {
@@ -1261,16 +1287,42 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========\n`)
         
         // ✅ ИСПРАВЛЕНО 2026-01-15: Инкремент счетчика промокода при оплате заказа (partial)
+        // Инкремент происходит только при первой оплате (если заказ был создан без оплаты)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1275',message:'Checking promo increment condition (partial)',data:{orderId:id,hasPromoCode:!!currentOrder.promo_code,promoCode:currentOrder.promo_code,wasPaid,willBePaid,conditionResult:!wasPaid && willBePaid && currentOrder.promo_code},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
         if (!wasPaid && willBePaid && currentOrder.promo_code) {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1278',message:'Incrementing promo code usage at payment (partial)',data:{orderId:id,promoCode:currentOrder.promo_code,wasPaid,willBePaid},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H2'})}).catch(()=>{});
+          // #endregion
           try {
             const { fetchPromoCode, incrementPromoCodeUsage } = await import("@/lib/nocodb")
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1282',message:'Calling fetchPromoCode (partial)',data:{promoCode:currentOrder.promo_code},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+            // #endregion
             const promo = await fetchPromoCode(currentOrder.promo_code)
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1284',message:'fetchPromoCode result (partial)',data:{promoCode:currentOrder.promo_code,found:!!promo,promoId:promo?.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+            // #endregion
             if (promo) {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1287',message:'Calling incrementPromoCodeUsage (partial)',data:{promoCode:currentOrder.promo_code,promoId:promo.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
               await incrementPromoCodeUsage(promo.Id)
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1290',message:'Promo code usage incremented at payment (partial)',data:{orderId:id,promoCode:currentOrder.promo_code,promoId:promo.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
               console.log(`✅ Счетчик промокода "${currentOrder.promo_code}" инкрементирован при оплате заказа (partial)`)
+            } else {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1295',message:'Promo code not found (partial)',data:{promoCode:currentOrder.promo_code},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H1'})}).catch(()=>{});
+              // #endregion
             }
           } catch (error) {
             console.error(`❌ Ошибка при инкременте промокода:`, error)
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1299',message:'Error incrementing promo code at payment (partial)',data:{orderId:id,promoCode:currentOrder.promo_code,error:String(error),errorStack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H3'})}).catch(()=>{});
+            // #endregion
           }
         }
         }
