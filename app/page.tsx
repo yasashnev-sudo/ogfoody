@@ -334,6 +334,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     title: string
     description: string
     variant?: "warning" | "error" | "info"
+    buttonText?: string
     onConfirm?: () => void
   }>({
     open: false,
@@ -342,13 +343,14 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     variant: "warning",
   })
   
-  const showWarning = (title: string, description: string, variant: "warning" | "error" | "info" = "warning", onConfirm?: () => void) => {
+  const showWarning = (title: string, description: string, variant: "warning" | "error" | "info" = "warning", onConfirm?: () => void, buttonText?: string) => {
     setWarningDialog({
       open: true,
       title,
       description,
       variant,
       onConfirm,
+      buttonText,
     })
   }
   
@@ -729,7 +731,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           "warning",
           () => {
             setSelectedDate(sunday)
-          }
+          },
+          "ОК"
         )
         return
       } else {
@@ -3676,6 +3679,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         title={warningDialog.title}
         description={warningDialog.description}
         variant={warningDialog.variant}
+        buttonText={warningDialog.buttonText}
       />
 
       {/* ✅ ИСПРАВЛЕНО 2026-01-14: Диалог подтверждения отмены заказа с кнопками Да/Нет */}

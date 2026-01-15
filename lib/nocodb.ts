@@ -2422,7 +2422,8 @@ export interface NocoDBPromoCode {
 export async function fetchPromoCode(code: string): Promise<NocoDBPromoCode | null> {
   // NocoDB API v2 использует заголовки колонок в where-условиях
   // В таблице Promo_Codes колонки code и active имеют заголовки "Code" и "Active"
-  const response = await nocoFetch<NocoDBResponse<NocoDBPromoCode>>("Promo_Codes", {
+  // ✅ Используем nocoFetchNoCache чтобы всегда получать свежие данные (без кэша)
+  const response = await nocoFetchNoCache<NocoDBResponse<NocoDBPromoCode>>("Promo_Codes", {
     where: `(Code,eq,${code})~and(Active,eq,true)`,
   })
   return response.list?.[0] || null
