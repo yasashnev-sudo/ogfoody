@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Gift, Plus, Edit, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
 interface PromoCode {
   Id: number
@@ -26,6 +27,8 @@ interface PromoCode {
   valid_until?: string
   "Active"?: boolean
   active?: boolean
+  "Comment"?: string
+  comment?: string
 }
 
 export default function AdminPromoPage() {
@@ -44,6 +47,7 @@ export default function AdminPromoPage() {
     valid_from: "",
     valid_until: "",
     active: true,
+    comment: "",
   })
 
   useEffect(() => {
@@ -126,6 +130,7 @@ export default function AdminPromoPage() {
         active: formData.active,
         valid_from: formData.valid_from || null,
         valid_until: formData.valid_until || null,
+        comment: formData.comment || null,
       }
 
       let response
@@ -152,6 +157,7 @@ export default function AdminPromoPage() {
           valid_from: "",
           valid_until: "",
           active: true,
+          comment: "",
         })
         setShowForm(false)
         setEditingId(null)
@@ -176,6 +182,7 @@ export default function AdminPromoPage() {
       valid_from: promo["Valid From"] || promo.valid_from || "",
       valid_until: promo["Valid Until"] || promo.valid_until || "",
       active: promo["Active"] || promo.active || false,
+      comment: promo["Comment"] || promo.comment || "",
     })
     setShowForm(true)
   }
@@ -218,6 +225,7 @@ export default function AdminPromoPage() {
       valid_from: "",
       valid_until: "",
       active: true,
+      comment: "",
     })
   }
 
@@ -283,6 +291,7 @@ export default function AdminPromoPage() {
               valid_from: "",
               valid_until: "",
               active: true,
+              comment: "",
             })
             setShowForm(true)
           }}
@@ -334,6 +343,7 @@ export default function AdminPromoPage() {
             const usageType = promo["Usage Type"] || promo.usage_type || "unlimited"
             const validFrom = promo["Valid From"] || promo.valid_from || ""
             const validUntil = promo["Valid Until"] || promo.valid_until || ""
+            const comment = promo["Comment"] || promo.comment || ""
             const status = getStatusLabel(promo)
 
             return (
@@ -355,7 +365,7 @@ export default function AdminPromoPage() {
                         {status}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
                       <div>
                         <p className="text-black/70 mb-1">Скидка</p>
                         <p className="font-black text-black text-lg">
@@ -379,6 +389,12 @@ export default function AdminPromoPage() {
                         </p>
                       </div>
                     </div>
+                    {comment && (
+                      <div className="mt-3 p-3 bg-gray-50 border-2 border-black rounded-lg">
+                        <p className="text-xs text-black/70 font-bold mb-1">Комментарий:</p>
+                        <p className="text-sm text-black font-medium">{comment}</p>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -521,6 +537,18 @@ export default function AdminPromoPage() {
                   <SelectItem value="once_total">Всего один раз (для всех)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="comment" className="text-black font-bold">
+                Комментарий
+              </Label>
+              <Textarea
+                id="comment"
+                value={formData.comment}
+                onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                className="border-2 border-black rounded-lg shadow-brutal min-h-[100px]"
+                placeholder="Введите комментарий к промокоду (необязательно)..."
+              />
             </div>
             <div className="flex gap-2">
               <Button
