@@ -905,11 +905,44 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               }
             }
             
+            // ✅ ИСПРАВЛЕНО: Проверяем, что orderTotal учитывает промокод
+            // Если total уже установлен, но не учитывает промокод, пересчитываем
+            if (orderTotal > 0) {
+              const promoDiscount = typeof currentOrder.promo_discount === 'number'
+                ? currentOrder.promo_discount
+                : typeof (currentOrder as any)['Promo Discount'] === 'number'
+                ? (currentOrder as any)['Promo Discount']
+                : parseFloat(String(currentOrder.promo_discount || (currentOrder as any)['Promo Discount'] || 0)) || 0
+              
+              // Если промокод есть, но total не учитывает его, пересчитываем
+              if (promoDiscount > 0) {
+                const subtotal = typeof currentOrder.subtotal === 'number'
+                  ? currentOrder.subtotal
+                  : typeof (currentOrder as any).Subtotal === 'number'
+                  ? (currentOrder as any).Subtotal
+                  : parseFloat(String(currentOrder.subtotal || (currentOrder as any).Subtotal || 0)) || 0
+                
+                const deliveryFee = typeof currentOrder.delivery_fee === 'number'
+                  ? currentOrder.delivery_fee
+                  : typeof (currentOrder as any)['Delivery Fee'] === 'number'
+                  ? (currentOrder as any)['Delivery Fee']
+                  : parseFloat(String(currentOrder.delivery_fee || (currentOrder as any)['Delivery Fee'] || 0)) || 0
+                
+                const expectedTotal = subtotal + deliveryFee - promoDiscount
+                // Если текущий total не совпадает с ожидаемым (с учетом промокода), используем ожидаемый
+                if (Math.abs(orderTotal - expectedTotal) > 0.01) {
+                  console.log(`⚠️ orderTotal не учитывает промокод, пересчитываем: ${orderTotal} → ${expectedTotal}`)
+                  orderTotal = expectedTotal
+                }
+              }
+            }
+            
             console.log(`🔍 [PATCH partial ${id}] 3️⃣ Расчет orderTotal:`, {
               'currentOrder.total': currentOrder.total,
               'currentOrder.Total': (currentOrder as any).Total,
               'currentOrder.subtotal': currentOrder.subtotal,
               'currentOrder.delivery_fee': currentOrder.delivery_fee,
+              'currentOrder.promo_discount': currentOrder.promo_discount || (currentOrder as any)['Promo Discount'],
               'calculated orderTotal': orderTotal,
             })
             
