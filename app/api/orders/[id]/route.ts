@@ -307,14 +307,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ: Баллы уже начислены для заказа ${id}: ${existingPointsEarned}. Пропускаем начисление.`)
             loyaltyPointsEarned = existingPointsEarned
           } else if (isPaymentMethodChangedFromCash) {
-            // ✅ НОВАЯ ЗАЩИТА: Если заказ был за наличные и меняется на карту/СБП,
-            // НЕ начисляем новые баллы, а только обрабатываем pending транзакции ниже
+            // ✅ ИСПРАВЛЕНО: Если заказ был за наличные и меняется на карту/СБП,
+            // обрабатываем pending транзакции ниже, а если их нет - начислим баллы как при обычной оплате
             console.log(`🔍 [PATCH ${id}] 3️⃣ Смена способа оплаты с наличных:`, {
               oldPaymentMethod,
               newPaymentMethod: order.paymentMethod,
             })
-            console.log(`💳 Заказ ${id}: способ оплаты изменен с наличных на ${order.paymentMethod}. Pending транзакции будут обработаны ниже, новые баллы НЕ начисляем.`)
-            loyaltyPointsEarned = 0
+            console.log(`💳 Заказ ${id}: способ оплаты изменен с наличных на ${order.paymentMethod}. Pending транзакции будут обработаны ниже.`)
+            // ✅ ИСПРАВЛЕНО: Не устанавливаем loyaltyPointsEarned = 0, чтобы можно было начислить баллы ниже, если pending транзакций не было
+            loyaltyPointsEarned = undefined // Пока не знаем, будут ли pending транзакции
           } else {
             console.log(`🔍 [PATCH ${id}] 4️⃣ Загрузка пользователя для расчета баллов`)
             const user = await fetchUserById(currentOrder.user_id)
@@ -434,7 +435,38 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             console.log(`✅ Pending транзакции обработаны, начислено ${pendingPointsEarned} баллов`)
             loyaltyPointsEarned = pendingPointsEarned // Используем баллы из pending транзакции
           } else {
-            console.log(`✅ Pending транзакции обработаны, баллов не было`)
+            console.log(`ℹ️ Pending транзакции обработаны, баллов не было`)
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если pending транзакций не было, но заказ оплачен онлайн,
+            // нужно начислить баллы как при обычной оплате онлайн
+            console.log(`💡 Pending транзакций не было, но заказ оплачен онлайн - начисляем баллы как при обычной оплате`)
+            if (order.paid && (order.paymentMethod === 'card' || order.paymentMethod === 'sbp')) {
+              try {
+                const user = await fetchUserById(currentOrder.user_id, true)
+                if (user) {
+                  const orderTotal = order.total || (typeof currentOrder.total === 'number' 
+                    ? currentOrder.total 
+                    : parseFloat(String(currentOrder.total)) || 0)
+                  // ✅ ИСПРАВЛЕНО: Учитываем промокод при расчете orderTotal
+                  const promoDiscount = order.promoDiscount || 0
+                  let orderTotalForPoints = orderTotal
+                  if (promoDiscount > 0 && orderTotal > 0) {
+                    const subtotal = order.subtotal || (typeof currentOrder.subtotal === 'number' ? currentOrder.subtotal : parseFloat(String(currentOrder.subtotal)) || 0)
+                    const deliveryFee = order.deliveryFee || (typeof currentOrder.delivery_fee === 'number' ? currentOrder.delivery_fee : parseFloat(String(currentOrder.delivery_fee)) || 0)
+                    const expectedTotal = subtotal + deliveryFee - promoDiscount
+                    if (Math.abs(orderTotal - expectedTotal) > 0.01) {
+                      console.log(`⚠️ [PATCH full] orderTotal не учитывает промокод, пересчитываем для начисления баллов: ${orderTotal} → ${expectedTotal}`)
+                      orderTotalForPoints = expectedTotal
+                    }
+                  }
+                  const pointsUsed = order.loyaltyPointsUsed || 0
+                  const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
+                  loyaltyPointsEarned = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)
+                  console.log(`💰 [PATCH full] Рассчитано ${loyaltyPointsEarned} баллов для заказа ${id} (orderTotal: ${orderTotalForPoints}, promoDiscount: ${promoDiscount})`)
+                }
+              } catch (error) {
+                console.error(`❌ Ошибка при расчете баллов для заказа ${id}:`, error)
+              }
+            }
           }
         } catch (error) {
           console.error(`❌ Ошибка при обработке pending транзакций для заказа ${id}:`, error)
