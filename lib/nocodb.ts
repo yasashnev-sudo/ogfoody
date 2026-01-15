@@ -1203,40 +1203,35 @@ export async function awardLoyaltyPoints(
     console.log(`✅ Транзакция "earned" создана: +${earnedPoints} баллов`)
   }
 
-  // Обновляем total_spent и loyalty_points
+  // Обновляем total_spent
   const newTotalSpent = currentTotalSpent + orderTotal - pointsUsed
-  
-  // Вычисляем новый баланс: текущий баланс + начислено - использовано
-  const currentBalance = typeof user.loyalty_points === 'number' 
-    ? user.loyalty_points 
-    : parseFloat(String(user.loyalty_points)) || 0
-  const newBalance = currentBalance + earnedPoints - pointsUsed
 
-  console.log(`💳 Обновление баланса:`, {
-    currentBalance,
-    earnedPoints,
-    pointsUsed,
-    newBalance,
-    calculation: `${currentBalance} + ${earnedPoints} - ${pointsUsed} = ${newBalance}`,
+  console.log(`💳 Обновление total_spent:`, {
     currentTotalSpent,
     orderTotal,
+    pointsUsed,
     newTotalSpent,
     calculation_totalSpent: `${currentTotalSpent} + ${orderTotal} - ${pointsUsed} = ${newTotalSpent}`,
   })
 
-  // Обновляем и total_spent и loyalty_points!
-  console.log(`📝 [awardLoyaltyPoints] Обновляем пользователя ${userId}:`, {
-    total_spent: newTotalSpent,
-    loyalty_points: newBalance,
-  })
-  
+  // ✅ КРИТИЧНО: Обновляем total_spent в БД
   await updateUser(userId, {
     total_spent: newTotalSpent,
-    loyalty_points: newBalance,
     updated_at: now,
   })
   
-  console.log(`✅ [awardLoyaltyPoints] Пользователь ${userId} обновлен в БД`)
+  console.log(`✅ [awardLoyaltyPoints] total_spent обновлен в БД: ${newTotalSpent}`)
+
+  // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций (единственный источник правды)
+  const recalculatedBalance = await calculateUserBalance(userId, true)
+  console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
+  
+  // Обновляем баланс в БД на основе пересчитанного значения
+  await updateUser(userId, {
+    loyalty_points: recalculatedBalance,
+    updated_at: now,
+  })
+  console.log(`✅ Баланс обновлен в БД: ${recalculatedBalance} баллов`)
 
   // Возвращаем пользователя с актуальным балансом
   const updatedUser = await fetchUserById(userId, true) // noCache для свежих данных
