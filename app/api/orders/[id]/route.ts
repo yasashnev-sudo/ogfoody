@@ -587,6 +587,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       // Это обычно используется для обновления только статуса оплаты
       // Преобразуем camelCase в snake_case для NocoDB
       const updateData: any = {}
+      // ✅ ИСПРАВЛЕНО: Обрабатываем как body.paid, так и body.order.paid
+      if (body.order) {
+        if (body.order.paid !== undefined) updateData.paid = body.order.paid
+        if (body.order.paidAt !== undefined) updateData.paid_at = body.order.paidAt
+        if (body.order.paymentMethod !== undefined) updateData.payment_method = body.order.paymentMethod
+        if (body.order.paymentStatus !== undefined) updateData.payment_status = body.order.paymentStatus
+        if (body.order.promoCode !== undefined) updateData.promo_code = body.order.promoCode
+        if (body.order.promoDiscount !== undefined) updateData.promo_discount = body.order.promoDiscount
+        if (body.order.loyaltyPointsUsed !== undefined) updateData.loyalty_points_used = body.order.loyaltyPointsUsed
+      }
       if (body.paid !== undefined) updateData.paid = body.paid
       if (body.paid_at !== undefined) updateData.paid_at = body.paid_at
       if (body.paidAt !== undefined) updateData.paid_at = body.paidAt
@@ -672,8 +682,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
 
       // Проверяем изменения статуса оплаты для обработки баллов
+      // ✅ ИСПРАВЛЕНО: Проверяем также body.order для случая, когда передается объект order
       const wasPaid = currentOrder.paid === true || currentOrder.payment_status === "paid"
-      const willBePaid = updateData.paid === true || updateData.payment_status === "paid"
+      const willBePaid = updateData.paid === true || updateData.payment_status === "paid" || 
+                        (body.order && (body.order.paid === true || body.order.paymentStatus === "paid"))
       const willBeCancelled = body.orderStatus === "cancelled" || body.order_status === "cancelled"
       const wasCancelled = currentOrder.order_status === "cancelled"
 
@@ -1015,11 +1027,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                 console.log(`ℹ️ PATCH ${id}: Баллы не начислены - рассчитано 0 баллов`)
               }
             }
+          } else {
+            console.warn(`⚠️ PATCH ${id}: Пользователь не найден для начисления баллов (user_id: ${currentOrder.user_id})`)
           }
         } catch (error) {
           console.error(`❌ Ошибка при начислении баллов при оплате:`, error)
+          // ✅ ИСПРАВЛЕНО: Не прерываем процесс обновления заказа из-за ошибки начисления баллов
+          // Но логируем ошибку для отладки
         }
         console.log(`🔍 ========== КОНЕЦ ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial) ==========\n`)
+      } else {
+        // ✅ ДОБАВЛЕНО: Логируем, почему баллы не начисляются
+        console.log(`ℹ️ PATCH ${id}: Баллы не начисляются, причина:`, {
+          wasPaid,
+          willBePaid,
+          hasUserId: !!currentOrder.user_id,
+          pendingPointsEarned,
+          existingPointsEarnedPartial,
+          reason: !wasPaid && willBePaid && currentOrder.user_id && pendingPointsEarned === 0 && existingPointsEarnedPartial === 0
+            ? 'Условие выполнено, но не вошли в блок'
+            : !wasPaid && willBePaid
+            ? 'Условие оплаты выполнено'
+            : !currentOrder.user_id
+            ? 'Нет user_id'
+            : pendingPointsEarned > 0
+            ? `Есть pending транзакции: ${pendingPointsEarned}`
+            : existingPointsEarnedPartial > 0
+            ? `Баллы уже начислены: ${existingPointsEarnedPartial}`
+            : 'Неизвестная причина'
+        })
       }
 
       // Добавляем order_status в updateData, если он указан
