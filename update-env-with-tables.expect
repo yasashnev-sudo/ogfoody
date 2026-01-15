@@ -1,0 +1,29 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+
+spawn ssh root@5.129.194.168
+
+expect {
+    "password:" {
+        send "pULRoAvF@P-@4Y\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "root@" {
+        send "cd /var/www/ogfoody\r"
+        expect "root@"
+        
+        send "echo '=== Getting all tables ==='\r"
+        expect "root@"
+        send "export \$(cat .env.production | grep -v '^#' | xargs) && curl -s -H \"xc-token: \$NOCODB_TOKEN\" \"\$NOCODB_URL/api/v2/meta/bases/p9id5v4q0ukk9iz/tables\" | node -e \"const data=require('fs').readFileSync(0,'utf-8'); const tables=JSON.parse(data).list; tables.forEach(t=>{if(t.table_name.includes('essage')||t.table_name.includes('essage')||t.title.includes('essage')||t.title.includes('essage')){console.log('Messages:',t.id,'-',t.table_name,'-',t.title);}if(t.table_name.includes('ush')||t.table_name.includes('otif')||t.title.includes('ush')||t.title.includes('otif')){console.log('Notifications:',t.id,'-',t.table_name,'-',t.title);}});\"\r"
+        expect "root@"
+        
+        send "exit\r"
+    }
+}
+
+expect eof
