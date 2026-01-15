@@ -242,8 +242,13 @@ export function DebugConsole({
             )}
           </button>
           <p className="text-xs text-gray-500 text-center mt-2">
-            Отчёт включает: скриншот + последние 20 логов
+            Отчёт включает: последние {Math.min(logs.length, 50)} логов
             {comment && ' + твой комментарий'}
+            {!isLoggingEnabled && logs.length > 0 && (
+              <span className="block mt-1 text-blue-600 font-medium">
+                💡 Запись выключена, но {logs.length} накопленных логов будут отправлены
+              </span>
+            )}
           </p>
         </div>
       </div>
