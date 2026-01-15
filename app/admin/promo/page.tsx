@@ -180,26 +180,30 @@ export default function AdminPromoPage() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Вы уверены, что хотите деактивировать этот промокод?")) {
+  const handleToggleActive = async (promo: PromoCode) => {
+    const isActive = promo["Active"] || promo.active || false
+    const action = isActive ? "деактивировать" : "активировать"
+    
+    if (!confirm(`Вы уверены, что хотите ${action} этот промокод?`)) {
       return
     }
 
     try {
-      const response = await fetch(`/api/admin/promo/${id}`, {
-        method: "DELETE",
+      const response = await fetch("/api/db/Promo_Codes/records", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([{ Id: promo.Id, active: !isActive }]),
       })
 
       if (response.ok) {
         loadPromoCodes()
       } else {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-        alert(`Ошибка деактивации: ${errorData.error || response.statusText}`)
+        alert(`Ошибка: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
-      console.error("Ошибка деактивации промокода:", error)
-      alert("Произошла ошибка при деактивации промокода")
+      console.error("Ошибка изменения статуса промокода:", error)
+      alert("Произошла ошибка при изменении статуса промокода")
     }
   }
 
@@ -385,15 +389,18 @@ export default function AdminPromoPage() {
                       <Edit className="w-4 h-4 mr-2" />
                       Редактировать
                     </Button>
-                    {(promo["Active"] || promo.active) && (
-                      <Button
-                        onClick={() => handleDelete(promo.Id)}
-                        variant="outline"
-                        className="border-2 border-red-500 text-red-500 shadow-brutal hover:bg-red-50"
-                      >
-                        Деактивировать
-                      </Button>
-                    )}
+                    <Button
+                      onClick={() => handleToggleActive(promo)}
+                      variant="outline"
+                      className={cn(
+                        "shadow-brutal brutal-hover",
+                        (promo["Active"] || promo.active)
+                          ? "border-2 border-red-500 text-red-500 hover:bg-red-50"
+                          : "border-2 border-green-500 text-green-500 hover:bg-green-50"
+                      )}
+                    >
+                      {(promo["Active"] || promo.active) ? "Деактивировать" : "Активировать"}
+                    </Button>
                   </div>
                 </div>
               </Card>
