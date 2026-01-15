@@ -14,16 +14,14 @@ interface PromoCode {
   code?: string
   "Discount Type"?: string
   discount_type?: string
-  "Discount Percent"?: number
-  discount_percent?: number
-  "Discount Rubles"?: number
-  discount_rubles?: number
+  "Discount Value"?: number
+  discount_value?: number
   "Valid From"?: string
   valid_from?: string
   "Valid Until"?: string
   valid_until?: string
-  "Is Active"?: boolean
-  is_active?: boolean
+  "Active"?: boolean
+  active?: boolean
 }
 
 export default function AdminPromoPage() {
@@ -32,12 +30,11 @@ export default function AdminPromoPage() {
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     code: "",
-    discount_type: "percent" as "percent" | "rubles",
-    discount_percent: 0,
-    discount_rubles: 0,
+    discount_type: "percentage" as "percentage" | "fixed",
+    discount_value: 0,
     valid_from: "",
     valid_until: "",
-    is_active: true,
+    active: true,
   })
 
   useEffect(() => {
@@ -60,21 +57,14 @@ export default function AdminPromoPage() {
     e.preventDefault()
 
     try {
-      // Формируем данные для отправки в зависимости от типа скидки
+      // Формируем данные для отправки
       const promoData: any = {
         code: formData.code,
         discount_type: formData.discount_type,
-        is_active: formData.is_active,
+        discount_value: formData.discount_value,
+        active: formData.active,
         valid_from: formData.valid_from || null,
         valid_until: formData.valid_until || null,
-      }
-
-      if (formData.discount_type === "percent") {
-        promoData.discount_percent = formData.discount_percent
-        promoData.discount_rubles = 0
-      } else {
-        promoData.discount_rubles = formData.discount_rubles
-        promoData.discount_percent = 0
       }
 
       const response = await fetch("/api/db/Promo_Codes/records", {
@@ -86,12 +76,11 @@ export default function AdminPromoPage() {
       if (response.ok) {
         setFormData({
           code: "",
-          discount_type: "percent",
-          discount_percent: 0,
-          discount_rubles: 0,
+          discount_type: "percentage",
+          discount_value: 0,
           valid_from: "",
           valid_until: "",
-          is_active: true,
+          active: true,
         })
         setShowForm(false)
         loadPromoCodes()
@@ -153,39 +142,37 @@ export default function AdminPromoPage() {
                 </Label>
                 <Select
                   value={formData.discount_type}
-                  onValueChange={(value: "percent" | "rubles") => 
-                    setFormData({ ...formData, discount_type: value })
+                  onValueChange={(value: "percentage" | "fixed") => 
+                    setFormData({ ...formData, discount_type: value, discount_value: 0 })
                   }
                 >
                   <SelectTrigger className="border-2 border-black rounded-lg shadow-brutal">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percent">Процент (%)</SelectItem>
-                    <SelectItem value="rubles">Рубли (₽)</SelectItem>
+                    <SelectItem value="percentage">Процент (%)</SelectItem>
+                    <SelectItem value="fixed">Рубли (₽)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label 
-                  htmlFor={formData.discount_type === "percent" ? "discount_percent" : "discount_rubles"} 
+                  htmlFor="discount_value" 
                   className="text-black font-bold"
                 >
-                  {formData.discount_type === "percent" ? "Скидка (%)" : "Скидка (₽)"}
+                  {formData.discount_type === "percentage" ? "Скидка (%)" : "Скидка (₽)"}
                 </Label>
                 <Input
-                  id={formData.discount_type === "percent" ? "discount_percent" : "discount_rubles"}
+                  id="discount_value"
                   type="number"
                   min="1"
-                  max={formData.discount_type === "percent" ? "100" : undefined}
-                  value={formData.discount_type === "percent" ? formData.discount_percent : formData.discount_rubles}
+                  max={formData.discount_type === "percentage" ? "100" : undefined}
+                  value={formData.discount_value}
                   onChange={(e) => {
-                    const value = parseInt(e.target.value) || 0
-                    if (formData.discount_type === "percent") {
-                      setFormData({ ...formData, discount_percent: value })
-                    } else {
-                      setFormData({ ...formData, discount_rubles: value })
-                    }
+                    const value = formData.discount_type === "percentage" 
+                      ? parseInt(e.target.value) || 0
+                      : parseFloat(e.target.value) || 0
+                    setFormData({ ...formData, discount_value: value })
                   }}
                   className="border-2 border-black rounded-lg shadow-brutal"
                   required
@@ -248,14 +235,11 @@ export default function AdminPromoPage() {
         ) : (
           promoCodes.map((promo) => {
             const code = promo["Code"] || promo.code || ""
-            const discountPercent = promo["Discount Percent"] || promo.discount_percent || 0
-            const discountRubles = promo["Discount Rubles"] || promo.discount_rubles || 0
-            const discountType = promo["Discount Type"] || promo.discount_type || "percent"
+            const discountType = promo["Discount Type"] || promo.discount_type || "percentage"
+            const discountValue = promo["Discount Value"] || promo.discount_value || 0
             const validFrom = promo["Valid From"] || promo.valid_from || ""
             const validUntil = promo["Valid Until"] || promo.valid_until || ""
-            const isActive = promo["Is Active"] || promo.is_active || false
-            
-            const discount = discountType === "rubles" ? discountRubles : discountPercent
+            const isActive = promo["Active"] || promo.active || false
 
             const isValid = () => {
               if (!isActive) return false
@@ -291,7 +275,7 @@ export default function AdminPromoPage() {
 
                 <h3 className="text-2xl font-black text-black mb-2">{code}</h3>
                 <p className="text-3xl font-black text-[#9D00FF] mb-4">
-                  -{discount}{discountType === "rubles" ? "₽" : "%"}
+                  -{discountValue}{discountType === "fixed" ? "₽" : "%"}
                 </p>
 
                 <div className="space-y-1 text-sm text-black/70 mb-4">
