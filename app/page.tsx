@@ -2963,9 +2963,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         setShowOrderLoading(false)
         
         // Показываем модалку оплаты с обновленной суммой
+        // ✅ ИСПРАВЛЕНО: Учитываем промокод при расчете total для PaymentModal
+        const promoDiscount = pendingCheckout.order.promoDiscount || 0
+        const totalForPayment = (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee - promoDiscount
         setPaymentOrder({ 
           order: updatedOrder, 
-          total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee,
+          total: totalForPayment,
           isNewOrder: true // ✅ Помечаем как новый заказ для удаления при отмене
         })
         
@@ -2982,9 +2985,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setShowOrderLoading(false)
       
       // Показываем модалку оплаты с обновленной суммой
+      // ✅ ИСПРАВЛЕНО: Учитываем промокод при расчете total для PaymentModal
+      const promoDiscount = pendingCheckout.order.promoDiscount || 0
+      const totalForPayment = (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee - promoDiscount
       setPaymentOrder({ 
         order: updatedOrder, 
-        total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee,
+        total: totalForPayment,
         isNewOrder: true // ✅ Помечаем как новый заказ для удаления при отмене
       })
       
