@@ -1365,6 +1365,17 @@ export async function refundLoyaltyPoints(
 
   console.log(`✅ total_spent откачен: ${currentTotalSpent} → ${newTotalSpent}`)
 
+  // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций и обновляем в БД
+  const recalculatedBalance = await calculateUserBalance(userId, true)
+  console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
+  
+  // Обновляем баланс в БД на основе пересчитанного значения
+  await updateUser(userId, {
+    loyalty_points: recalculatedBalance,
+    updated_at: now,
+  })
+  console.log(`✅ Баланс обновлен в БД: ${recalculatedBalance} баллов`)
+
   // Возвращаем пользователя с актуальным балансом (пересчитанным из транзакций)
   const updatedUser = await fetchUserById(userId, true) // noCache для свежих данных
   if (!updatedUser) {
