@@ -32,6 +32,10 @@ interface OrderDetailModalProps {
     delivery_address?: string
     "Delivery Time"?: string
     delivery_time?: string
+    "Promo Code"?: string
+    promo_code?: string
+    "Promo Discount"?: number
+    promo_discount?: number
     "Created At"?: string
     created_at?: string
   } | null
@@ -47,6 +51,8 @@ export function OrderDetailModal({ open, onClose, order }: OrderDetailModalProps
   const total = order["Total"] || order.total || 0
   const subtotal = order["Subtotal"] || order.subtotal || total
   const deliveryFee = order["Delivery Fee"] || order.delivery_fee || 0
+  const promoCode = order["Promo Code"] || order.promo_code
+  const promoDiscount = order["Promo Discount"] || order.promo_discount || 0
   const address = order["Delivery Address"] || order.delivery_address || "Не указан"
   const deliveryTime = order["Delivery Time"] || order.delivery_time || "Не указано"
   const date = order["Start Date"] || order.start_date || order["Created At"] || order.created_at || ""
@@ -185,6 +191,12 @@ export function OrderDetailModal({ open, onClose, order }: OrderDetailModalProps
                 <div className="flex justify-between items-center">
                   <span className="text-black/70 font-medium">Доставка:</span>
                   <span className="font-black text-black">{deliveryFee}₽</span>
+                </div>
+              )}
+              {promoCode && promoDiscount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-black/70 font-medium">Промокод {promoCode}:</span>
+                  <span className="font-black text-[#9D00FF]">-{promoDiscount}₽</span>
                 </div>
               )}
               <div className="border-t-2 border-black pt-2 mt-2">

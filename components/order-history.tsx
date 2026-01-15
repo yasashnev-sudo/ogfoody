@@ -508,7 +508,7 @@ export function OrderHistory({
               </div>
               
               {/* Информация об оплате, доставке и баллах */}
-              {(order.paid || (order.loyaltyPointsUsed && order.loyaltyPointsUsed > 0) || (order.loyaltyPointsEarned && order.loyaltyPointsEarned > 0) || (order.deliveryFee !== undefined && order.deliveryFee !== null)) && (
+              {(order.paid || (order.loyaltyPointsUsed && order.loyaltyPointsUsed > 0) || (order.loyaltyPointsEarned && order.loyaltyPointsEarned > 0) || (order.deliveryFee !== undefined && order.deliveryFee !== null) || (order.promoCode && order.promoDiscount !== undefined && order.promoDiscount > 0)) && (
                 <div className="bg-purple-50 rounded-lg p-2 border border-black mb-2 text-[11px] space-y-1">
                   {order.paid && (
                     <div className="flex items-center gap-1">
@@ -526,6 +526,14 @@ export function OrderHistory({
                       <span className="text-orange-700">🚚 Доставка:</span>
                       <span className="font-black text-orange-700">
                         {order.deliveryFee > 0 ? `+${order.deliveryFee}₽` : 'Бесплатно'}
+                      </span>
+                    </div>
+                  )}
+                  {order.promoCode && order.promoDiscount !== undefined && order.promoDiscount > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#9D00FF]">🏷️ Промокод {order.promoCode}:</span>
+                      <span className="font-black text-[#9D00FF]">
+                        -{order.promoDiscount}₽
                       </span>
                     </div>
                   )}

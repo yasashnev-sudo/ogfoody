@@ -1045,7 +1045,7 @@ export function OrderModal({
                 )}
 
                 {/* Информация о заказе */}
-                {existingOrder && (existingOrder.paid || existingOrder.total !== undefined) && (
+                {existingOrder && (existingOrder.paid || existingOrder.total !== undefined || (existingOrder.promoCode && existingOrder.promoDiscount !== undefined && existingOrder.promoDiscount > 0)) && (
                   <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
                     <h3 className="font-bold text-purple-900 dark:text-purple-300 mb-3 flex items-center gap-2">
                       <Receipt className="w-5 h-5" />
@@ -1069,6 +1069,18 @@ export function OrderModal({
                           </span>
                           <span className="font-bold text-orange-700 dark:text-orange-400">
                             {existingOrder.deliveryFee > 0 ? `+${existingOrder.deliveryFee.toLocaleString()} ₽` : 'Бесплатно'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {existingOrder.promoCode && existingOrder.promoDiscount !== undefined && existingOrder.promoDiscount > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#9D00FF] dark:text-purple-400 flex items-center gap-1">
+                            <Tag className="w-4 h-4" />
+                            Промокод {existingOrder.promoCode}:
+                          </span>
+                          <span className="font-bold text-[#9D00FF] dark:text-purple-400">
+                            -{existingOrder.promoDiscount.toLocaleString()} ₽
                           </span>
                         </div>
                       )}
