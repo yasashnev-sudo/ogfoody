@@ -48,6 +48,7 @@ export default function AdminPromoPage() {
 
   const loadPromoCodes = async () => {
     try {
+      // Загружаем все промокоды (включая деактивированные для отображения)
       const response = await fetch("/api/db/Promo_Codes/records?limit=1000")
       const data = await response.json()
       setPromoCodes(data.list || [])
