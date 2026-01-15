@@ -228,6 +228,7 @@ export function OrderModal({
     title: string
     description: string
     variant?: "warning" | "error" | "info"
+    buttonText?: string
   }>({
     open: false,
     title: "",
@@ -240,12 +241,13 @@ export function OrderModal({
 
   const { toast } = useToast()
   
-  const showWarning = (title: string, description: string, variant: "warning" | "error" | "info" = "error") => {
+  const showWarning = (title: string, description: string, variant: "warning" | "error" | "info" = "error", buttonText?: string) => {
     setWarningDialog({
       open: true,
       title,
       description,
       variant,
+      buttonText,
     })
   }
 
@@ -828,7 +830,8 @@ export function OrderModal({
           discountType === "percentage"
             ? `Скидка ${discountValue}% (${calculatedDiscount} ₽) применена к вашему заказу.`
             : `Скидка ${calculatedDiscount} ₽ применена к вашему заказу.`,
-          "info"
+          "info",
+          "ОК"
         )
       } else {
         setAppliedPromo(null)
@@ -1701,6 +1704,7 @@ export function OrderModal({
         title={warningDialog.title}
         description={warningDialog.description}
         variant={warningDialog.variant}
+        buttonText={warningDialog.buttonText}
       />
     </>
   )
