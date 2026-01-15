@@ -1222,6 +1222,9 @@ export async function awardLoyaltyPoints(
   
   console.log(`✅ [awardLoyaltyPoints] total_spent обновлен в БД: ${newTotalSpent}`)
 
+  // ✅ КРИТИЧНО: Небольшая задержка для того, чтобы транзакции были видны в БД
+  await new Promise((resolve) => setTimeout(resolve, 500))
+
   // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций (единственный источник правды)
   const recalculatedBalance = await calculateUserBalance(userId, true)
   console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
