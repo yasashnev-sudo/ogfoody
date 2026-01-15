@@ -2534,23 +2534,42 @@ export async function incrementPromoCodeUsage(id: number): Promise<void> {
   // Обновляем через bulk update (массив)
   const updateBody = JSON.stringify([{ Id: id, "Times Used": newTimesUsed }])
   // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2511',message:'Calling clientFetch to update',data:{id,newTimesUsed,updateBody},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2511',message:'Calling update function to update',data:{id,newTimesUsed,updateBody,isServer:typeof window === 'undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
   // #endregion
   try {
-    await clientFetch(
-      "Promo_Codes",
-      {},
-      {
-        method: "PATCH",
-        body: updateBody,
-      },
-    )
+    // На сервере используем serverCreateRecord, на клиенте - clientFetch
+    const apiBaseUrl = getApiBaseUrl()
+    if (apiBaseUrl === null) {
+      // Серверная среда - прямой запрос к NocoDB
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2515',message:'Using serverCreateRecord (server)',data:{id,newTimesUsed},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
+      await serverCreateRecord<NocoDBPromoCode>(
+        "Promo_Codes",
+        { "Times Used": newTimesUsed },
+        "PATCH",
+        id
+      )
+    } else {
+      // Клиентская среда - через API proxy
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2523',message:'Using clientFetch (client)',data:{id,newTimesUsed},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
+      await clientFetch(
+        "Promo_Codes",
+        {},
+        {
+          method: "PATCH",
+          body: updateBody,
+        },
+      )
+    }
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2522',message:'clientFetch update completed',data:{id,newTimesUsed},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2535',message:'Update completed',data:{id,newTimesUsed,isServer:apiBaseUrl === null},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
     // #endregion
   } catch (error) {
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2525',message:'clientFetch update error',data:{id,newTimesUsed,error:String(error),errorStack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2538',message:'Update error',data:{id,newTimesUsed,error:String(error),errorStack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'debug-increment',hypothesisId:'H5'})}).catch(()=>{});
     // #endregion
     throw error
   }
