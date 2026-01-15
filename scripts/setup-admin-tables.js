@@ -10,9 +10,14 @@
 
 const https = require('https');
 const http = require('http');
+const { URL } = require('url');
 
 const NOCODB_URL = process.env.NOCODB_URL || 'https://noco.povarnakolesah.ru';
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN;
+
+// Определяем какой модуль использовать
+const urlObj = new URL(NOCODB_URL);
+const httpModule = urlObj.protocol === 'https:' ? https : http;
 
 if (!NOCODB_TOKEN) {
   console.error('❌ NOCODB_TOKEN не установлен в переменных окружения');
@@ -31,7 +36,7 @@ async function getBaseId() {
       },
     };
 
-    const req = https.request(url, options, (res) => {
+    const req = httpModule.request(url, options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
@@ -74,7 +79,7 @@ async function createTable(baseId, tableName, columns) {
       columns: columns,
     };
 
-    const req = https.request(url, options, (res) => {
+    const req = httpModule.request(url, options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
