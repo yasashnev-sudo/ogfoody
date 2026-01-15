@@ -134,11 +134,10 @@ export default function AdminPromoPage() {
     }
 
     try {
-      // NocoDB использует bulk delete - массив ID в теле запроса
-      const response = await fetch("/api/db/Promo_Codes/records", {
+      // Используем формат с ID в URL пути, как в других местах кода
+      const response = await fetch(`/api/db/Promo_Codes/records/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify([id]),
       })
 
       if (response.ok) {
