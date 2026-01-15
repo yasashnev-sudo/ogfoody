@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Gift, Plus, Edit, Trash2, Checkbox } from "lucide-react"
+import { Gift, Plus, Edit, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Checkbox as UICheckbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface PromoCode {
   Id: number
