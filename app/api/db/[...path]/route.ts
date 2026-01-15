@@ -151,10 +151,24 @@ async function proxyToNocoDB(request: NextRequest, path: string, method: string)
       })
     }
 
-    return NextResponse.json(data, { status: response.status })
+    return NextResponse.json(data, { 
+      status: response.status,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error) {
     console.error("NocoDB proxy error:", error)
-    return NextResponse.json({ error: "Failed to proxy request to NocoDB", details: String(error) }, { status: 500 })
+    return NextResponse.json({ error: "Failed to proxy request to NocoDB", details: String(error) }, { 
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   }
 }
 

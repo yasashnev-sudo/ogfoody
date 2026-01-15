@@ -53,7 +53,7 @@ export function InfoBanner({ isAuthenticated, onAuthClick, onClose }: InfoBanner
                 <span className="underline">С приложением удобнее</span> — установите на главный экран
               </p>
               <p className="text-sm text-black/70">
-                {isIOS ? "Нажмите для подробной инструкции" : "Быстрый доступ и работа офлайн"}
+                {isIOS ? "Нажмите для подробной инструкции" : "Быстрый доступ к сервису"}
               </p>
             </div>
             <button

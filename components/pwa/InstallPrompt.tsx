@@ -340,7 +340,7 @@ export function InstallPrompt() {
             <div className="flex-1">
               <h3 className="font-bold text-lg mb-2">Установите OGFooDY</h3>
               <p className="text-sm text-gray-700">
-                Установите приложение для быстрого доступа и работы офлайн
+                Установите приложение для быстрого доступа к сервису
               </p>
             </div>
           </div>

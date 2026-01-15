@@ -16,6 +16,13 @@ import {
 } from "@/lib/nocodb"
 import type { Order, Meal, PortionSize } from "@/lib/types"
 
+// Заголовки для предотвращения кеширования на клиенте
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+}
+
 // GET /api/orders?userId=123
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -28,9 +35,9 @@ export async function GET(request: Request) {
       const { fetchOrderByNumber } = await import("@/lib/nocodb")
       const order = await fetchOrderByNumber(orderNumber)
       if (order) {
-        return NextResponse.json({ orders: [order] })
+        return NextResponse.json({ orders: [order] }, { headers: noCacheHeaders })
       } else {
-        return NextResponse.json({ orders: [], message: `Order with number ${orderNumber} not found` })
+        return NextResponse.json({ orders: [], message: `Order with number ${orderNumber} not found` }, { headers: noCacheHeaders })
       }
     }
 
@@ -40,7 +47,7 @@ export async function GET(request: Request) {
       const user = await fetchUserById(Number(userId), true)
       if (!user) {
         console.warn(`⚠️ GET /api/orders - пользователь с User ID=${userId} не найден, возвращаем пустой массив`)
-        return NextResponse.json({ orders: [] })
+        return NextResponse.json({ orders: [] }, { headers: noCacheHeaders })
       }
       
       // ✅ ВСЕГДА загружаем детали заказов (persons, meals, extras) из БД
@@ -58,14 +65,14 @@ export async function GET(request: Request) {
           loyaltyPoints: user.loyalty_points, // Уже вычислен из транзакций в fetchUserById
           totalSpent: user.total_spent,
         }
-      })
+      }, { headers: noCacheHeaders })
     }
 
     // Если ничего не указано, возвращаем ошибку
-    return NextResponse.json({ error: "userId or orderNumber is required" }, { status: 400 })
+    return NextResponse.json({ error: "userId or orderNumber is required" }, { status: 400, headers: noCacheHeaders })
   } catch (error) {
     console.error("Failed to fetch orders:", error)
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500, headers: noCacheHeaders })
   }
 }
 

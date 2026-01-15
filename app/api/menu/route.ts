@@ -2,8 +2,15 @@ import { NextResponse } from "next/server"
 import { fetchMeals, fetchExtras, fetchDeliveryZones, isNocoDBConfigured } from "@/lib/nocodb"
 import { DELIVERY_TIMES } from "@/lib/meals-data"
 
-// Кэшируем на 1 минуту для более частого обновления данных
+// Кэшируем на 1 минуту для более частого обновления данных (только на сервере)
 export const revalidate = 60
+
+// Заголовки для предотвращения кеширования на клиенте
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+}
 
 function parsePrice(value: string | number | undefined | null): number {
   if (value === undefined || value === null) return 0
@@ -101,7 +108,10 @@ export async function GET(request: Request) {
         missingVariables: missingVars,
         hint: "Add missing environment variables in Vercel Dashboard → Settings → Environment Variables and redeploy",
       },
-    }, { status: 503 })
+    }, { 
+      status: 503,
+      headers: noCacheHeaders,
+    })
   }
 
   try {
@@ -430,6 +440,8 @@ export async function GET(request: Request) {
         processingTime: `${totalTime}ms`,
         weekType: weekType || "all",
       },
+    }, {
+      headers: noCacheHeaders,
     })
   } catch (error) {
     const totalTime = Date.now() - startTime
@@ -519,6 +531,9 @@ export async function GET(request: Request) {
         processingTime: `${totalTime}ms`,
         timestamp: new Date().toISOString(),
       },
-    }, { status: 503 })
+    }, { 
+      status: 503,
+      headers: noCacheHeaders,
+    })
   }
 }
