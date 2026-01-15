@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, User, Phone, Star, Ban } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface User {
   Id: number
