@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { X, Download, Share2, SquarePlus, MoreVertical, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { X, Download, Share2, SquarePlus, MoreVertical, ArrowRight, CheckCircle2, Home } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
