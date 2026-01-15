@@ -98,7 +98,7 @@ async function main() {
     // Проверяем существующие колонки
     const tableInfo = await getTableInfo();
     const existingColumns = tableInfo.columns || [];
-    const columnNames = existingColumns.map((c: any) => 
+    const columnNames = existingColumns.map((c) => 
       (c.column_name || '').toLowerCase()
     );
 
