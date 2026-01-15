@@ -3613,7 +3613,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             })) || [],
             subtotal: order?.subtotal,
             total: order?.total,
-            receivedTotal: total
+            receivedTotal: total,
+            promoCode: order?.promoCode, // ✅ ДОБАВЛЕНО: Логируем промокод
+            promoDiscount: order?.promoDiscount, // ✅ ДОБАВЛЕНО: Логируем скидку промокода
           })
           
           if (!order) {
