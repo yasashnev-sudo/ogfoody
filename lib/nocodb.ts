@@ -32,6 +32,8 @@ function getTableId(tableName: string): string {
     Reviews: process.env.NOCODB_TABLE_REVIEWS,
     Loyalty_Points_Transactions: process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,
     Fraud_Alerts: process.env.NOCODB_TABLE_FRAUD_ALERTS || "mr9txejs65nk1yi", // Фолбэк для Fraud_Alerts
+    Messages: process.env.NOCODB_TABLE_MESSAGES,
+    Push_Notifications: process.env.NOCODB_TABLE_PUSH_NOTIFICATIONS,
   }
 
   return tableIds[tableName] || ""
