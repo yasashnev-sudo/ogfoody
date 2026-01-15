@@ -1034,14 +1034,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                 // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем loyalty_points_earned в updateData ПЕРЕД вызовом updateOrder
                 updateData.loyalty_points_earned = loyaltyPointsEarned
                 
-                // ✅ ИСПРАВЛЕНО: Обновляем заказ сразу после начисления баллов
-                try {
-                  await updateOrder(Number(id), { loyalty_points_earned: loyaltyPointsEarned })
-                  console.log(`✅ Заказ ${id} обновлен с loyalty_points_earned: ${loyaltyPointsEarned}`)
-                } catch (error) {
-                  console.error(`❌ Ошибка обновления заказа с баллами:`, error)
-                }
-                
                 console.log(`✅ Начислено ${loyaltyPointsEarned} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
               } else {
                 console.log(`ℹ️ PATCH ${id}: Баллы не начислены - рассчитано 0 баллов`)
@@ -1101,6 +1093,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           bodyOrderKeys: body.order ? Object.keys(body.order) : [],
           bodyKeys: Object.keys(body),
         })
+      }
+      
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, что updateData не пустой перед обновлением
+      if (Object.keys(updateData).length === 0) {
+        console.error(`❌ [PATCH /api/orders/${id}] updateData пустой! Нечего обновлять.`)
+        return NextResponse.json({ 
+          error: "No data to update",
+          details: "updateData is empty"
+        }, { status: 400 })
       }
       
       try {
