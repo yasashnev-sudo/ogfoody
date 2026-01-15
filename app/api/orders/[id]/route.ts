@@ -640,10 +640,39 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         start_date: normalizeStartDate(updatedOrder.start_date || (updatedOrder as any)["Start Date"]),
       }
       
+      // ✅ ИСПРАВЛЕНО: Возвращаем обновленный профиль пользователя и loyaltyPointsEarned
+      let updatedUserProfile = undefined
+      if (currentOrder.user_id) {
+        try {
+          const updatedUser = await fetchUserById(currentOrder.user_id, true) // noCache для свежих данных
+          if (updatedUser) {
+            updatedUserProfile = {
+              id: updatedUser.Id,
+              phone: updatedUser.phone,
+              name: updatedUser.name,
+              loyaltyPoints: updatedUser.loyalty_points,
+              totalSpent: updatedUser.total_spent,
+            }
+            console.log(`✅ [PATCH full] Обновленный профиль после начисления баллов:`, updatedUserProfile)
+          }
+        } catch (error) {
+          console.error(`❌ Ошибка загрузки обновленного профиля:`, error)
+        }
+      }
+      
+      // Получаем количество начисленных баллов для ответа
+      const pointsEarned = loyaltyPointsEarned !== undefined 
+        ? loyaltyPointsEarned 
+        : typeof mergedOrder.loyalty_points_earned === 'number' 
+        ? mergedOrder.loyalty_points_earned 
+        : parseInt(String(mergedOrder.loyalty_points_earned)) || 0
+      
       return NextResponse.json({ 
         success: true, 
         order: mergedOrder,
-        orderNumber: (mergedOrder as any)?.order_number ?? (mergedOrder as any)?.["Order Number"] 
+        orderNumber: (mergedOrder as any)?.order_number ?? (mergedOrder as any)?.["Order Number"],
+        loyaltyPointsEarned: pointsEarned > 0 ? pointsEarned : undefined,
+        userProfile: updatedUserProfile
       })
     } else {
       // Если передан только частичный объект (без order), обновляем только основные поля
