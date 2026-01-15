@@ -881,6 +881,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                 loyaltyPointsUsed: updatedOrderFromAPI.loyalty_points_used || 
                                    updatedOrderFromAPI["Loyalty Points Used"] || 
                                    updatedOrder.loyaltyPointsUsed || 0,
+                promoCode: updatedOrderFromAPI.promo_code || 
+                          updatedOrderFromAPI["Promo Code"] || 
+                          updatedOrder.promoCode,
+                promoDiscount: updatedOrderFromAPI.promo_discount || 
+                               updatedOrderFromAPI["Promo Discount"] || 
+                               updatedOrder.promoDiscount || 0,
               },
             ]
             // ✅ ИСПРАВЛЕНО: НЕ сохраняем заказы в localStorage для авторизованных
