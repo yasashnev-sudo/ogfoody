@@ -12,20 +12,20 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const promoId = parseInt(id)
+    const orderId = parseInt(id)
 
-    if (isNaN(promoId)) {
+    if (isNaN(orderId)) {
       return NextResponse.json(
-        { error: "Invalid promo code ID" },
+        { error: "Invalid order ID" },
         { status: 400, headers: noCacheHeaders }
       )
     }
 
     const NOCODB_URL = process.env.NOCODB_URL
     const NOCODB_TOKEN = process.env.NOCODB_TOKEN
-    const NOCODB_TABLE_PROMO_CODES = process.env.NOCODB_TABLE_PROMO_CODES
+    const NOCODB_TABLE_ORDERS = process.env.NOCODB_TABLE_ORDERS
 
-    if (!NOCODB_URL || !NOCODB_TOKEN || !NOCODB_TABLE_PROMO_CODES) {
+    if (!NOCODB_URL || !NOCODB_TOKEN || !NOCODB_TABLE_ORDERS) {
       return NextResponse.json(
         { error: "NocoDB not configured" },
         { status: 500, headers: noCacheHeaders }
@@ -33,7 +33,7 @@ export async function DELETE(
     }
 
     // Пробуем сначала прямой DELETE с ID в пути
-    let url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_PROMO_CODES}/records/${promoId}`
+    let url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_ORDERS}/records/${orderId}`
     
     let response = await fetch(url, {
       method: "DELETE",
@@ -45,7 +45,7 @@ export async function DELETE(
 
     // Если не работает, пробуем bulk delete с where
     if (!response.ok && response.status === 404) {
-      url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_PROMO_CODES}/records?where=(Id,eq,${promoId})`
+      url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_ORDERS}/records?where=(Id,eq,${orderId})`
       response = await fetch(url, {
         method: "DELETE",
         headers: {
@@ -58,19 +58,19 @@ export async function DELETE(
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error")
       return NextResponse.json(
-        { error: "Failed to delete promo code", details: errorText },
+        { error: "Failed to delete order", details: errorText },
         { status: response.status, headers: noCacheHeaders }
       )
     }
 
     return NextResponse.json(
-      { success: true, message: "Promo code deleted" },
+      { success: true, message: "Order deleted" },
       { headers: noCacheHeaders }
     )
   } catch (error: any) {
-    console.error("Ошибка удаления промокода:", error)
+    console.error("Ошибка удаления заказа:", error)
     return NextResponse.json(
-      { error: "Failed to delete promo code", details: error.message },
+      { error: "Failed to delete order", details: error.message },
       { status: 500, headers: noCacheHeaders }
     )
   }

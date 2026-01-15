@@ -153,8 +153,8 @@ export default function AdminOrdersPage() {
     }
 
     try {
-      // Используем bulk delete с where параметром (правильный формат для NocoDB API v2)
-      const response = await fetch(`/api/db/Orders/records?where=(Id,eq,${id})`, {
+      // Создаем отдельный API endpoint для удаления заказов
+      const response = await fetch(`/api/admin/orders/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       })
