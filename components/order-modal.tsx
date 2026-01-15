@@ -218,6 +218,20 @@ export function OrderModal({
   const [promoCode, setPromoCode] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  
+  // ✅ Инициализируем промокод из existingOrder при загрузке
+  useEffect(() => {
+    if (existingOrder?.promoCode && existingOrder?.promoDiscount && Number(existingOrder.promoDiscount) > 0) {
+      setAppliedPromo({
+        code: existingOrder.promoCode,
+        discount: Number(existingOrder.promoDiscount)
+      })
+      setPromoCode(existingOrder.promoCode)
+    } else {
+      setAppliedPromo(null)
+      setPromoCode("")
+    }
+  }, [existingOrder?.promoCode, existingOrder?.promoDiscount])
   const [fillTimestamp, setFillTimestamp] = useState(0)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const [showFloatingButton, setShowFloatingButton] = useState(false)
@@ -415,6 +429,8 @@ export function OrderModal({
           total: finalTotal,
           paid: false,
           cancelled: false,
+          promoCode: appliedPromo?.code,
+          promoDiscount: appliedPromo?.discount,
         }
         console.log('🔍 [OrderModal] Вызываем onRequestAuth с order:', {
           subtotal: order.subtotal,
@@ -463,6 +479,8 @@ export function OrderModal({
         total: finalTotal,
         paid: false,
         cancelled: false,
+        promoCode: appliedPromo?.code,
+        promoDiscount: appliedPromo?.discount,
       }
       
       // onRequestAuth внутри app/page.tsx сам разберется:
@@ -1506,6 +1524,8 @@ export function OrderModal({
                               total: finalTotal,
                               paid: false,
                               cancelled: false,
+                              promoCode: appliedPromo?.code,
+                              promoDiscount: appliedPromo?.discount,
                             }
                             onRequestAuth?.(order, finalTotal)
                           }}
