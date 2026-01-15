@@ -880,6 +880,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const isPaymentMethodChangedFromCash = oldPaymentMethodPartial === 'cash' && 
           (newPaymentMethod === 'card' || newPaymentMethod === 'sbp')
       
+      console.log(`🔍 [PATCH partial ${id}] Проверка смены способа оплаты:`, {
+        oldPaymentMethodPartial,
+        newPaymentMethod,
+        'updateData.payment_method': updateData.payment_method,
+        'body.order?.paymentMethod': body.order?.paymentMethod,
+        isPaymentMethodChangedFromCash,
+      })
+      
       if (isPaymentMethodChangedFromCash) {
         console.log(`💳 Partial update: Заказ ${id} оплачен онлайн (было: ${oldPaymentMethodPartial}, стало: ${newPaymentMethod}), обрабатываем pending баллы`)
         
