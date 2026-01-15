@@ -678,9 +678,9 @@ export async function POST(request: Request) {
                 console.log(`🔍 [POST] ❌ Условие НЕ выполнено: Способ оплаты не указан - баллы будут начислены при оплате`)
                 console.log(`ℹ️ Способ оплаты не указан - баллы будут начислены при оплате`)
                 actualPointsEarned = 0 // Сбрасываем, чтобы не записать в БД
-              } else if ((order.paymentMethod === 'card' || order.paymentMethod === 'sbp') && order.paid) {
+              } else if ((order.paymentMethod === 'card' || order.paymentMethod === 'sbp') && (order.paid === true || order.paymentStatus === 'paid')) {
                 // ✅ ИСПРАВЛЕНО: Онлайн-оплата И заказ оплачен - начисляем сразу
-                console.log(`🔍 [POST] ✅ Условие выполнено: Онлайн-оплата (${order.paymentMethod}) И заказ оплачен`)
+                console.log(`🔍 [POST] ✅ Условие выполнено: Онлайн-оплата (${order.paymentMethod}) И заказ оплачен (paid=${order.paid}, paymentStatus=${order.paymentStatus})`)
                 console.log(`💳 Онлайн-оплата: начисление баллов сразу`)
                 
                 console.log(`🔍 [POST] 7️⃣ Вызов awardLoyaltyPoints с параметрами:`, {
