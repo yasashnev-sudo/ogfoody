@@ -1996,11 +1996,15 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paid: isPaid,
-          paid_at: isPaid ? new Date().toISOString() : undefined,
-          status: paymentStatus,
-          payment_method: paymentMethod,
-          loyaltyPointsUsed: pointsUsed, // ✅ ИСПРАВЛЕНО: Передаем использованные баллы из PaymentModal
+          order: {
+            paid: isPaid,
+            paidAt: isPaid ? new Date().toISOString() : undefined,
+            paymentStatus: paymentStatus,
+            paymentMethod: paymentMethod,
+            loyaltyPointsUsed: pointsUsed, // ✅ ИСПРАВЛЕНО: Передаем использованные баллы из PaymentModal
+            promoCode: order.promoCode, // ✅ ИСПРАВЛЕНО: Сохраняем промокод при оплате
+            promoDiscount: order.promoDiscount, // ✅ ИСПРАВЛЕНО: Сохраняем скидку промокода при оплате
+          },
         }),
       })
 
@@ -2031,6 +2035,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                                      data.loyaltyPointsEarned || 0,
                 loyaltyPointsUsed: updatedOrderFromAPI.loyalty_points_used || 
                                    updatedOrderFromAPI["Loyalty Points Used"] || 0,
+                promoCode: updatedOrderFromAPI.promo_code || 
+                          updatedOrderFromAPI["Promo Code"] || 
+                          order.promoCode,
+                promoDiscount: updatedOrderFromAPI.promo_discount || 
+                               updatedOrderFromAPI["Promo Discount"] || 
+                               order.promoDiscount || 0,
               }
             }
             return o
@@ -2717,7 +2727,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         deliveryDistrict: district,
         deliveryAddress: `${userProfile.street}, ${userProfile.building}${userProfile.apartment ? ', кв. ' + userProfile.apartment : ''}`,
         subtotal: pendingCheckout.order.subtotal || pendingCheckout.total,
-        total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee,
+        total: (pendingCheckout.order.subtotal || pendingCheckout.total) + deliveryFee - (pendingCheckout.order.promoDiscount || 0),
+        promoCode: pendingCheckout.order.promoCode,
+        promoDiscount: pendingCheckout.order.promoDiscount,
       }
       
       // ✅ ИСПРАВЛЕНО: Удаляем paymentMethod и ID при создании нового заказа

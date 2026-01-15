@@ -499,8 +499,10 @@ export async function POST(request: Request) {
     }
     
     // Итоговая сумма с доставкой
-    const finalTotal = calculatedTotal + deliveryFee
-    console.log(`💰 Итоговая сумма: ${calculatedTotal}₽ + ${deliveryFee}₽ (доставка) = ${finalTotal}₽`)
+    // ✅ ИСПРАВЛЕНО: Учитываем промокод при расчете итоговой суммы
+    const promoDiscount = order.promoDiscount || 0
+    const finalTotal = calculatedTotal + deliveryFee - promoDiscount
+    console.log(`💰 Итоговая сумма: ${calculatedTotal}₽ + ${deliveryFee}₽ (доставка) - ${promoDiscount}₽ (промокод) = ${finalTotal}₽`)
     
     if (finalTotal > 0) {
       try {
@@ -510,6 +512,8 @@ export async function POST(request: Request) {
           delivery_fee: deliveryFee,
           delivery_district: deliveryDistrict,
           delivery_address: deliveryAddress,
+          promo_code: order.promoCode,
+          promo_discount: promoDiscount,
         })
         console.log(`✅ Updated order ${nocoOrder.Id} with total: ${finalTotal}₽ (subtotal: ${calculatedTotal}₽, delivery: ${deliveryFee}₽)`)
         // Обновляем локальную копию заказа
@@ -540,8 +544,9 @@ export async function POST(request: Request) {
       userId,
     })
     
-    // ✅ ИСПРАВЛЕНО: Используем finalTotal (с доставкой) из обновленного заказа в БД
-    // nocoOrder.total был обновлен в строках 434-438 после расчета finalTotal
+    // ✅ ИСПРАВЛЕНО: Используем finalTotal (с доставкой и промокодом) из обновленного заказа в БД
+    // nocoOrder.total был обновлен в строках 509-515 после расчета finalTotal
+    // finalTotal уже учитывает промокод: calculatedTotal + deliveryFee - promoDiscount
     const orderTotal = nocoOrder.total || finalTotal || calculatedTotal
     
     console.log(`🔍 [POST] 2️⃣ Рассчитанные суммы:`, {
