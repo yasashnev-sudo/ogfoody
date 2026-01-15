@@ -262,6 +262,8 @@ export async function POST(request: Request) {
         const reloadedOrder = await fetchOrderById(nocoOrder.Id, true)
         if (reloadedOrder) {
           console.log("🔄 Перезагруженный заказ из БД:", JSON.stringify(reloadedOrder, null, 2))
+          console.log("🔍 КРИТИЧНО: reloadedOrder.paid =", reloadedOrder.paid, "тип:", typeof reloadedOrder.paid)
+          console.log("🔍 КРИТИЧНО: reloadedOrder.payment_status =", reloadedOrder.payment_status)
           nocoOrder = reloadedOrder
         }
       }
