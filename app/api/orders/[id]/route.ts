@@ -686,6 +686,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const wasPaid = currentOrder.paid === true || currentOrder.payment_status === "paid"
       const willBePaid = updateData.paid === true || updateData.payment_status === "paid" || 
                         (body.order && (body.order.paid === true || body.order.paymentStatus === "paid"))
+      
+      console.log(`[PATCH /api/orders/${id}] 🔍 Проверка оплаты:`, {
+        wasPaid,
+        willBePaid,
+        'updateData.paid': updateData.paid,
+        'updateData.payment_status': updateData.payment_status,
+        'body.order?.paid': body.order?.paid,
+        'body.order?.paymentStatus': body.order?.paymentStatus,
+        'currentOrder.paid': currentOrder.paid,
+        'currentOrder.payment_status': currentOrder.payment_status,
+      })
       const willBeCancelled = body.orderStatus === "cancelled" || body.order_status === "cancelled"
       const wasCancelled = currentOrder.order_status === "cancelled"
 
@@ -1063,6 +1074,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (body.order_status !== undefined) updateData.order_status = body.order_status
       
       console.log(`[PATCH /api/orders/${id}] Updating with data:`, updateData)
+      console.log(`[PATCH /api/orders/${id}] 🔍 Детали updateData:`, {
+        paid: updateData.paid,
+        payment_status: updateData.payment_status,
+        payment_method: updateData.payment_method,
+        promo_code: updateData.promo_code,
+        promo_discount: updateData.promo_discount,
+        loyalty_points_earned: updateData.loyalty_points_earned,
+        hasUpdateData: Object.keys(updateData).length > 0,
+      })
       
       try {
         await updateOrder(Number(id), updateData)
