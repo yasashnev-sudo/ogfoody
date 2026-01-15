@@ -75,11 +75,11 @@ export default function AdminPromoPage() {
 
       let response
       if (editingId) {
-        // Редактирование
-        response = await fetch(`/api/db/Promo_Codes/records/${editingId}`, {
+        // Редактирование - NocoDB использует bulk update формат
+        response = await fetch("/api/db/Promo_Codes/records", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(promoData),
+          body: JSON.stringify([{ Id: editingId, ...promoData }]),
         })
       } else {
         // Создание
@@ -103,9 +103,14 @@ export default function AdminPromoPage() {
         setShowForm(false)
         setEditingId(null)
         loadPromoCodes()
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        console.error("Ошибка сохранения промокода:", errorData)
+        alert(`Ошибка сохранения: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
       console.error("Ошибка сохранения промокода:", error)
+      alert("Произошла ошибка при сохранении промокода")
     }
   }
 
@@ -129,15 +134,23 @@ export default function AdminPromoPage() {
     }
 
     try {
-      const response = await fetch(`/api/db/Promo_Codes/records/${id}`, {
+      // NocoDB использует bulk delete - массив ID в теле запроса
+      const response = await fetch("/api/db/Promo_Codes/records", {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([id]),
       })
 
       if (response.ok) {
         loadPromoCodes()
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        console.error("Ошибка удаления промокода:", errorData)
+        alert(`Ошибка удаления: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
       console.error("Ошибка удаления промокода:", error)
+      alert("Произошла ошибка при удалении промокода")
     }
   }
 
