@@ -6,7 +6,7 @@ import { Phone, Mail, Smartphone } from "lucide-react"
 import { usePWA } from "@/hooks/usePWA"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, CheckCircle2, Home, Plus } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Home as HomeIcon, Plus } from 'lucide-react'
 import { IOSMenuIcon, IOSShareIcon, IOSAddToHomeIcon } from '@/components/icons/ios-icons'
 
 export function Footer() {
@@ -119,7 +119,7 @@ export function Footer() {
           <DialogHeader className="px-4 pt-4 pb-2">
             <div className="flex justify-center mb-3">
               <div className="w-16 h-16 rounded-lg bg-[#FFEA00] flex items-center justify-center border-3 border-black shadow-brutal">
-                <Home className="w-8 h-8 text-black" />
+                <HomeIcon className="w-8 h-8 text-black" />
               </div>
             </div>
             <DialogTitle className="text-xl font-black text-black text-center mb-1">

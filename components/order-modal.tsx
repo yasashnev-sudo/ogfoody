@@ -51,6 +51,7 @@ import type {
 } from "@/lib/types"
 // Added getMealPrice helper
 import { getMealPrice } from "@/lib/types"
+import { fetchPromoCode, type NocoDBPromoCode } from "@/lib/nocodb"
 import { useToast } from "@/hooks/use-toast"
 import { WarningDialog } from "@/components/warning-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -715,7 +716,7 @@ export function OrderModal({
     }
   }
 
-  const handleApplyPromo = () => {
+  const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
       showWarning(
         "Введите промокод",
@@ -725,37 +726,124 @@ export function OrderModal({
       return
     }
 
-    const code = promoCode.toUpperCase()
-    let discount = 0
+    const code = promoCode.toUpperCase().trim()
 
-    if (code === "WELCOME10") {
-      discount = 0.1
-    } else if (code === "SALE20") {
-      discount = 0.2
-    } else if (code === "FREE100") {
-      discount = 100
-    }
+    try {
+      // Вызываем API для получения промокода из базы данных
+      const promo = await fetchPromoCode(code)
 
-    if (discount > 0) {
-      const calculatedDiscount =
-        typeof discount === "number" && discount < 1 ? Math.floor(totalBeforeDiscount * discount) : discount
+      if (!promo) {
+        setAppliedPromo(null)
+        showWarning(
+          "Неверный промокод",
+          "К сожалению, этот промокод не найден или неактивен.",
+          "error"
+        )
+        return
+      }
 
-      setAppliedPromo({ code: promoCode, discount: calculatedDiscount })
-      // Removed promoError state
+      // Проверяем валидность промокода
+      const now = new Date()
+      
+      // Проверка даты начала действия
+      const validFrom = promo["Valid From"] || promo.valid_from
+      if (validFrom) {
+        const fromDate = new Date(validFrom)
+        if (now < fromDate) {
+          setAppliedPromo(null)
+          showWarning(
+            "Промокод еще не активен",
+            `Промокод будет действителен с ${fromDate.toLocaleDateString("ru-RU")}.`,
+            "error"
+          )
+          return
+        }
+      }
 
-      showWarning(
-        "Промокод применен!",
-        discount < 1
-          ? `Скидка ${discount * 100}% (${calculatedDiscount} ₽) применена к вашему заказу.`
-          : `Скидка ${calculatedDiscount} ₽ применена к вашему заказу.`,
-        "info"
-      )
-    } else {
+      // Проверка даты окончания действия
+      const validUntil = promo["Valid Until"] || promo.valid_until
+      if (validUntil) {
+        const untilDate = new Date(validUntil)
+        untilDate.setHours(23, 59, 59, 999) // Конец дня
+        if (now > untilDate) {
+          setAppliedPromo(null)
+          showWarning(
+            "Промокод истек",
+            `Промокод был действителен до ${untilDate.toLocaleDateString("ru-RU")}.`,
+            "error"
+          )
+          return
+        }
+      }
+
+      // Проверка лимита использования
+      const usageLimit = promo["Usage Limit"] || promo.usage_limit
+      const timesUsed = promo["Times Used"] || promo.times_used || 0
+      if (usageLimit && typeof usageLimit === "number" && timesUsed >= usageLimit) {
+        setAppliedPromo(null)
+        showWarning(
+          "Промокод исчерпан",
+          "К сожалению, лимит использований этого промокода исчерпан.",
+          "error"
+        )
+        return
+      }
+
+      // Проверка минимальной суммы заказа
+      const minOrderAmount = promo["Min Order Amount"] || promo.min_order_amount
+      if (minOrderAmount && totalBeforeDiscount < Number(minOrderAmount)) {
+        setAppliedPromo(null)
+        showWarning(
+          "Минимальная сумма не достигнута",
+          `Для применения этого промокода минимальная сумма заказа должна быть ${Number(minOrderAmount)} ₽.`,
+          "error"
+        )
+        return
+      }
+
+      // Рассчитываем скидку
+      const discountType = promo["Discount Type"] || promo.discount_type || "percentage"
+      const discountValue = Number(promo["Discount Value"] || promo.discount_value || 0)
+      const maxDiscount = promo["Max Discount"] || promo.max_discount
+
+      let calculatedDiscount = 0
+
+      if (discountType === "percentage") {
+        // Процентная скидка
+        calculatedDiscount = Math.floor(totalBeforeDiscount * (discountValue / 100))
+        
+        // Применяем максимальную скидку, если указана
+        if (maxDiscount) {
+          calculatedDiscount = Math.min(calculatedDiscount, Number(maxDiscount))
+        }
+      } else {
+        // Фиксированная скидка
+        calculatedDiscount = Math.min(discountValue, totalBeforeDiscount)
+      }
+
+      if (calculatedDiscount > 0) {
+        setAppliedPromo({ code: promoCode, discount: calculatedDiscount })
+        showWarning(
+          "Промокод применен!",
+          discountType === "percentage"
+            ? `Скидка ${discountValue}% (${calculatedDiscount} ₽) применена к вашему заказу.`
+            : `Скидка ${calculatedDiscount} ₽ применена к вашему заказу.`,
+          "info"
+        )
+      } else {
+        setAppliedPromo(null)
+        showWarning(
+          "Ошибка применения промокода",
+          "Не удалось рассчитать скидку. Попробуйте еще раз.",
+          "error"
+        )
+      }
+    } catch (error) {
+      console.error("Ошибка при применении промокода:", error)
       setAppliedPromo(null)
-      // Removed promoError state
       showWarning(
-        "Неверный промокод",
-        "К сожалению, этот промокод не найден или истек.",
+        "Ошибка",
+        "Произошла ошибка при проверке промокода. Попробуйте еще раз.",
         "error"
       )
     }
