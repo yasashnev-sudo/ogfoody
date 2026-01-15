@@ -25,11 +25,27 @@ export function InstallPrompt() {
     setIsIOS(isIOSDevice)
 
     // Проверяем, запущено ли приложение в standalone режиме (уже установлено)
+    // Важно: display-mode: standalone - самый надежный способ определить установленное приложение
+    // navigator.standalone может быть true даже если приложение удалено, но ярлык остался
     const checkStandalone = () => {
-      const isStandaloneMode =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true ||
-        document.referrer.includes('android-app://')
+      // Основная проверка: display-mode: standalone - приложение установлено и запущено
+      const isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches
+      
+      // Для iOS: navigator.standalone может быть true только когда открыто через ярлык
+      // Но это не значит, что приложение установлено - ярлык может остаться после удаления
+      // Поэтому используем только display-mode как основную проверку
+      const isIOSStandalone = isIOSDevice && (window.navigator as any).standalone === true
+      
+      // Для Android: проверяем referrer
+      const isAndroidStandalone = document.referrer.includes('android-app://')
+      
+      // Приложение считается установленным ТОЛЬКО если:
+      // 1. display-mode: standalone (самый надежный способ) - приложение точно установлено и запущено
+      // 2. ИЛИ (iOS через ярлык И display-mode не browser) - это значит открыто через установленное приложение
+      // 3. ИЛИ Android через referrer
+      const isStandaloneMode = isStandaloneDisplay || 
+        (isIOSStandalone && !window.matchMedia('(display-mode: browser)').matches) ||
+        isAndroidStandalone
       
       setIsStandalone(isStandaloneMode)
       
@@ -128,13 +144,12 @@ export function InstallPrompt() {
     setShowIOSModal(true)
   }
 
-  // Не показываем, если уже установлено, отклонено или не видимо
-  if (isStandalone || isDismissed || !isVisible) {
-    return null
-  }
+  // Не показываем баннер сверху - он теперь в InfoBanner
+  // Оставляем только модальное окно для инструкций
+  return null
 
-  // Для iOS - кликабельный баннер сверху
-  if (isIOS) {
+  // Для iOS - кликабельный баннер сверху (ОТКЛЮЧЕН - теперь в InfoBanner)
+  if (false && isIOS) {
     return (
       <>
         <div 

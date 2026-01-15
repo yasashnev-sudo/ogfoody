@@ -1,9 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { Phone, Mail } from "lucide-react"
+import { Phone, Mail, Smartphone } from "lucide-react"
+import { usePWA } from "@/hooks/usePWA"
 
 export function Footer() {
+  const { isStandalone, isIOS } = usePWA()
   return (
     <footer className="bg-white border-t-2 border-black mt-auto">
       <div className="container mx-auto px-4 py-6">
@@ -57,9 +59,29 @@ export function Footer() {
             <p className="text-sm text-muted-foreground mb-2">
               Домашняя еда на каждый день
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-3">
               Доставка готовых обедов на 2 дня в Санкт-Петербурге
             </p>
+            
+            {/* Информация о приложении (если не установлено) */}
+            {!isStandalone && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="flex items-start gap-2">
+                  <Smartphone className="w-4 h-4 text-[#9D00FF] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-black mb-1">
+                      Установите приложение
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {isIOS 
+                        ? "С приложением удобнее — добавьте на главный экран через меню Safari"
+                        : "С приложением удобнее — быстрый доступ и работа офлайн"
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
