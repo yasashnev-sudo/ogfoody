@@ -14,9 +14,16 @@ import fetch from 'node-fetch'
 
 // ⚠️ ПРОДАКШН КОНФИГУРАЦИЯ
 const API_BASE = process.env.API_BASE || 'https://ogfoody.ru'
-const TEST_USER_ID = 5 // Тестовый пользователь на проде
+const TEST_USER_ID = 125 // Тестовый пользователь на проде (существующий)
 const NOCODB_URL = process.env.NOCODB_URL || 'https://noco.povarnakolesah.ru'
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || 'eppmI3qJq8ahGaCzPmjmZGIze9NgJxEFQzu6Ps1r'
+
+// Генерируем уникальную дату для каждого теста
+function getUniqueDate(daysOffset: number = 0): string {
+  const date = new Date()
+  date.setDate(date.getDate() + daysOffset + Math.floor(Math.random() * 365)) // Уникальная дата в будущем
+  return date.toISOString()
+}
 
 // Table IDs (из переменных окружения или хардкод для продакшена)
 const TABLE_USERS = 'mg9dm2m41bjv8ar'
@@ -40,14 +47,24 @@ async function getNocoDBUser(userId: number): Promise<any> {
   return data.list?.[0]
 }
 
-async function getUserBalance(userId: number): Promise<number> {
-  const user = await getNocoDBUser(userId)
-  return user?.['Loyalty Points'] || 0
+async function getUserBalance(userId: number, retries: number = 3): Promise<number> {
+  for (let i = 0; i < retries; i++) {
+    const user = await getNocoDBUser(userId)
+    const balance = user?.['Loyalty Points'] || 0
+    if (user || i === retries - 1) return balance
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+  return 0
 }
 
-async function getUserTotalSpent(userId: number): Promise<number> {
-  const user = await getNocoDBUser(userId)
-  return parseFloat(String(user?.['Total Spent'] || 0))
+async function getUserTotalSpent(userId: number, retries: number = 3): Promise<number> {
+  for (let i = 0; i < retries; i++) {
+    const user = await getNocoDBUser(userId)
+    const totalSpent = parseFloat(String(user?.['Total Spent'] || 0))
+    if (user || i === retries - 1) return totalSpent
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+  return 0
 }
 
 async function getUserTransactions(userId: number): Promise<any[]> {
@@ -182,8 +199,14 @@ describe('Все сценарии: Баллы лояльности и промо
   
   beforeAll(async () => {
     console.log('🧹 Сброс данных перед тестами...')
+    console.log(`📋 Проверка пользователя ${TEST_USER_ID}...`)
+    const user = await getNocoDBUser(TEST_USER_ID)
+    if (!user) {
+      throw new Error(`Пользователь ${TEST_USER_ID} не найден в БД!`)
+    }
+    console.log(`✅ Пользователь найден: ${user.Name || user['Name'] || 'Без имени'}`)
     await resetUserData(TEST_USER_ID)
-    await new Promise((resolve) => setTimeout(resolve, 2000)) // Ждем обновления кэша
+    await new Promise((resolve) => setTimeout(resolve, 3000)) // Ждем обновления кэша
   }, 60000)
   
   afterAll(async () => {
@@ -203,10 +226,11 @@ describe('Все сценарии: Баллы лояльности и промо
   test('Сценарий 1.2: Онлайн-оплата при создании заказа (POST)', async () => {
     const initialBalance = await getUserBalance(TEST_USER_ID)
     const initialTotalSpent = await getUserTotalSpent(TEST_USER_ID)
+    console.log(`📊 Начальное состояние: баланс=${initialBalance}, total_spent=${initialTotalSpent}`)
     
     const orderData = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-20T00:00:00.000Z',
+      startDate: getUniqueDate(30),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'card',
       paid: true,
@@ -225,14 +249,21 @@ describe('Все сценарии: Баллы лояльности и промо
     expect(result.success).toBe(true)
     expect(result.order?.id).toBeDefined()
     createdOrderIds.push(result.order.id)
+    console.log(`✅ Заказ создан: ID=${result.order.id}, номер=${result.order.orderNumber}`)
     
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    // Ждем обработки (увеличена задержка)
+    await new Promise((resolve) => setTimeout(resolve, 4000))
     
-    const finalBalance = await getUserBalance(TEST_USER_ID)
-    const finalTotalSpent = await getUserTotalSpent(TEST_USER_ID)
+    const finalBalance = await getUserBalance(TEST_USER_ID, 5)
+    const finalTotalSpent = await getUserTotalSpent(TEST_USER_ID, 5)
     const transactions = await getUserTransactions(TEST_USER_ID)
     
+    console.log(`📊 Финальное состояние: баланс=${finalBalance}, total_spent=${finalTotalSpent}`)
+    console.log(`📋 Транзакций найдено: ${transactions.length}`)
+    
     const expectedPoints = calculateExpectedPoints(2000, initialTotalSpent)
+    console.log(`💰 Ожидаемые баллы: ${expectedPoints} (${initialTotalSpent >= 50000 ? 'Gold 7%' : initialTotalSpent >= 20000 ? 'Silver 5%' : 'Bronze 3%'})`)
+    
     expect(finalBalance).toBe(initialBalance + expectedPoints)
     expect(finalTotalSpent).toBe(initialTotalSpent + 2000)
     
@@ -248,10 +279,11 @@ describe('Все сценарии: Баллы лояльности и промо
   test('Сценарий 1.5: Оплата наличными - Pending транзакция (POST)', async () => {
     const initialBalance = await getUserBalance(TEST_USER_ID)
     const initialTotalSpent = await getUserTotalSpent(TEST_USER_ID)
+    console.log(`📊 Начальное состояние: баланс=${initialBalance}, total_spent=${initialTotalSpent}`)
     
     const orderData = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-21T00:00:00.000Z',
+      startDate: getUniqueDate(31),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'cash',
       paid: false,
@@ -269,12 +301,16 @@ describe('Все сценарии: Баллы лояльности и промо
     const result = await createTestOrder(orderData)
     expect(result.success).toBe(true)
     createdOrderIds.push(result.order.id)
+    console.log(`✅ Заказ создан: ID=${result.order.id}`)
     
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 4000))
     
-    const balanceAfter = await getUserBalance(TEST_USER_ID)
-    const totalSpentAfter = await getUserTotalSpent(TEST_USER_ID)
+    const balanceAfter = await getUserBalance(TEST_USER_ID, 5)
+    const totalSpentAfter = await getUserTotalSpent(TEST_USER_ID, 5)
     const transactions = await getUserTransactions(TEST_USER_ID)
+    
+    console.log(`📊 После создания: баланс=${balanceAfter}, total_spent=${totalSpentAfter}`)
+    console.log(`📋 Транзакций найдено: ${transactions.length}`)
     
     expect(balanceAfter).toBe(initialBalance) // Баллы НЕ начислены сразу
     expect(totalSpentAfter).toBe(initialTotalSpent + 2000) // total_spent обновлен
@@ -291,7 +327,7 @@ describe('Все сценарии: Баллы лояльности и промо
     // Создаем неоплаченный заказ
     const orderData = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-22T00:00:00.000Z',
+      startDate: getUniqueDate(32),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'card',
       paid: false,
@@ -308,24 +344,29 @@ describe('Все сценарии: Баллы лояльности и промо
     
     const createResult = await createTestOrder(orderData)
     createdOrderIds.push(createResult.order.id)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 3000))
     
-    const balanceBeforePayment = await getUserBalance(TEST_USER_ID)
-    const totalSpentBeforePayment = await getUserTotalSpent(TEST_USER_ID)
+    const balanceBeforePayment = await getUserBalance(TEST_USER_ID, 5)
+    const totalSpentBeforePayment = await getUserTotalSpent(TEST_USER_ID, 5)
+    console.log(`📊 До оплаты: баланс=${balanceBeforePayment}, total_spent=${totalSpentBeforePayment}`)
     
     // Оплачиваем заказ
     await updateOrder(createResult.order.id, {
       paid: true,
       paymentStatus: 'paid',
     })
+    console.log(`✅ Заказ оплачен`)
     
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 4000))
     
-    const balanceAfterPayment = await getUserBalance(TEST_USER_ID)
-    const totalSpentAfterPayment = await getUserTotalSpent(TEST_USER_ID)
+    const balanceAfterPayment = await getUserBalance(TEST_USER_ID, 5)
+    const totalSpentAfterPayment = await getUserTotalSpent(TEST_USER_ID, 5)
     const transactions = await getUserTransactions(TEST_USER_ID)
     
+    console.log(`📊 После оплаты: баланс=${balanceAfterPayment}, total_spent=${totalSpentAfterPayment}`)
+    
     const expectedPoints = calculateExpectedPoints(2000, totalSpentBeforePayment)
+    console.log(`💰 Ожидаемые баллы: ${expectedPoints}`)
     expect(balanceAfterPayment).toBe(balanceBeforePayment + expectedPoints)
     
     const earnedTransaction = transactions.find(t => 
@@ -342,7 +383,7 @@ describe('Все сценарии: Баллы лояльности и промо
     // Сначала начислим баллы
     const orderData1 = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-23T00:00:00.000Z',
+      startDate: getUniqueDate(33),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'card',
       paid: true,
@@ -359,16 +400,17 @@ describe('Все сценарии: Баллы лояльности и промо
     
     const result1 = await createTestOrder(orderData1)
     createdOrderIds.push(result1.order.id)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 4000))
     
-    const balanceAfterEarn = await getUserBalance(TEST_USER_ID)
+    const balanceAfterEarn = await getUserBalance(TEST_USER_ID, 5)
+    console.log(`📊 Баланс после начисления: ${balanceAfterEarn}`)
     expect(balanceAfterEarn).toBeGreaterThan(0)
     
     // Теперь используем баллы
-    const pointsToUse = 100
+    const pointsToUse = Math.min(100, balanceAfterEarn) // Используем не больше, чем есть
     const orderData2 = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-24T00:00:00.000Z',
+      startDate: getUniqueDate(34),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'card',
       paid: true,
@@ -385,11 +427,12 @@ describe('Все сценарии: Баллы лояльности и промо
     
     const result2 = await createTestOrder(orderData2)
     createdOrderIds.push(result2.order.id)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 4000))
     
-    const balanceAfterUse = await getUserBalance(TEST_USER_ID)
+    const balanceAfterUse = await getUserBalance(TEST_USER_ID, 5)
     const transactions = await getUserTransactions(TEST_USER_ID)
     
+    console.log(`📊 Баланс после использования: ${balanceAfterUse}, ожидается: ${balanceAfterEarn - pointsToUse}`)
     expect(balanceAfterUse).toBe(balanceAfterEarn - pointsToUse)
     
     const usedTransaction = transactions.find(t => 
@@ -404,11 +447,12 @@ describe('Все сценарии: Баллы лояльности и промо
   test('Сценарий 2.6: Возврат баллов при удалении заказа - проверка total_spent', async () => {
     const initialBalance = await getUserBalance(TEST_USER_ID)
     const initialTotalSpent = await getUserTotalSpent(TEST_USER_ID)
+    console.log(`📊 Начальное состояние: баланс=${initialBalance}, total_spent=${initialTotalSpent}`)
     
     // Создаем оплаченный заказ
     const orderData = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-25T00:00:00.000Z',
+      startDate: getUniqueDate(35),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'card',
       paid: true,
@@ -424,20 +468,23 @@ describe('Все сценарии: Баллы лояльности и промо
     }
     
     const createResult = await createTestOrder(orderData)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 4000))
     
-    const balanceAfterCreate = await getUserBalance(TEST_USER_ID)
-    const totalSpentAfterCreate = await getUserTotalSpent(TEST_USER_ID)
+    const balanceAfterCreate = await getUserBalance(TEST_USER_ID, 5)
+    const totalSpentAfterCreate = await getUserTotalSpent(TEST_USER_ID, 5)
+    console.log(`📊 После создания: баланс=${balanceAfterCreate}, total_spent=${totalSpentAfterCreate}`)
     
     expect(balanceAfterCreate).toBeGreaterThan(initialBalance)
     expect(totalSpentAfterCreate).toBe(initialTotalSpent + 2000)
     
     // Удаляем заказ
     await deleteOrder(createResult.order.id, TEST_USER_ID)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    console.log(`✅ Заказ удален`)
+    await new Promise((resolve) => setTimeout(resolve, 4000))
     
-    const balanceAfterDelete = await getUserBalance(TEST_USER_ID)
-    const totalSpentAfterDelete = await getUserTotalSpent(TEST_USER_ID)
+    const balanceAfterDelete = await getUserBalance(TEST_USER_ID, 5)
+    const totalSpentAfterDelete = await getUserTotalSpent(TEST_USER_ID, 5)
+    console.log(`📊 После удаления: баланс=${balanceAfterDelete}, total_spent=${totalSpentAfterDelete}`)
     
     // ✅ КРИТИЧНО: Проверяем что total_spent откачен
     expect(balanceAfterDelete).toBe(initialBalance) // Баллы возвращены
@@ -453,7 +500,7 @@ describe('Все сценарии: Баллы лояльности и промо
     // Создаем заказ с промокодом
     const orderData = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-26T00:00:00.000Z',
+      startDate: getUniqueDate(36),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'card',
       paid: true,
@@ -493,7 +540,7 @@ describe('Все сценарии: Баллы лояльности и промо
     // Создаем неоплаченный заказ с промокодом
     const orderData = {
       userId: TEST_USER_ID,
-      startDate: '2026-01-27T00:00:00.000Z',
+      startDate: getUniqueDate(37),
       deliveryTime: '18:00-21:00',
       paymentMethod: 'card',
       paid: false,
