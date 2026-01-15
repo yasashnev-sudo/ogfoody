@@ -116,7 +116,7 @@ async function testDeleteMethod2(promoId) {
           status: res.statusCode,
           statusText: res.statusMessage,
           body: data,
-          method: 'DELETE /records с массивом ID в теле',
+          method: 'DELETE /records с массивом ID [id]',
         });
       });
     });
@@ -125,12 +125,54 @@ async function testDeleteMethod2(promoId) {
       resolve({
         status: 0,
         error: error.message,
-        method: 'DELETE /records с массивом ID в теле',
+        method: 'DELETE /records с массивом ID [id]',
       });
     });
 
     // Отправляем массив ID в теле запроса
     req.write(JSON.stringify([promoId]));
+    req.end();
+  });
+}
+
+// Тестируем удаление методом 2b: bulk delete с массивом объектов {Id: id}
+async function testDeleteMethod2b(promoId) {
+  return new Promise((resolve) => {
+    const requestUrl = url.parse(`${NOCODB_URL}/api/v2/tables/${PROMO_TABLE_ID}/records`);
+    const options = {
+      hostname: requestUrl.hostname,
+      port: requestUrl.port || (requestUrl.protocol === 'https:' ? 443 : 80),
+      path: requestUrl.path,
+      method: 'DELETE',
+      headers: {
+        'xc-token': NOCODB_TOKEN,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    const req = httpModule.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        resolve({
+          status: res.statusCode,
+          statusText: res.statusMessage,
+          body: data,
+          method: 'DELETE /records с массивом объектов [{Id: id}]',
+        });
+      });
+    });
+
+    req.on('error', (error) => {
+      resolve({
+        status: 0,
+        error: error.message,
+        method: 'DELETE /records с массивом объектов [{Id: id}]',
+      });
+    });
+
+    // Отправляем массив объектов с Id
+    req.write(JSON.stringify([{ Id: promoId }]));
     req.end();
   });
 }
@@ -201,11 +243,18 @@ async function main() {
     if (result1.error) console.log(`   Ошибка: ${result1.error}`);
     console.log('');
 
-    console.log('🔍 Тестирование метода 2: DELETE /records с массивом ID в теле');
+    console.log('🔍 Тестирование метода 2: DELETE /records с массивом ID [id]');
     const result2 = await testDeleteMethod2(testId);
     console.log(`   Статус: ${result2.status} ${result2.statusText || ''}`);
     if (result2.body) console.log(`   Ответ: ${result2.body.substring(0, 200)}`);
     if (result2.error) console.log(`   Ошибка: ${result2.error}`);
+    console.log('');
+
+    console.log('🔍 Тестирование метода 2b: DELETE /records с массивом объектов [{Id: id}]');
+    const result2b = await testDeleteMethod2b(testId);
+    console.log(`   Статус: ${result2b.status} ${result2b.statusText || ''}`);
+    if (result2b.body) console.log(`   Ответ: ${result2b.body.substring(0, 200)}`);
+    if (result2b.error) console.log(`   Ошибка: ${result2b.error}`);
     console.log('');
 
     console.log('🔍 Тестирование метода 3: DELETE /records?where=(id,eq,{id})');
@@ -216,10 +265,10 @@ async function main() {
     console.log('');
 
     // Определяем рабочий метод
-    const workingMethod = [result1, result2, result3].find(r => r.status === 200);
+    const workingMethod = [result1, result2, result2b, result3].find(r => r.status === 200);
     
-    // Если метод 2 работает, проверяем что запись действительно удалена
-    if (result2.status === 200) {
+    // Если какой-то метод работает, проверяем что запись действительно удалена
+    if (result2.status === 200 || result2b.status === 200) {
       console.log('🔄 Проверяем, что промокод действительно удален...');
       const promoCodesAfter = await getPromoCodes();
       const stillExists = promoCodesAfter.find(p => p.Id === testId);
