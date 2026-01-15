@@ -5,12 +5,10 @@ import {
   LayoutDashboard, 
   ShoppingCart, 
   Users, 
-  Utensils, 
   MessageSquare, 
   Bell,
   Gift,
-  BarChart3,
-  Settings
+  BarChart3
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -18,7 +16,6 @@ const menuItems = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Заказы", icon: ShoppingCart },
   { href: "/admin/users", label: "Пользователи", icon: Users },
-  { href: "/admin/meals", label: "Блюда", icon: Utensils },
   { href: "/admin/chat", label: "Чат с клиентами", icon: MessageSquare },
   { href: "/admin/notifications", label: "Пуш-уведомления", icon: Bell },
   { href: "/admin/promo", label: "Промокоды", icon: Gift },

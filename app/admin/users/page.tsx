@@ -149,15 +149,6 @@ export default function AdminUsersPage() {
                     </div>
                   )}
                 </div>
-
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-2 border-black shadow-brutal brutal-hover"
-                  >
-                    Подробнее
-                  </Button>
-                </div>
               </Card>
             )
           })

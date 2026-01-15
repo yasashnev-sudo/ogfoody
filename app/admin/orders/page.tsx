@@ -217,13 +217,6 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="border-2 border-black shadow-brutal brutal-hover"
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Подробнее
-                  </Button>
                 </div>
               </Card>
             )
