@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Eye, Package } from "lucide-react"
+import { Search, Eye, Package, Edit, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { OrderDetailModal } from "@/components/admin/OrderDetailModal"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 interface Order {
   Id: number
@@ -37,6 +39,9 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [newStatus, setNewStatus] = useState<string>("")
 
   useEffect(() => {
     loadOrders()
@@ -110,6 +115,59 @@ export default function AdminOrdersPage() {
       failed: "Ошибка",
     }
     return labels[status] || status
+  }
+
+  const handleEditStatus = (order: Order) => {
+    setEditingOrder(order)
+    setNewStatus(order["Order Status"] || order.order_status || "pending")
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveStatus = async () => {
+    if (!editingOrder) return
+
+    try {
+      const response = await fetch("/api/db/Orders/records", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([{ Id: editingOrder.Id, order_status: newStatus }]),
+      })
+
+      if (response.ok) {
+        setIsEditModalOpen(false)
+        setEditingOrder(null)
+        loadOrders()
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        alert(`Ошибка сохранения: ${errorData.error || response.statusText}`)
+      }
+    } catch (error) {
+      console.error("Ошибка сохранения статуса:", error)
+      alert("Произошла ошибка при сохранении статуса")
+    }
+  }
+
+  const handleDeleteOrder = async (id: number) => {
+    if (!confirm("Вы уверены, что хотите удалить этот заказ? Это действие нельзя отменить.")) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/db/Orders/records/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      if (response.ok) {
+        loadOrders()
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        alert(`Ошибка удаления: ${errorData.error || response.statusText}`)
+      }
+    } catch (error) {
+      console.error("Ошибка удаления заказа:", error)
+      alert("Произошла ошибка при удалении заказа")
+    }
   }
 
   if (loading) {
@@ -220,17 +278,34 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setSelectedOrder(order)
-                      setIsModalOpen(true)
-                    }}
-                    variant="outline"
-                    className="border-2 border-black shadow-brutal brutal-hover"
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Подробнее
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedOrder(order)
+                        setIsModalOpen(true)
+                      }}
+                      variant="outline"
+                      className="border-2 border-black shadow-brutal brutal-hover"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Подробнее
+                    </Button>
+                    <Button
+                      onClick={() => handleEditStatus(order)}
+                      variant="outline"
+                      className="border-2 border-[#9D00FF] text-[#9D00FF] shadow-brutal brutal-hover"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Статус
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteOrder(order.Id)}
+                      variant="outline"
+                      className="border-2 border-red-500 text-red-500 shadow-brutal hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             )
@@ -246,6 +321,59 @@ export default function AdminOrdersPage() {
         }}
         order={selectedOrder}
       />
+
+      {/* Модальное окно редактирования статуса */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="bg-white border-2 border-black rounded-xl shadow-brutal">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-black">
+              Изменить статус заказа
+            </DialogTitle>
+            <DialogDescription className="text-black/70">
+              Заказ {editingOrder ? (editingOrder["Order Number"] || editingOrder.order_number || `#${editingOrder.Id}`) : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-black font-bold">
+                Новый статус
+              </Label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger className="border-2 border-black rounded-lg shadow-brutal">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">В обработке</SelectItem>
+                  <SelectItem value="confirmed">Подтвержден</SelectItem>
+                  <SelectItem value="preparing">Готовится</SelectItem>
+                  <SelectItem value="ready">Готов</SelectItem>
+                  <SelectItem value="cancelled">Отменен</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveStatus}
+                className="bg-[#9D00FF] text-white border-2 border-black shadow-brutal brutal-hover"
+              >
+                Сохранить
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsEditModalOpen(false)
+                  setEditingOrder(null)
+                }}
+                variant="outline"
+                className="border-2 border-black shadow-brutal brutal-hover"
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
