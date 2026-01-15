@@ -93,10 +93,10 @@ async function testDeleteMethod1(promoId) {
   });
 }
 
-// Тестируем удаление методом 2: bulk delete с where
+// Тестируем удаление методом 2: bulk delete с массивом ID в теле
 async function testDeleteMethod2(promoId) {
   return new Promise((resolve) => {
-    const requestUrl = url.parse(`${NOCODB_URL}/api/v2/tables/${PROMO_TABLE_ID}/records?where=(Id,eq,${promoId})`);
+    const requestUrl = url.parse(`${NOCODB_URL}/api/v2/tables/${PROMO_TABLE_ID}/records`);
     const options = {
       hostname: requestUrl.hostname,
       port: requestUrl.port || (requestUrl.protocol === 'https:' ? 443 : 80),
@@ -116,7 +116,7 @@ async function testDeleteMethod2(promoId) {
           status: res.statusCode,
           statusText: res.statusMessage,
           body: data,
-          method: 'DELETE /records?where=(Id,eq,{id})',
+          method: 'DELETE /records с массивом ID в теле',
         });
       });
     });
@@ -125,10 +125,12 @@ async function testDeleteMethod2(promoId) {
       resolve({
         status: 0,
         error: error.message,
-        method: 'DELETE /records?where=(Id,eq,{id})',
+        method: 'DELETE /records с массивом ID в теле',
       });
     });
 
+    // Отправляем массив ID в теле запроса
+    req.write(JSON.stringify([promoId]));
     req.end();
   });
 }
@@ -199,7 +201,7 @@ async function main() {
     if (result1.error) console.log(`   Ошибка: ${result1.error}`);
     console.log('');
 
-    console.log('🔍 Тестирование метода 2: DELETE /records?where=(Id,eq,{id})');
+    console.log('🔍 Тестирование метода 2: DELETE /records с массивом ID в теле');
     const result2 = await testDeleteMethod2(testId);
     console.log(`   Статус: ${result2.status} ${result2.statusText || ''}`);
     if (result2.body) console.log(`   Ответ: ${result2.body.substring(0, 200)}`);
@@ -215,6 +217,19 @@ async function main() {
 
     // Определяем рабочий метод
     const workingMethod = [result1, result2, result3].find(r => r.status === 200);
+    
+    // Если метод 2 работает, проверяем что запись действительно удалена
+    if (result2.status === 200) {
+      console.log('🔄 Проверяем, что промокод действительно удален...');
+      const promoCodesAfter = await getPromoCodes();
+      const stillExists = promoCodesAfter.find(p => p.Id === testId);
+      if (stillExists) {
+        console.log('   ⚠️  Промокод все еще существует!');
+      } else {
+        console.log('   ✅ Промокод успешно удален!');
+      }
+      console.log('');
+    }
     if (workingMethod) {
       console.log(`✅ Рабочий метод найден: ${workingMethod.method}`);
       console.log(`   Используйте этот формат для удаления!`);
