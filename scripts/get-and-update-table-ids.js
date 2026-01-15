@@ -82,22 +82,33 @@ async function main() {
   try {
     const tables = await getTables();
     
-    // Ищем таблицы по разным вариантам названий
-    const messagesTable = tables.find(t => 
-      t.table_name === 'Messages' || 
-      t.title === 'Messages' ||
-      t.table_name.toLowerCase().includes('message') ||
-      t.title.toLowerCase().includes('message')
-    );
+    // Выводим все таблицы для отладки
+    console.log('\n📋 Все таблицы в базе:');
+    tables.forEach(t => {
+      console.log(`   - ${t.table_name || 'N/A'} (${t.title || 'N/A'}) - ID: ${t.id}`);
+    });
+    console.log('');
 
-    const notificationsTable = tables.find(t => 
-      t.table_name === 'Push_Notifications' || 
-      t.title === 'Push_Notifications' ||
-      t.table_name.toLowerCase().includes('push') ||
-      t.table_name.toLowerCase().includes('notification') ||
-      t.title.toLowerCase().includes('push') ||
-      t.title.toLowerCase().includes('notification')
-    );
+    // Ищем таблицы по разным вариантам названий
+    const messagesTable = tables.find(t => {
+      const name = (t.table_name || '').toLowerCase();
+      const title = (t.title || '').toLowerCase();
+      return name === 'messages' || 
+             title === 'messages' ||
+             name.includes('message') ||
+             title.includes('message');
+    });
+
+    const notificationsTable = tables.find(t => {
+      const name = (t.table_name || '').toLowerCase();
+      const title = (t.title || '').toLowerCase();
+      return name === 'push_notifications' || 
+             title === 'push_notifications' ||
+             name === 'pushnotifications' ||
+             title === 'pushnotifications' ||
+             (name.includes('push') && name.includes('notif')) ||
+             (title.includes('push') && title.includes('notif'));
+    });
 
     if (!messagesTable) {
       console.error('❌ Таблица Messages не найдена');
