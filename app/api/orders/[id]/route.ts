@@ -1568,8 +1568,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
           ? currentOrder.total
           : parseFloat(String(currentOrder.total)) || 0
         
-        // Если заказ был ОПЛАЧЕН - баллы уже начислены, возвращаем их
-        if (wasPaid && (pointsEarned > 0 || pointsUsed > 0)) {
+        // ✅ ИСПРАВЛЕНО: Возвращаем баллы для оплаченных заказов, даже если pointsEarned = 0
+        // (могут быть транзакции, которые нужно вернуть)
+        if (wasPaid) {
+          console.log(`💰 Заказ ${id} был ОПЛАЧЕН - проверяем транзакции для возврата баллов`, {
+            pointsEarned,
+            pointsUsed,
+            orderTotal,
+          })
           // ✅ ИСПРАВЛЕНО: Получаем ВСЕ completed транзакции для этого заказа
           // Вместо использования pointsEarned из заказа, подсчитываем реальную сумму из транзакций
           try {
@@ -1600,16 +1606,32 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
               finalPointsUsed,
               orderTotal,
               userId: currentOrder.user_id,
+              transactionsFound: allTransactions.length,
             })
             
-            await refundLoyaltyPoints(
-              currentOrder.user_id,
-              finalPointsEarned,
-              finalPointsUsed,
-              orderTotal,
-              Number(id)
-            )
-            console.log(`✅ Возвращено ${finalPointsEarned} начисленных и ${finalPointsUsed} использованных баллов`)
+            // ✅ ИСПРАВЛЕНО: Вызываем refundLoyaltyPoints только если есть что возвращать
+            if (finalPointsEarned > 0 || finalPointsUsed > 0) {
+              await refundLoyaltyPoints(
+                currentOrder.user_id,
+                finalPointsEarned,
+                finalPointsUsed,
+                orderTotal,
+                Number(id)
+              )
+              console.log(`✅ Возвращено ${finalPointsEarned} начисленных и ${finalPointsUsed} использованных баллов`)
+            } else {
+              console.log(`ℹ️ Нет баллов для возврата (earned: ${finalPointsEarned}, used: ${finalPointsUsed})`)
+              // ✅ КРИТИЧНО: Даже если нет баллов, нужно откатить total_spent
+              // Вызываем refundLoyaltyPoints с нулевыми баллами, но с orderTotal для отката total_spent
+              await refundLoyaltyPoints(
+                currentOrder.user_id,
+                0,
+                0,
+                orderTotal,
+                Number(id)
+              )
+              console.log(`✅ Откачен total_spent для заказа ${id} (баллов не было)`)
+            }
           } catch (error) {
             console.error(`❌ Ошибка при получении транзакций для возврата баллов:`, error)
             // Fallback на значения из заказа
