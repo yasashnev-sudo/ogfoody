@@ -33,15 +33,14 @@ export async function POST(request: Request) {
       
       console.log(`📦 Найдено заказов: ${orderIds.length}`)
       
-      // Удаляем каждый заказ
+      // Удаляем каждый заказ используя where параметр (правильный формат для NocoDB API v2)
       for (const orderId of orderIds) {
-        await fetch(`${NOCODB_URL}/api/v2/tables/${process.env.NOCODB_TABLE_ORDERS}/records`, {
+        await fetch(`${NOCODB_URL}/api/v2/tables/${process.env.NOCODB_TABLE_ORDERS}/records?where=(Id,eq,${orderId})`, {
           method: 'DELETE',
           headers: {
             'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify([orderId]),
         })
       }
       

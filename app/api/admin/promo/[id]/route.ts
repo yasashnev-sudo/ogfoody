@@ -32,8 +32,8 @@ export async function DELETE(
       )
     }
 
-    // Используем прямой DELETE запрос к NocoDB API
-    const url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_PROMO_CODES}/records/${promoId}`
+    // Используем bulk delete с where параметром (правильный формат для NocoDB API v2)
+    const url = `${NOCODB_URL}/api/v2/tables/${NOCODB_TABLE_PROMO_CODES}/records?where=(Id,eq,${promoId})`
     
     const response = await fetch(url, {
       method: "DELETE",
