@@ -19,19 +19,21 @@ function getNocoDBToken(): string {
 }
 
 function getTableId(tableName: string): string {
+  // ✅ ИСПРАВЛЕНО: Используем fallback значения для таблиц, так как переменные не секретные
+  // Это гарантирует, что код работает даже если переменные окружения не загружены
   const tableIds: Record<string, string | undefined> = {
-    Meals: process.env.NOCODB_TABLE_MEALS,
-    Extras: process.env.NOCODB_TABLE_EXTRAS,
-    Delivery_Zones: process.env.NOCODB_TABLE_DELIVERY_ZONES,
-    Users: process.env.NOCODB_TABLE_USERS,
-    Orders: process.env.NOCODB_TABLE_ORDERS,
-    Order_Persons: process.env.NOCODB_TABLE_ORDER_PERSONS,
-    Order_Meals: process.env.NOCODB_TABLE_ORDER_MEALS,
-    Order_Extras: process.env.NOCODB_TABLE_ORDER_EXTRAS,
-    Promo_Codes: process.env.NOCODB_TABLE_PROMO_CODES,
-    Reviews: process.env.NOCODB_TABLE_REVIEWS,
-    Loyalty_Points_Transactions: process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,
-    Fraud_Alerts: process.env.NOCODB_TABLE_FRAUD_ALERTS || "mr9txejs65nk1yi", // Фолбэк для Fraud_Alerts
+    Meals: process.env.NOCODB_TABLE_MEALS || "m6h073y33i44nwx",
+    Extras: process.env.NOCODB_TABLE_EXTRAS || "m43rjzbwcon7a9p",
+    Delivery_Zones: process.env.NOCODB_TABLE_DELIVERY_ZONES || "mozhmlebwluzna4",
+    Users: process.env.NOCODB_TABLE_USERS || "mg9dm2m41bjv8ar",
+    Orders: process.env.NOCODB_TABLE_ORDERS || "m96i4ai2yelbboh",
+    Order_Persons: process.env.NOCODB_TABLE_ORDER_PERSONS || "m6jccosyrdiz2bm",
+    Order_Meals: process.env.NOCODB_TABLE_ORDER_MEALS || "mvwp0iaqj2tne15",
+    Order_Extras: process.env.NOCODB_TABLE_ORDER_EXTRAS || "mm5yxpaojbtjs4v",
+    Promo_Codes: process.env.NOCODB_TABLE_PROMO_CODES || "mbm55wmm3ok48n8",
+    Reviews: process.env.NOCODB_TABLE_REVIEWS || "mrfo7gyp91oq77b",
+    Loyalty_Points_Transactions: process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS || "mn244txmccpwmhx",
+    Fraud_Alerts: process.env.NOCODB_TABLE_FRAUD_ALERTS || "mr9txejs65nk1yi",
     Messages: process.env.NOCODB_TABLE_MESSAGES,
     Push_Notifications: process.env.NOCODB_TABLE_PUSH_NOTIFICATIONS,
   }
@@ -186,43 +188,6 @@ async function serverCreateRecord<T>(
 
   const tableId = getTableId(tableName)
   if (!tableId) {
-    // ✅ ИСПРАВЛЕНО: Для Loyalty_Points_Transactions используем fallback, если переменная не установлена
-    // Это позволяет транзакциям создаваться даже если переменная окружения не загружена в PM2
-    if (tableName === "Loyalty_Points_Transactions") {
-      console.warn(`⚠️ NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS не установлена, используем fallback: mn244txmccpwmhx`)
-      const fallbackTableId = "mn244txmccpwmhx"
-      // Продолжаем с fallback ID
-      const baseUrl = getNocoDBUrl().replace(/\/$/, "")
-      const actualBaseUrl = baseUrl.endsWith("/api/v2") ? baseUrl : `${baseUrl}/api/v2`
-      const url = `${actualBaseUrl}/tables/${fallbackTableId}/records`
-      const token = getNocoDBToken()
-      
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "xc-token": token,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-      
-      const text = await response.text()
-      if (!response.ok) {
-        console.error(`❌ NocoDB POST error for ${tableName}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          url,
-          response: text.substring(0, 500),
-        })
-        throw new Error(`NocoDB API error: ${response.status} - ${text.substring(0, 200)}`)
-      }
-      
-      const result = JSON.parse(text)
-      if (Array.isArray(result)) {
-        return result[0] as T
-      }
-      return result as T
-    }
     throw new Error(`TABLE_NOT_CONFIGURED:${tableName}`)
   }
 
