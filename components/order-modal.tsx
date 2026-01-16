@@ -661,7 +661,10 @@ export function OrderModal({
   const canPay = !isPaid && !isPastDate           // Можно оплатить сегодня, но не прошлые
   const canUsePromo = !isPaid && !isPastDate      // Можно использовать промокод сегодня, но не для прошлых заказов
   const canEdit = canEditContent                  // Для обратной совместимости
-  const isExistingOrder = !!existingOrder
+  // ✅ КРИТИЧНО: Черновик (без id) не считается существующим заказом
+  // Это исправляет проблему, когда при повторе заказа открывался черновик,
+  // но кнопки оплаты не показывались, потому что черновик считался существующим заказом
+  const isExistingOrder = !!existingOrder?.id
 
   const fillRandomMeals = (personId: number) => {
     const getRandom = <T,>(arr: T[]): T | null => {
