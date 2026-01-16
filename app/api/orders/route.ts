@@ -230,9 +230,12 @@ export async function POST(request: Request) {
       // Новые статусы оплаты
       // Определяем статус оплаты: если явно указан paymentStatus, используем его, иначе на основе paid
       payment_status: order.paymentStatus || (order.paid === true || String(order.paid).toLowerCase() === 'true' ? "paid" : "pending"),
-      // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+      // ✅ КРИТИЧНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем null для новых заказов
+      // Проблема: В схеме БД есть дефолтное значение "cash" для payment_method
+      // Если передать undefined, БД установит "cash" автоматически
+      // Решение: Передаем null явно, чтобы БД не устанавливала дефолтное значение
       // paymentMethod должен быть установлен только при оплате, а не при создании заказа
-      payment_method: order.paymentMethod || undefined,
+      payment_method: order.paymentMethod || (order.paid ? undefined : null),
       paid: order.paid === true || String(order.paid).toLowerCase() === 'true' || order.paymentStatus === 'paid' || String(order.paymentStatus).toLowerCase() === 'paid',
       paid_at: order.paidAt || (order.paid ? now : undefined),
       payment_id: order.paymentId || undefined,
@@ -954,9 +957,13 @@ export async function POST(request: Request) {
         orderNumber: orderNumberToReturn,
         startDate: order.startDate,
         deliveryTime: order.deliveryTime,
-        // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию для новых заказов
-        // paymentMethod должен быть undefined до выбора способа оплаты
-        paymentMethod: order.paymentMethod || undefined,
+        // ✅ КРИТИЧНО 2026-01-16: НЕ используем paymentMethod из перезагруженного заказа (nocoOrder)
+        // Проблема: В схеме БД есть дефолтное значение "cash" для payment_method
+        // Когда мы создаем заказ с payment_method: undefined, БД автоматически устанавливает "cash"
+        // Поэтому fetchOrderById возвращает "cash" из БД, хотя мы не отправляли это значение
+        // Решение: Используем paymentMethod из исходного order (который undefined для новых заказов)
+        // Только если заказ уже оплачен (paid=true), используем paymentMethod из БД
+        paymentMethod: order.paid ? (order.paymentMethod || (nocoOrder as any).payment_method || (nocoOrder as any)["Payment Method"]) : (order.paymentMethod || undefined),
         paid: order.paid || false,
         paymentStatus: order.paymentStatus || "pending",
         orderStatus: "pending",
