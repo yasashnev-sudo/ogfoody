@@ -1210,16 +1210,16 @@ export function OrderModal({
                                         if (isRepeatingOrder) return
                                         // ✅ КРИТИЧНО: Устанавливаем loading перед вызовом (как в order-history.tsx)
                                         setIsRepeatingOrder(true)
+                                        setShowRepeatDateMenu(false) // Закрываем меню выбора даты сразу
                                         try {
                                           if (existingOrder && onRepeatOrder) {
                                             await onRepeatOrder(existingOrder, date)
-                                            // После успешного повтора закрываем текущий модал
-                                            onClose()
+                                            // ✅ НЕ закрываем модалку здесь - handleRepeatOrder сам управляет открытием/закрытием через setSelectedDate
+                                            // Модалка закроется автоматически, когда handleRepeatOrder установит новую дату
                                           }
                                         } finally {
                                           // ✅ Всегда снимаем loading даже при ошибке
                                           setIsRepeatingOrder(false)
-                                          setShowRepeatDateMenu(false)
                                         }
                                       }}
                                       disabled={isRepeatingOrder}
