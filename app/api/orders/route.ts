@@ -601,24 +601,28 @@ export async function POST(request: Request) {
           const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
           
           // ✅ Приводим orderTotal к числу для избежания ошибок типов
-          // ✅ ИСПРАВЛЕНО: Учитываем промокод при расчете orderTotal для начисления баллов
+          // ✅ ИСПРАВЛЕНО: Для total_spent используем сумму С промокодом
           let orderTotalNum = typeof orderTotal === 'number' ? orderTotal : parseFloat(String(orderTotal)) || 0
           
-          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если orderTotal не учитывает промокод, пересчитываем
+          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Для начисления баллов используем Subtotal + Delivery Fee БЕЗ промокода
           const promoDiscount = order.promoDiscount || 0
+          const subtotal = order.subtotal || calculatedTotal || 0
+          const deliveryFee = nocoOrder.delivery_fee || (nocoOrder as any)['Delivery Fee'] || 0
+          const orderTotalForPoints = subtotal + deliveryFee // БЕЗ учета промокода для начисления баллов
+          
+          // Если orderTotal не учитывает промокод, пересчитываем для total_spent
           if (promoDiscount > 0 && orderTotalNum > 0) {
-            const subtotal = order.subtotal || calculatedTotal || 0
-            const deliveryFee = nocoOrder.delivery_fee || (nocoOrder as any)['Delivery Fee'] || 0
             const expectedTotal = subtotal + deliveryFee - promoDiscount
             // Если текущий total не совпадает с ожидаемым (с учетом промокода), используем ожидаемый
             if (Math.abs(orderTotalNum - expectedTotal) > 0.01) {
-              console.log(`⚠️ [POST] orderTotal не учитывает промокод, пересчитываем для начисления баллов: ${orderTotalNum} → ${expectedTotal}`)
+              console.log(`⚠️ [POST] orderTotal не учитывает промокод, пересчитываем для total_spent: ${orderTotalNum} → ${expectedTotal}`)
               orderTotalNum = expectedTotal
             }
           }
           
           console.log(`📊 Данные для расчета баллов:`, {
-            orderTotal: orderTotalNum,
+            orderTotalForPoints, // БЕЗ промокода (для начисления баллов)
+            orderTotal: orderTotalNum, // С промокодом (для total_spent)
             promoDiscount,
             pointsUsed,
             currentTotalSpent,
@@ -658,12 +662,14 @@ export async function POST(request: Request) {
           } else {
             // Рассчитываем начисляемые баллы
             // ВАЖНО: Используем currentTotalSpent БЕЗ учета текущего заказа для правильного расчета уровня
+            // ✅ ИСПРАВЛЕНО: Для расчета баллов используем orderTotalForPoints (БЕЗ промокода)
             console.log(`🔍 [POST] 4️⃣ Вызов calculateEarnedPoints с параметрами:`, {
-              orderTotalNum,
+              orderTotalForPoints, // БЕЗ промокода (для начисления баллов)
+              orderTotalNum, // С промокодом (для total_spent)
               pointsUsed,
               currentTotalSpent,
             })
-            actualPointsEarned = calculateEarnedPoints(orderTotalNum, pointsUsed, currentTotalSpent)
+            actualPointsEarned = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)
             
             console.log(`🔍 [POST] 5️⃣ Результат calculateEarnedPoints:`, {
               actualPointsEarned,
@@ -720,7 +726,8 @@ export async function POST(request: Request) {
                 
                 console.log(`🔍 [POST] 7️⃣ Вызов awardLoyaltyPoints с параметрами:`, {
                   userId,
-                  orderTotalNum,
+                  orderTotalNum, // С промокодом (для total_spent)
+                  orderTotalForPoints, // БЕЗ промокода (для описания транзакции)
                   pointsUsed: 0,
                   actualPointsEarned,
                   orderId: nocoOrder.Id,
@@ -728,7 +735,7 @@ export async function POST(request: Request) {
                 
                 // ✅ ИСПРАВЛЕНО: НЕ передаем pointsUsed, так как списание уже произошло выше
                 try {
-                  await awardLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id)
+                  await awardLoyaltyPoints(userId, orderTotalNum, 0, actualPointsEarned, nocoOrder.Id, orderTotalForPoints)
                   console.log(`🔍 [POST] 8️⃣ Результат awardLoyaltyPoints: успешно`)
                   console.log(`✅ Начислено ${actualPointsEarned} баллов пользователю ${userId} за заказ ${nocoOrder.Id}`)
                   

@@ -397,12 +397,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               })
 
               // Рассчитываем начисляемые баллы
+              // ✅ ИСПРАВЛЕНО: Для расчета баллов используем Subtotal + Delivery Fee (БЕЗ промокода)
+              const subtotal = order.subtotal !== undefined ? order.subtotal : (typeof currentOrder.subtotal === 'number' ? currentOrder.subtotal : parseFloat(String(currentOrder.subtotal)) || 0)
+              const deliveryFee = order.deliveryFee !== undefined ? order.deliveryFee : (typeof currentOrder.delivery_fee === 'number' ? currentOrder.delivery_fee : parseFloat(String(currentOrder.delivery_fee)) || 0)
+              const orderTotalForPoints = subtotal + deliveryFee // БЕЗ учета промокода для начисления баллов
+              
               console.log(`🔍 [PATCH ${id}] 6️⃣ Вызов calculateEarnedPoints с параметрами:`, {
-                orderTotal,
+                orderTotalForPoints, // БЕЗ промокода
+                orderTotal, // С промокодом (для total_spent)
                 pointsUsed,
                 currentTotalSpent,
               })
-              loyaltyPointsEarned = calculateEarnedPoints(orderTotal, pointsUsed, currentTotalSpent)
+              loyaltyPointsEarned = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)
               
               console.log(`🔍 [PATCH ${id}] 7️⃣ Результат calculateEarnedPoints:`, {
                 loyaltyPointsEarned,
@@ -412,12 +418,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               // ✅ ИСПРАВЛЕНО: передаем pointsUsed = 0, так как баллы уже списаны при создании/редактировании заказа
               console.log(`🔍 [PATCH ${id}] 8️⃣ Вызов awardLoyaltyPoints с параметрами:`, {
                 userId: currentOrder.user_id,
-                orderTotal,
+                orderTotal, // С промокодом (для total_spent)
+                orderTotalForPoints, // БЕЗ промокода (для описания транзакции)
                 pointsUsed: 0, // баллы уже списаны, не списываем повторно
                 loyaltyPointsEarned,
                 orderId: id,
               })
-              await awardLoyaltyPoints(currentOrder.user_id, orderTotal, 0, loyaltyPointsEarned, Number(id))
+              await awardLoyaltyPoints(currentOrder.user_id, orderTotal, 0, loyaltyPointsEarned, Number(id), orderTotalForPoints)
               
               console.log(`🔍 [PATCH ${id}] 9️⃣ Результат awardLoyaltyPoints: успешно`)
               console.log(`✅ Начислено ${loyaltyPointsEarned} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
@@ -568,7 +575,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                       loyaltyPointsEarned: calculatedPoints,
                       orderId: id,
                     })
-                    await awardLoyaltyPoints(currentOrder.user_id, orderTotalForTotalSpent, 0, calculatedPoints, Number(id))
+                    await awardLoyaltyPoints(currentOrder.user_id, orderTotalForTotalSpent, 0, calculatedPoints, Number(id), orderTotalForPoints)
                     console.log(`✅ [PATCH full] Начислено ${calculatedPoints} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
                     loyaltyPointsEarned = calculatedPoints
                     
@@ -1103,7 +1110,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                       loyaltyPointsEarned: calculatedPoints,
                       orderId: id,
                     })
-                    await awardLoyaltyPoints(currentOrder.user_id, orderTotalForPoints, 0, calculatedPoints, Number(id))
+                    // ✅ ИСПРАВЛЕНО: Передаем orderTotalForPoints как 6-й параметр для описания транзакции
+                    // orderTotalForPoints уже используется как orderTotal (для total_spent), но это правильно, т.к. здесь нет промокода
+                    await awardLoyaltyPoints(currentOrder.user_id, orderTotalForPoints, 0, calculatedPoints, Number(id), orderTotalForPoints)
                     console.log(`✅ [PATCH partial] Начислено ${calculatedPoints} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
                     pendingPointsEarned = calculatedPoints
                     updateData.loyalty_points_earned = calculatedPoints
@@ -1315,19 +1324,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             if (orderTotal <= 0) {
               console.warn(`⚠️ PATCH ${id}: Невозможно начислить баллы - orderTotal = ${orderTotal}. Проверьте данные заказа в БД!`)
             } else {
+              // ✅ ИСПРАВЛЕНО: Для расчета баллов используем Subtotal + Delivery Fee (БЕЗ промокода)
+              const subtotal = typeof currentOrder.subtotal === 'number'
+                ? currentOrder.subtotal
+                : typeof (currentOrder as any).Subtotal === 'number'
+                ? (currentOrder as any).Subtotal
+                : parseFloat(String(currentOrder.subtotal || (currentOrder as any).Subtotal || 0)) || 0
+              
+              const deliveryFee = typeof currentOrder.delivery_fee === 'number'
+                ? currentOrder.delivery_fee
+                : typeof (currentOrder as any)['Delivery Fee'] === 'number'
+                ? (currentOrder as any)['Delivery Fee']
+                : parseFloat(String(currentOrder.delivery_fee || (currentOrder as any)['Delivery Fee'] || 0)) || 0
+              
+              const orderTotalForPoints = subtotal + deliveryFee // БЕЗ учета промокода для начисления баллов
+              
               // Рассчитываем начисляемые баллы
               console.log(`🔍 [PATCH partial ${id}] 5️⃣ Вызов calculateEarnedPoints с параметрами:`, {
-                orderTotal,
+                orderTotalForPoints, // БЕЗ промокода
+                orderTotal, // С промокодом (для total_spent)
                 pointsUsed,
                 currentTotalSpent,
               })
-              const loyaltyPointsEarned = calculateEarnedPoints(orderTotal, pointsUsed, currentTotalSpent)
+              const loyaltyPointsEarned = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)
               
               console.log(`🔍 [PATCH partial ${id}] 6️⃣ Результат calculateEarnedPoints:`, {
                 loyaltyPointsEarned,
               })
               
-              console.log(`💰 Рассчитано ${loyaltyPointsEarned} баллов для заказа ${id} (orderTotal: ${orderTotal}, pointsUsed: ${pointsUsed})`)
+              console.log(`💰 Рассчитано ${loyaltyPointsEarned} баллов для заказа ${id} (orderTotalForPoints: ${orderTotalForPoints}, orderTotal: ${orderTotal}, pointsUsed: ${pointsUsed})`)
               
               if (loyaltyPointsEarned > 0) {
                 // Начисляем баллы пользователю
@@ -1336,13 +1361,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                 // чтобы не списывать их повторно в awardLoyaltyPoints
                 console.log(`🔍 [PATCH partial ${id}] 7️⃣ Вызов awardLoyaltyPoints с параметрами:`, {
                   userId: currentOrder.user_id,
-                  orderTotal,
+                  orderTotal, // С промокодом (для total_spent)
+                  orderTotalForPoints, // БЕЗ промокода (для описания транзакции)
                   pointsUsed: 0, // ✅ 0 вместо pointsUsed, т.к. уже списаны
                   loyaltyPointsEarned,
                   orderId: id,
                   note: 'pointsUsed=0 потому что баллы уже были списаны при создании/обновлении заказа'
                 })
-                await awardLoyaltyPoints(currentOrder.user_id, orderTotal, 0, loyaltyPointsEarned, Number(id))
+                await awardLoyaltyPoints(currentOrder.user_id, orderTotal, 0, loyaltyPointsEarned, Number(id), orderTotalForPoints)
                 
                 console.log(`🔍 [PATCH partial ${id}] 8️⃣ Результат awardLoyaltyPoints: успешно`)
                 

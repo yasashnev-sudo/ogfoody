@@ -1217,7 +1217,8 @@ export async function awardLoyaltyPoints(
   orderTotal: number,
   pointsUsed: number = 0,
   pointsEarned?: number,
-  orderId?: number
+  orderId?: number,
+  orderTotalForPoints?: number // ✅ НОВОЕ: Сумма БЕЗ промокода для описания транзакции (на которую начисляются баллы)
 ): Promise<NocoDBUser> {
   // ✅ ИСПРАВЛЕНО: Всегда загружаем свежие данные без кэша
   const user = await fetchUserById(userId, true)
@@ -1326,13 +1327,16 @@ export async function awardLoyaltyPoints(
     // ✅ ВОЗВРАЩЕНО: Всегда пытаемся создать транзакцию, ошибки обрабатываем в try-catch
     // Раньше это работало, даже если переменная окружения не была установлена
     try {
+      // ✅ ИСПРАВЛЕНО: Используем orderTotalForPoints (сумма БЕЗ промокода) для описания, если передан
+      // Это сумма, на которую реально начисляются баллы (Subtotal + Delivery Fee)
+      const orderAmountForDescription = orderTotalForPoints !== undefined ? orderTotalForPoints : orderTotal
       createdTransaction = await createLoyaltyPointsTransaction({
         user_id: userId,
         order_id: orderId,
         transaction_type: "earned",
         transaction_status: "completed",
         points: earnedPoints,
-        description: `Начислено ${earnedPoints} баллов за заказ на сумму ${orderTotal} руб.`,
+        description: `Начислено ${earnedPoints} баллов за заказ на сумму ${orderAmountForDescription} руб.`,
         created_at: now,
         updated_at: now,
         processed_at: now,

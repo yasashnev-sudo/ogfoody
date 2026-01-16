@@ -1,0 +1,53 @@
+{
+  "list": [
+    {
+      "Id": 1437,
+      "CreatedAt": "2026-01-16 14:32:38+00:00",
+      "UpdatedAt": null,
+      "User ID": 169,
+      "Order ID": 1006,
+      "Transaction Type": "earned",
+      "Points": 97,
+      "Description": "Начислено 97 баллов за заказ на сумму 2189 руб.",
+      "Created At": "2026-01-16 14:32:38+00:00",
+      "Updated At": "2026-01-16 14:32:38+00:00",
+      "Transaction Status": "completed",
+      "Processed At": "2026-01-16 14:32:38+00:00"
+    },
+    {
+      "Id": 1438,
+      "CreatedAt": "2026-01-16 14:33:02+00:00",
+      "UpdatedAt": null,
+      "User ID": 169,
+      "Order ID": 1007,
+      "Transaction Type": "used",
+      "Points": -21,
+      "Description": "Использовано 21 баллов для оплаты заказа",
+      "Created At": "2026-01-16 14:33:02+00:00",
+      "Updated At": "2026-01-16 14:33:02+00:00",
+      "Transaction Status": "completed",
+      "Processed At": "2026-01-16 14:33:02+00:00"
+    },
+    {
+      "Id": 1439,
+      "CreatedAt": "2026-01-16 14:33:20+00:00",
+      "UpdatedAt": null,
+      "User ID": 169,
+      "Order ID": 1007,
+      "Transaction Type": "earned",
+      "Points": 111,
+      "Description": "Начислено 111 баллов за заказ на сумму 3719 руб.",
+      "Created At": "2026-01-16 14:33:20+00:00",
+      "Updated At": "2026-01-16 14:33:20+00:00",
+      "Transaction Status": "completed",
+      "Processed At": "2026-01-16 14:33:20+00:00"
+    }
+  ],
+  "pageInfo": {
+    "totalRows": 3,
+    "page": 1,
+    "pageSize": 100,
+    "isFirstPage": true,
+    "isLastPage": true
+  }
+}
