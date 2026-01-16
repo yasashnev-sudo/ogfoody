@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { Calendar } from "@/components/calendar"
 import { OrderModal } from "@/components/order-modal"
@@ -1697,12 +1697,26 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
    * 6. Автоматически открывает OrderModal с заказом
    */
   const handleRepeatOrder = async (order: Order, targetDate: Date) => {
+    console.log('🔄 [Repeat Order] ФУНКЦИЯ ВЫЗВАНА:', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      orderDate: order.startDate,
+      targetDate: targetDate.toISOString(),
+      timestamp: new Date().toISOString(),
+    })
+    
     try {
       // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату
       // ✅ ИСПРАВЛЕНО 2026-01-13: Нормализуем даты к локальному времени (как в календаре)
       const targetDateNormalized = new Date(targetDate)
       targetDateNormalized.setHours(0, 0, 0, 0)
       const targetDateTimestamp = targetDateNormalized.getTime()
+      
+      console.log('🔍 [Repeat Order] Проверка существующего заказа на дату:', {
+        targetDate: targetDate.toISOString(),
+        targetDateTimestamp,
+        totalOrders: orders.length,
+      })
       
       const existingOrderOnDate = orders.find((o) => {
         if (!o.id) return false // Черновики не учитываем
@@ -1819,9 +1833,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         })),
       })
       
-      // Сохраняем черновик во временный state
-      setDraftOrder(newOrder)
-      
       // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлено логирование перед открытием модалки
       console.log('🎯 [Repeat Order] Открываем OrderModal:', {
         targetDate: targetDate.toISOString(),
@@ -1832,8 +1843,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         draftOrderNumber: newOrder.orderNumber,
       })
       
-      // Открываем модалку - теперь она получит черновик через useMemo ниже
-      // ✅ КРИТИЧНО: Устанавливаем selectedDate ПОСЛЕ draftOrder, чтобы черновик имел приоритет
+      // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
+      // useMemo в existingOrder пересчитается только после установки обоих значений
+      // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
+      setDraftOrder(newOrder)
       setSelectedDate(targetDate)
 
     } catch (error) {
@@ -3332,59 +3345,78 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   // ✅ ИСПРАВЛЕНО 2026-01-13: Приоритет черновику над существующим заказом
   // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлена проверка статуса заказа и логирование для отладки
   // ✅ ИСПРАВЛЕНО 2026-01-16: Исправлена проблема с открытием существующего заказа вместо черновика при повторе заказа
-  const existingOrder = selectedDate
-    ? (draftOrder && getDateTimestamp(draftOrder.startDate) === getDateTimestamp(selectedDate)
-        ? (console.log('📝 [existingOrder] Используем черновик:', {
-            draftDate: draftOrder.startDate,
-            selectedDate: selectedDate,
-            draftId: draftOrder.id,
-            draftDateTimestamp: getDateTimestamp(draftOrder.startDate),
-            selectedDateTimestamp: getDateTimestamp(selectedDate),
-          }), draftOrder) // Черновик имеет приоритет
-        : (() => {
-            // ✅ ИСПРАВЛЕНО 2026-01-16: Используем getDateTimestamp для консистентности с handleRepeatOrder
-            const checkTimestamp = getDateTimestamp(selectedDate)
-            
-            const found = orders.find((o) => {
-              // ✅ КРИТИЧНО: Пропускаем черновики (заказы без id)
-              if (!o.id) return false
-              
-              // ✅ КРИТИЧНО: Пропускаем отмененные заказы
-              const orderStatus = o.orderStatus || 'pending'
-              if (orderStatus === 'cancelled') return false
-              
-              // ✅ ИСПРАВЛЕНО 2026-01-16: Используем getDateTimestamp для консистентности
-              const orderTimestamp = getDateTimestamp(o.startDate)
-              
-              return orderTimestamp === checkTimestamp
-            })
-            
-            if (found) {
-              console.log('📋 [existingOrder] Найден существующий заказ:', {
-                orderId: found.id,
-                orderDate: found.startDate,
-                selectedDate: selectedDate,
-                orderStatus: found.orderStatus,
-                orderTimestamp: getDateTimestamp(found.startDate),
-                checkTimestamp,
-              })
-            } else {
-              console.log('🔍 [existingOrder] Заказ на дату не найден:', {
-                selectedDate: selectedDate,
-                checkTimestamp,
-                totalOrders: orders.length,
-                ordersDates: orders.filter(o => o.id).map(o => ({
-                  id: o.id,
-                  date: o.startDate,
-                  dateTimestamp: getDateTimestamp(o.startDate),
-                  status: o.orderStatus,
-                })),
-              })
-            }
-            
-            return found
-          })())
-    : undefined
+  // ✅ ИСПРАВЛЕНО 2026-01-16: Используем useMemo для предотвращения race condition при установке draftOrder и selectedDate
+  const existingOrder = useMemo(() => {
+    if (!selectedDate) return undefined
+    
+    // ✅ КРИТИЧНО: Сначала проверяем черновик - он имеет приоритет
+    if (draftOrder) {
+      const draftTimestamp = getDateTimestamp(draftOrder.startDate)
+      const selectedTimestamp = getDateTimestamp(selectedDate)
+      
+      if (draftTimestamp === selectedTimestamp) {
+        console.log('📝 [existingOrder] Используем черновик:', {
+          draftDate: draftOrder.startDate,
+          selectedDate: selectedDate,
+          draftId: draftOrder.id,
+          draftDateTimestamp: draftTimestamp,
+          selectedDateTimestamp: selectedTimestamp,
+        })
+        return draftOrder
+      } else {
+        console.log('⚠️ [existingOrder] Черновик есть, но даты не совпадают:', {
+          draftDate: draftOrder.startDate,
+          selectedDate: selectedDate,
+          draftTimestamp,
+          selectedTimestamp,
+        })
+      }
+    }
+    
+    // ✅ Если черновика нет или даты не совпадают, ищем существующий заказ
+    const checkTimestamp = getDateTimestamp(selectedDate)
+    
+    const found = orders.find((o) => {
+      // ✅ КРИТИЧНО: Пропускаем черновики (заказы без id)
+      if (!o.id) return false
+      
+      // ✅ КРИТИЧНО: Пропускаем отмененные заказы
+      const orderStatus = o.orderStatus || 'pending'
+      if (orderStatus === 'cancelled') return false
+      
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем getDateTimestamp для консистентности
+      const orderTimestamp = getDateTimestamp(o.startDate)
+      
+      return orderTimestamp === checkTimestamp
+    })
+    
+    if (found) {
+      console.log('📋 [existingOrder] Найден существующий заказ:', {
+        orderId: found.id,
+        orderDate: found.startDate,
+        selectedDate: selectedDate,
+        orderStatus: found.orderStatus,
+        orderTimestamp: getDateTimestamp(found.startDate),
+        checkTimestamp,
+        hasDraftOrder: !!draftOrder,
+      })
+    } else {
+      console.log('🔍 [existingOrder] Заказ на дату не найден:', {
+        selectedDate: selectedDate,
+        checkTimestamp,
+        totalOrders: orders.length,
+        hasDraftOrder: !!draftOrder,
+        ordersDates: orders.filter(o => o.id).map(o => ({
+          id: o.id,
+          date: o.startDate,
+          dateTimestamp: getDateTimestamp(o.startDate),
+          status: o.orderStatus,
+        })),
+      })
+    }
+    
+    return found
+  }, [selectedDate, draftOrder, orders])
 
   const availableDates = getAvailableDates()
 
