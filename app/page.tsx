@@ -486,7 +486,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // Это предотвращает использование данных удаленных пользователей
       console.log('⚠️ Игнорируем кэшированный профиль из localStorage, загружаем свежие данные из БД')
       
-      if (false && savedProfile) // Отключено для предотвращения использования удаленных пользователей {
+      // Отключено для предотвращения использования удаленных пользователей
+      if (false && savedProfile) {
         tempProfile = JSON.parse(savedProfile)
         // ⚠️ Временно устанавливаем профиль БЕЗ баллов (они загрузятся из API)
         setUserProfile({ ...tempProfile, loyaltyPoints: 0, totalSpent: 0 })
