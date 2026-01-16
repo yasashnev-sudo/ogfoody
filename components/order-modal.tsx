@@ -621,31 +621,62 @@ export function OrderModal({
     nextWeekDate.setDate(nextWeekDate.getDate() + 7)
     nextWeekDate.setHours(0, 0, 0, 0)
 
-    // Ищем первую доступную дату из availableDates, которая >= nextWeekDate
+    // Функция для проверки, есть ли заказ на дату
+    const hasOrderOnDate = (checkDate: Date): boolean => {
+      const checkTimestamp = checkDate.getTime()
+      return allOrders.some((o) => {
+        if (!o.id) return false // Черновики не учитываем
+        const orderStatus = o.orderStatus || 'pending'
+        if (orderStatus === 'cancelled') return false // Отмененные заказы не учитываем
+        
+        const oDate = new Date(o.startDate)
+        oDate.setHours(0, 0, 0, 0)
+        return oDate.getTime() === checkTimestamp
+      })
+    }
+
+    // Ищем первую доступную дату из availableDates, которая >= nextWeekDate и без заказа
     let targetDate = nextWeekDate
     if (availableDates.length > 0) {
       const availableAfterNextWeek = availableDates
         .map(d => new Date(d))
-        .filter(d => {
+        .map(d => {
           d.setHours(0, 0, 0, 0)
-          return d.getTime() >= nextWeekDate.getTime()
+          return d
+        })
+        .filter(d => {
+          return d.getTime() >= nextWeekDate.getTime() && !hasOrderOnDate(d)
         })
         .sort((a, b) => a.getTime() - b.getTime())
       
       if (availableAfterNextWeek.length > 0) {
         targetDate = availableAfterNextWeek[0]
       } else {
-        // Если нет доступных дат после следующей недели, берем последнюю доступную
-        const sortedDates = availableDates
+        // Если нет доступных дат после следующей недели без заказов, ищем любую доступную дату без заказа
+        const availableWithoutOrder = availableDates
           .map(d => new Date(d))
           .map(d => {
             d.setHours(0, 0, 0, 0)
             return d
           })
-          .sort((a, b) => b.getTime() - a.getTime())
+          .filter(d => !hasOrderOnDate(d))
+          .sort((a, b) => a.getTime() - b.getTime())
         
-        if (sortedDates.length > 0) {
-          targetDate = sortedDates[0]
+        if (availableWithoutOrder.length > 0) {
+          targetDate = availableWithoutOrder[0]
+        } else {
+          // Если все даты заняты, берем последнюю доступную (пользователь увидит предупреждение)
+          const sortedDates = availableDates
+            .map(d => new Date(d))
+            .map(d => {
+              d.setHours(0, 0, 0, 0)
+              return d
+            })
+            .sort((a, b) => b.getTime() - a.getTime())
+          
+          if (sortedDates.length > 0) {
+            targetDate = sortedDates[0]
+          }
         }
       }
     }
@@ -1146,21 +1177,45 @@ export function OrderModal({
           <div className="relative flex flex-col flex-1 overflow-hidden">
             <DialogHeader className="p-4 pb-2">
               <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-2xl font-bold">
-                    Заказ на {date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
-                  </DialogTitle>
-                  {existingOrder && !canEdit && (
-                    <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground flex items-center gap-1">
-                      <Eye className="w-3 h-3" />
-                      {isToday ? "сегодня доставка" : isPastDate ? "просмотр" : "недоступно"}
-                    </div>
-                  )}
-                  {existingOrder && isPaid && (
-                    <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-600 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      оплачен
-                    </div>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap flex-1">
+                    <DialogTitle className="text-2xl font-bold">
+                      Заказ на {date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
+                    </DialogTitle>
+                    {existingOrder && !canEdit && (
+                      <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {isToday ? "сегодня доставка" : isPastDate ? "просмотр" : "недоступно"}
+                      </div>
+                    )}
+                    {existingOrder && isPaid && (
+                      <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        оплачен
+                      </div>
+                    )}
+                  </div>
+                  {/* ✅ НОВОЕ: Кнопка повтора заказа в верхней части модалки */}
+                  {existingOrder && existingOrder.id && onRepeatOrder && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRepeatOrder}
+                      disabled={isRepeatingOrder || isDataLoading}
+                      className="bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20 text-[#9D00FF] border-2 border-[#9D00FF] hover:border-[#9D00FF] font-medium shrink-0"
+                    >
+                      {isRepeatingOrder ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                          Загрузка...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-3 h-3 mr-1.5" />
+                          Повторить
+                        </>
+                      )}
+                    </Button>
                   )}
                 </div>
                 <DialogDescription className="text-sm text-muted-foreground">Набор на 2 дня</DialogDescription>
@@ -1773,44 +1828,16 @@ export function OrderModal({
                         </>
                       )}
 
-                      {/* ✅ НОВОЕ: Кнопки действий для существующего заказа */}
-                      {existingOrder && existingOrder.id && (
-                        <div className="flex gap-2 mt-4">
-                          {/* Кнопка повтора заказа */}
-                          {onRepeatOrder && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleRepeatOrder}
-                              disabled={isRepeatingOrder || isDataLoading}
-                              className="flex-1 bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20 text-[#9D00FF] border-2 border-[#9D00FF] hover:border-[#9D00FF] font-medium"
-                            >
-                              {isRepeatingOrder ? (
-                                <>
-                                  <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                                  Загрузка...
-                                </>
-                              ) : (
-                                <>
-                                  <RotateCcw className="w-3 h-3 mr-1.5" />
-                                  Повторить
-                                </>
-                              )}
-                            </Button>
-                          )}
-                          
-                          {/* Кнопка отмены заказа */}
-                          {canCancel && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleCancelClick}
-                              className="flex-1 bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              Отменить
-                            </Button>
-                          )}
-                        </div>
+                      {/* Кнопка отмены заказа */}
+                      {canCancel && existingOrder && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelClick}
+                          className="w-full mt-4 bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          Отменить заказ
+                        </Button>
                       )}
                       
                       {!canCancel && existingOrder && isToday && (
@@ -1853,54 +1880,28 @@ export function OrderModal({
                   </div>
                 )}
 
-                {/* ✅ НОВОЕ: Кнопки действий для оплаченных заказов - вне блока canEdit */}
-                {!canEdit && existingOrder && existingOrder.id && (
+                {/* Кнопка отмены для оплаченных заказов - вне блока canEdit */}
+                {!canEdit && existingOrder && (
                   <div className="mt-6 border-t border-border pt-6">
-                    <div className="flex gap-2">
-                      {/* Кнопка повтора заказа */}
-                      {onRepeatOrder && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRepeatOrder}
-                          disabled={isRepeatingOrder || isDataLoading}
-                          className="flex-1 bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20 text-[#9D00FF] border-2 border-[#9D00FF] hover:border-[#9D00FF] font-medium"
-                        >
-                          {isRepeatingOrder ? (
-                            <>
-                              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                              Загрузка...
-                            </>
-                          ) : (
-                            <>
-                              <RotateCcw className="w-3 h-3 mr-1.5" />
-                              Повторить
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      
-                      {/* Кнопка отмены заказа */}
-                      {canCancel ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCancelClick}
-                          className="flex-1 bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          Отменить
-                        </Button>
-                      ) : isToday ? (
-                        <Button
-                          size="sm"
-                          onClick={handleContactSupport}
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white border-2 border-black shadow-brutal font-black"
-                        >
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Поддержка
-                        </Button>
-                      ) : null}
-                    </div>
+                    {canCancel ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelClick}
+                        className="w-full bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Отменить заказ
+                      </Button>
+                    ) : isToday ? (
+                      <Button
+                        size="sm"
+                        onClick={handleContactSupport}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white border-2 border-black shadow-brutal font-black"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Связаться с поддержкой
+                      </Button>
+                    ) : null}
                   </div>
                 )}
               </div>
