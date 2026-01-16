@@ -319,6 +319,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
       
       // Начисление баллов при оплате заказа
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:322',message:'PATCH: Checking loyalty points award condition',data:{orderId:id,wasPaid,willBePaid,hasUserId:!!currentOrder.user_id,userId:currentOrder.user_id,paymentMethod:order.paymentMethod,paid:order.paid,paymentStatus:order.paymentStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       if (!wasPaid && willBePaid && currentOrder.user_id) {
         console.log(`\n🔍 ========== НАЧАЛО ОТЛАДКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH full order) ==========`)
         console.log(`🔍 [PATCH ${id}] 1️⃣ Входящий payload:`, {
