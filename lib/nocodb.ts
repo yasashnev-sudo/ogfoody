@@ -715,6 +715,16 @@ export async function calculateUserBalance(userId: number, noCache: boolean = fa
     return finalBalance
   } catch (error) {
     console.error(`❌ Ошибка вычисления баланса для userId=${userId}:`, error)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:713',message:'calculateUserBalance ERROR',data:{userId,error:String(error),errorMessage:error instanceof Error ? error.message : String(error),hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,tableId:process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    // ✅ ИСПРАВЛЕНО: Если таблица не найдена, возвращаем 0 вместо ошибки
+    if (error instanceof Error && (error.message.includes('TABLE_NOT_FOUND') || error.message.includes('TABLE_NOT_CONFIGURED'))) {
+      console.warn(`⚠️ Таблица Loyalty_Points_Transactions не найдена или не настроена для пользователя ${userId}, возвращаем баланс 0`)
+      console.warn(`⚠️ Проверьте переменную окружения NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS`)
+      return 0
+    }
+    // В случае другой ошибки возвращаем 0, чтобы не блокировать работу приложения
     return 0
   }
 }
@@ -1437,17 +1447,25 @@ export async function awardLoyaltyPoints(
   console.log(`✅ Баланс обновлен в БД: ${recalculatedBalance} баллов`)
 
   // Возвращаем пользователя с актуальным балансом
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1440',message:'Before fetchUserById for return',data:{userId,earnedPoints,newTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H6'})}).catch(()=>{});
+  // #endregion
   const updatedUser = await fetchUserById(userId, true) // noCache для свежих данных
   if (!updatedUser) {
     throw new Error(`User with ID ${userId} not found after update`)
   }
 
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1445',message:'awardLoyaltyPoints RETURNING user',data:{userId,earnedPoints,pointsUsed,actualBalance:updatedUser.loyalty_points,totalSpent:updatedUser.total_spent,expectedTotalSpent:newTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H6'})}).catch(()=>{});
+  // #endregion
   console.log(`✅ awardLoyaltyPoints завершено:`, {
     userId,
     earnedPoints,
     pointsUsed,
     actualBalance: updatedUser.loyalty_points,
     totalSpent: updatedUser.total_spent,
+    expectedTotalSpent: newTotalSpent,
+    totalSpentMatch: updatedUser.total_spent === newTotalSpent,
   })
 
   return updatedUser
