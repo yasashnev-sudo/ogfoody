@@ -668,7 +668,9 @@ export async function calculateUserBalance(userId: number, noCache: boolean = fa
     
     console.log(`💰 calculateUserBalance(${userId}): ${balance} баллов (из ${activeTransactions.length} активных транзакций, всего ${transactions.length})`)
     
-    return Math.max(0, balance)
+    // ✅ ИСПРАВЛЕНО: Возвращаем реальный баланс (может быть отрицательным)
+    // Math.max(0, balance) скрывает реальный баланс и мешает тестированию
+    return balance
   } catch (error) {
     console.error(`❌ Ошибка вычисления баланса для userId=${userId}:`, error)
     return 0
