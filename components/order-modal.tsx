@@ -332,6 +332,12 @@ export function OrderModal({
   })
 
   const hasContent = hasAnyMeal || extras.length > 0
+  // #region agent log
+  // Log hasContent calculation for debugging
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:334',message:'hasContent calculated',data:{hasContent,hasAnyMeal,extrasCount:extras.length},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H7'})}).catch(()=>{});
+  }
+  // #endregion
 
   // Track scroll to hide/show floating button
   useEffect(() => {
@@ -622,8 +628,10 @@ export function OrderModal({
   // ✅ ИСПРАВЛЕНО 2026-01-13: Разделяем право редактировать состав и право оплатить
   // canEditContent - редактировать состав заказа (блюда, extras) - НЕТ в день доставки
   // canPay - оплатить заказ - ДА даже в день доставки (если не оплачен)
+  // canUsePromo - использовать промокод - ДА даже в день доставки (если не оплачен)
   const canEditContent = !isViewOnly && !isPaid  // Нельзя редактировать в день доставки
   const canPay = !isPaid && !isPastDate           // Можно оплатить сегодня, но не прошлые
+  const canUsePromo = !isPaid && !isPastDate      // Можно использовать промокод сегодня, но не для прошлых заказов
   const canEdit = canEditContent                  // Для обратной совместимости
   const isExistingOrder = !!existingOrder
 
@@ -1500,15 +1508,35 @@ export function OrderModal({
                   </div>
                 )}
 
-                {/* Секция оформления - только если можно редактировать */}
-                {canEdit && hasContent && (
+                {/* #region agent log */}
+                {(() => {
+                  if (!canUsePromo || !hasContent) {
+                    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:1503',message:'Promo section not rendered - conditions not met',data:{canUsePromo,canEdit,hasContent,isAuthenticated,isViewOnly,isPaid,existingOrderId:existingOrder?.id,hasAnyMeal},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H6'})}).catch(()=>{});
+                  }
+                  return null;
+                })()}
+                {/* #endregion */}
+
+                {/* Секция оформления - промокод доступен даже в день доставки, если заказ не оплачен */}
+                {canUsePromo && hasContent && (
                   <div className="mt-6 border-t border-border pt-6">
+                    {/* #region agent log */}
+                    {(() => {
+                      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:1504',message:'Promo section render check',data:{canUsePromo,canEdit,hasContent,isAuthenticated,isViewOnly,isPaid,existingOrderId:existingOrder?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H6'})}).catch(()=>{});
+                      return null;
+                    })()}
+                    {/* #endregion */}
                     {isAuthenticated ? (
                       <>
                         {/* Промокод */}
                         <div
                           className="flex items-center justify-between py-3 px-4 bg-white border-2 border-black rounded-lg cursor-pointer hover:bg-[#FFEA00] transition-colors shadow-brutal mb-2"
-                          onClick={() => setActiveSectionId(activeSectionId === "promo" ? null : "promo")}
+                          onClick={() => {
+                            // #region agent log
+                            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:1511',message:'Promo section clicked',data:{currentActiveSectionId:activeSectionId,willOpen:activeSectionId !== 'promo'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H9'})}).catch(()=>{});
+                            // #endregion
+                            setActiveSectionId(activeSectionId === "promo" ? null : "promo")
+                          }}
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
@@ -1566,6 +1594,12 @@ export function OrderModal({
                       </>
                     ) : (
                       <div className="bg-primary/5 rounded-xl p-4 border border-primary/10 mb-6">
+                        {/* #region agent log */}
+                        {(() => {
+                          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:1597',message:'Promo section not shown - not authenticated',data:{canUsePromo,hasContent,isAuthenticated},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H8'})}).catch(()=>{});
+                          return null;
+                        })()}
+                        {/* #endregion */}
                         <p className="text-sm text-center text-muted-foreground">
                           Войдите в профиль, чтобы применить скидки и выбрать способ оплаты
                         </p>

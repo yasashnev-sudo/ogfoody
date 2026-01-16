@@ -366,8 +366,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             loyaltyPointsEarned = undefined // Пока не знаем, будут ли pending транзакции
           } else {
             console.log(`🔍 [PATCH ${id}] 4️⃣ Загрузка пользователя для расчета баллов`)
-            const user = await fetchUserById(currentOrder.user_id)
-            if (user) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:369',message:'Fetching user for points calculation',data:{orderId:id,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
+            // #endregion
+            const user = await fetchUserById(currentOrder.user_id, true) // ✅ ИСПРАВЛЕНО: Используем noCache для свежих данных
+            if (!user) {
+              console.error(`❌ [PATCH ${id}] Пользователь ${currentOrder.user_id} не найден в базе данных!`)
+              console.error(`⚠️ ВОЗМОЖНАЯ ПРИЧИНА: Пользователь был удален из БД, но заказ остался с его user_id`)
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:370',message:'User not found for points calculation',data:{orderId:id,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
+              // #endregion
+            } else if (user) {
               console.log(`🔍 [PATCH ${id}] Пользователь найден:`, {
                 userId: user.Id,
                 loyaltyPoints: user.loyalty_points,
@@ -516,15 +525,30 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             })
             if (order.paid && (order.paymentMethod === 'card' || order.paymentMethod === 'sbp')) {
               console.log(`🔍 [PATCH full ${id}] Условие выполнено, начинаем начисление баллов...`)
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:517',message:'Award points condition met',data:{orderId:id,orderPaid:order.paid,paymentMethod:order.paymentMethod,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H4'})}).catch(()=>{});
+              // #endregion
               try {
                 console.log(`🔍 [PATCH full ${id}] Загрузка пользователя ${currentOrder.user_id}...`)
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:520',message:'Fetching user before award',data:{orderId:id,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
                 const user = await fetchUserById(currentOrder.user_id, true)
                 if (!user) {
                   console.error(`❌ [PATCH full ${id}] КРИТИЧЕСКАЯ ОШИБКА: Пользователь ${currentOrder.user_id} не найден в базе данных!`)
                   console.error(`❌ Заказ ${id} имеет user_id=${currentOrder.user_id}, но пользователь не существует в БД`)
                   console.error(`❌ Невозможно начислить баллы - пользователь не найден`)
+                  console.error(`⚠️ ВОЗМОЖНАЯ ПРИЧИНА: Пользователь был удален из БД, но заказ остался с его user_id`)
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:528',message:'User not found - cannot award points',data:{orderId:id,userId:currentOrder.user_id,possibleReason:'User deleted from DB but order still references user_id'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
+                  // #endregion
                   // Не прерываем процесс обновления заказа, но логируем критическую ошибку
+                  // ✅ ВАЖНО: Не начисляем баллы для удаленных пользователей
+                  return // Выходим из функции, чтобы не продолжать обработку
                 } else {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:528',message:'User found - proceeding with award',data:{orderId:id,userId:user.Id,loyaltyPoints:user.loyalty_points,totalSpent:user.total_spent},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1'})}).catch(()=>{});
+                  // #endregion
                   console.log(`✅ [PATCH full ${id}] Пользователь найден:`, {
                     userId: user.Id,
                     loyaltyPoints: user.loyalty_points,
@@ -549,9 +573,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                   const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
                   const calculatedPoints = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)
                   console.log(`💰 [PATCH full] Рассчитано ${calculatedPoints} баллов для заказа ${id} (orderTotal: ${orderTotalForPoints}, promoDiscount: ${promoDiscount})`)
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:550',message:'Points calculated',data:{orderId:id,calculatedPoints,orderTotalForPoints,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3'})}).catch(()=>{});
+                  // #endregion
                   
                   // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Начисляем баллы пользователю
                   if (calculatedPoints > 0) {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:554',message:'Calling awardLoyaltyPoints',data:{orderId:id,userId:currentOrder.user_id,orderTotalForPoints,pointsUsed:0,earnedPoints:calculatedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5'})}).catch(()=>{});
+                    // #endregion
                     console.log(`🔍 [PATCH full] Вызов awardLoyaltyPoints с параметрами:`, {
                       userId: currentOrder.user_id,
                       orderTotal: orderTotalForPoints,
@@ -561,6 +591,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                     })
                     await awardLoyaltyPoints(currentOrder.user_id, orderTotalForPoints, 0, calculatedPoints, Number(id))
                     console.log(`✅ [PATCH full] Начислено ${calculatedPoints} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
+                    // #region agent log
+                    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:562',message:'awardLoyaltyPoints completed',data:{orderId:id,userId:currentOrder.user_id,calculatedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5'})}).catch(()=>{});
+                    // #endregion
                     loyaltyPointsEarned = calculatedPoints
                     
                     // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем заказ с правильным значением loyalty_points_earned
@@ -570,11 +603,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                     console.log(`✅ [PATCH full] Обновлен заказ ${id} с loyalty_points_earned: ${calculatedPoints}`)
                   } else {
                     console.warn(`⚠️ [PATCH full ${id}] calculatedPoints = ${calculatedPoints}, баллы не начислены`)
+                    // #region agent log
+                    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:572',message:'calculatedPoints is zero',data:{orderId:id,calculatedPoints,orderTotalForPoints,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3'})}).catch(()=>{});
+                    // #endregion
                   }
                 }
               } catch (error) {
                 console.error(`❌ Ошибка при расчете и начислении баллов для заказа ${id}:`, error)
                 console.error(`❌ Stack trace:`, error instanceof Error ? error.stack : 'No stack trace')
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:575',message:'Error in award points',data:{orderId:id,error:error instanceof Error ? error.message : String(error),stack:error instanceof Error ? error.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5'})}).catch(()=>{});
+                // #endregion
               }
             } else {
               console.log(`ℹ️ [PATCH full ${id}] Условие не выполнено:`, {
@@ -1039,8 +1078,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             
             if (isPaidOnline && isOnlinePayment) {
               try {
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1069',message:'Fetching user for partial update award',data:{orderId:id,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
                 const user = await fetchUserById(currentOrder.user_id, true)
-                if (user) {
+                if (!user) {
+                  console.error(`❌ [PATCH partial ${id}] Пользователь ${currentOrder.user_id} не найден в базе данных!`)
+                  console.error(`⚠️ ВОЗМОЖНАЯ ПРИЧИНА: Пользователь был удален из БД, но заказ остался с его user_id`)
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1070',message:'User not found in partial update',data:{orderId:id,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
+                  // #endregion
+                } else if (user) {
                   const orderTotal = typeof currentOrder.total === 'number' 
                     ? currentOrder.total 
                     : typeof (currentOrder as any).Total === 'number'
@@ -1202,8 +1250,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         
         try {
           // ✅ ИСПРАВЛЕНО: Всегда загружаем свежие данные без кэша
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1235',message:'Fetching user for partial award',data:{orderId:id,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
           const user = await fetchUserById(currentOrder.user_id, true)
-          if (user) {
+          if (!user) {
+            console.error(`❌ [PATCH partial ${id}] Пользователь ${currentOrder.user_id} не найден в базе данных!`)
+            console.error(`⚠️ ВОЗМОЖНАЯ ПРИЧИНА: Пользователь был удален из БД, но заказ остался с его user_id`)
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:1236',message:'User not found for partial award',data:{orderId:id,userId:currentOrder.user_id},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
+            // #endregion
+          } else if (user) {
             console.log(`🔍 [PATCH partial ${id}] 2️⃣ Пользователь найден:`, {
               userId: user.Id,
               loyaltyPoints: user.loyalty_points,

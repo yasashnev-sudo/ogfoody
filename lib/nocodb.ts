@@ -536,11 +536,13 @@ export interface NocoDBUser {
   "User ID"?: number
 }
 
-export async function fetchUserByPhone(phone: string): Promise<NocoDBUser | null> {
+export async function fetchUserByPhone(phone: string, noCache: boolean = true): Promise<NocoDBUser | null> {
   // NocoDB API v2 использует заголовки колонок (titles) в where-условиях, а не имена колонок
   // В таблице Users колонка phone имеет заголовок "Phone"
-  console.log(`🔍 fetchUserByPhone: поиск пользователя с телефоном=${phone}`)
-  const response = await nocoFetch<NocoDBResponse<any>>("Users", {
+  // ✅ ИСПРАВЛЕНО: По умолчанию используем noCache=true, чтобы избежать возврата удаленных пользователей из кэша
+  console.log(`🔍 fetchUserByPhone: поиск пользователя с телефоном=${phone} (noCache=${noCache})`)
+  const fetchFn = noCache ? nocoFetchNoCache : nocoFetch
+  const response = await fetchFn<NocoDBResponse<any>>("Users", {
     where: `(Phone,eq,${phone})`,
   })
   const rawUser = response.list?.[0]
@@ -1251,6 +1253,9 @@ export async function awardLoyaltyPoints(
 
   // ✅ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ: Проверяем, не начислены ли уже баллы для этого заказа
   if (earnedPoints > 0 && orderId) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1253',message:'Checking for duplicate transaction',data:{userId,orderId,earnedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
     const existingTransactions = await fetchLoyaltyPointsTransactions(userId)
     const existingEarnedTransaction = existingTransactions.find(
       (t: NocoDBLoyaltyPointsTransaction) => 
@@ -1258,6 +1263,9 @@ export async function awardLoyaltyPoints(
         (t.transaction_type === 'earned' || t['Transaction Type'] === 'earned') &&
         (t.transaction_status === 'completed' || t['Transaction Status'] === 'completed')
     )
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1260',message:'Duplicate check result',data:{userId,orderId,earnedPoints,foundExisting:!!existingEarnedTransaction,existingTransactionId:existingEarnedTransaction?.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
     
     if (existingEarnedTransaction) {
       const existingPoints = typeof existingEarnedTransaction.points === 'number'
@@ -1272,7 +1280,7 @@ export async function awardLoyaltyPoints(
       if (pointsMatch) {
         console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ: Баллы уже начислены для заказа ${orderId} (транзакция ${existingEarnedTransaction.Id}, ${existingPoints} баллов). Пропускаем создание новой транзакции.`)
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1252',message:'Duplicate transaction prevented',data:{userId,orderId,earnedPoints,existingTransactionId:existingEarnedTransaction.Id,existingPoints,pointsMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H6'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1272',message:'Duplicate transaction prevented',data:{userId,orderId,earnedPoints,existingTransactionId:existingEarnedTransaction.Id,existingPoints,pointsMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2'})}).catch(()=>{});
         // #endregion
         
         // ✅ ВАЖНО: Проверяем, не обновлялся ли уже total_spent для этого заказа
