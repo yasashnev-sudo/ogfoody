@@ -3799,7 +3799,21 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       <OrderModal
         key={`order-${selectedDate?.getTime()}-${existingOrder?.id}-${existingOrder?.paid}-${existingOrder?.total}-${existingOrder?.loyaltyPointsEarned}`}
         date={selectedDate || new Date()}
-        existingOrder={existingOrder}
+        existingOrder={(() => {
+          // #region agent log
+          console.log('[DEBUG REPEAT ORDER] OrderModal RENDER - existingOrder prop', {
+            location: 'app/page.tsx:3802',
+            hypothesisId: 'B',
+            existingOrderId: existingOrder?.id,
+            existingOrderDate: existingOrder?.startDate,
+            existingOrderIsDraft: !existingOrder?.id,
+            hasDraftOrder: !!draftOrder,
+            draftOrderId: draftOrder?.id,
+            selectedDate: selectedDate?.toISOString(),
+          })
+          // #endregion
+          return existingOrder
+        })()}
         onClose={() => {
           setSelectedDate(null)
           // #region agent log
