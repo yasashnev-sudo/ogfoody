@@ -1,0 +1,56 @@
+#!/usr/bin/expect -f
+
+# Скрипт для обновления systemd timer с учетом московского времени
+
+set timeout 300
+
+spawn ssh root@5.129.194.168
+
+expect {
+    "password:" {
+        send "pULRoAvF@P-@4Y\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "root@" {
+        # Переходим в директорию проекта
+        send "cd /var/www/ogfoody\r"
+        expect "root@"
+        
+        # Обновляем код
+        send "git pull\r"
+        expect "root@"
+        
+        # Копируем обновленные systemd файлы
+        send "cp systemd/ogfoody-loyalty-points.service /etc/systemd/system/\r"
+        expect "root@"
+        
+        send "cp systemd/ogfoody-loyalty-points.timer /etc/systemd/system/\r"
+        expect "root@"
+        
+        # Перезагружаем systemd
+        send "systemctl daemon-reload\r"
+        expect "root@"
+        
+        # Перезапускаем timer
+        send "systemctl restart ogfoody-loyalty-points.timer\r"
+        expect "root@"
+        
+        # Проверяем статус
+        send "systemctl status ogfoody-loyalty-points.timer --no-pager -l\r"
+        expect "root@"
+        
+        # Показываем следующий запуск
+        send "systemctl list-timers ogfoody-loyalty-points.timer --no-pager\r"
+        expect "root@"
+        
+        send "echo '=== SYSTEMD TIMER UPDATED ==='\r"
+        expect "root@"
+        
+        send "exit\r"
+        expect eof
+    }
+}

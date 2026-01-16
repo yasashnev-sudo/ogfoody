@@ -1264,28 +1264,63 @@ export async function awardLoyaltyPoints(
         ? existingEarnedTransaction.points
         : parseInt(String(existingEarnedTransaction.points || existingEarnedTransaction['Points'] || 0)) || 0
       
-      console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ: Баллы уже начислены для заказа ${orderId} (транзакция ${existingEarnedTransaction.Id}, ${existingPoints} баллов). Пропускаем создание новой транзакции.`)
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1252',message:'Duplicate transaction prevented',data:{userId,orderId,earnedPoints,existingTransactionId:existingEarnedTransaction.Id,existingPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
+      // ✅ УЛУЧШЕНО: Проверяем, совпадает ли количество баллов
+      // Если баллы совпадают - это дубликат, пропускаем
+      // Если баллы не совпадают - возможно, нужно начислить недостающие (но это редко)
+      const pointsMatch = Math.abs(existingPoints - earnedPoints) < 1 // Допускаем разницу в 1 балл из-за округления
       
-      // ✅ ВАЖНО: Проверяем, не обновлялся ли уже total_spent для этого заказа
-      // Если транзакция уже существует, значит total_spent уже был обновлен ранее
-      // Не обновляем его повторно, чтобы избежать двойного учета суммы заказа
-      console.log(`ℹ️ total_spent уже был обновлен при создании предыдущей транзакции, пропускаем обновление`)
-      
-      // Пересчитываем баланс и возвращаем пользователя без создания новой транзакции
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const recalculatedBalance = await calculateUserBalance(userId, true)
-      await updateUser(userId, {
-        loyalty_points: recalculatedBalance,
-        updated_at: new Date().toISOString(),
-      })
-      const updatedUser = await fetchUserById(userId, true)
-      if (!updatedUser) {
-        throw new Error(`User with ID ${userId} not found after update`)
+      if (pointsMatch) {
+        console.warn(`⚠️ ЗАЩИТА ОТ ДВОЙНОГО НАЧИСЛЕНИЯ: Баллы уже начислены для заказа ${orderId} (транзакция ${existingEarnedTransaction.Id}, ${existingPoints} баллов). Пропускаем создание новой транзакции.`)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1252',message:'Duplicate transaction prevented',data:{userId,orderId,earnedPoints,existingTransactionId:existingEarnedTransaction.Id,existingPoints,pointsMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H6'})}).catch(()=>{});
+        // #endregion
+        
+        // ✅ ВАЖНО: Проверяем, не обновлялся ли уже total_spent для этого заказа
+        // Если транзакция уже существует, значит total_spent уже был обновлен ранее
+        // Не обновляем его повторно, чтобы избежать двойного учета суммы заказа
+        console.log(`ℹ️ total_spent уже был обновлен при создании предыдущей транзакции, пропускаем обновление`)
+        
+        // Пересчитываем баланс и возвращаем пользователя без создания новой транзакции
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        const recalculatedBalance = await calculateUserBalance(userId, true)
+        await updateUser(userId, {
+          loyalty_points: recalculatedBalance,
+          updated_at: new Date().toISOString(),
+        })
+        const updatedUser = await fetchUserById(userId, true)
+        if (!updatedUser) {
+          throw new Error(`User with ID ${userId} not found after update`)
+        }
+        return updatedUser
+      } else {
+        // ✅ ВАЖНО: Если баллы не совпадают, это может быть ошибка
+        // Логируем предупреждение, но все равно пропускаем создание новой транзакции
+        // (чтобы не начислять дважды)
+        console.warn(`⚠️ ВНИМАНИЕ: Найдена completed транзакция для заказа ${orderId}, но количество баллов не совпадает!`, {
+          existingPoints,
+          earnedPoints,
+          difference: earnedPoints - existingPoints,
+          existingTransactionId: existingEarnedTransaction.Id,
+          note: 'Пропускаем создание новой транзакции, но это может быть ошибка в логике'
+        })
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1267',message:'Points mismatch in existing transaction',data:{userId,orderId,earnedPoints,existingTransactionId:existingEarnedTransaction.Id,existingPoints,difference:earnedPoints-existingPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H7'})}).catch(()=>{});
+        // #endregion
+        
+        // Все равно пропускаем создание новой транзакции, чтобы не начислять дважды
+        // Пересчитываем баланс и возвращаем пользователя
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        const recalculatedBalance = await calculateUserBalance(userId, true)
+        await updateUser(userId, {
+          loyalty_points: recalculatedBalance,
+          updated_at: new Date().toISOString(),
+        })
+        const updatedUser = await fetchUserById(userId, true)
+        if (!updatedUser) {
+          throw new Error(`User with ID ${userId} not found after update`)
+        }
+        return updatedUser
       }
-      return updatedUser
     }
   }
 

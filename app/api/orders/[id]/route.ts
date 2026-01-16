@@ -515,9 +515,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               'condition': order.paid && (order.paymentMethod === 'card' || order.paymentMethod === 'sbp'),
             })
             if (order.paid && (order.paymentMethod === 'card' || order.paymentMethod === 'sbp')) {
+              console.log(`🔍 [PATCH full ${id}] Условие выполнено, начинаем начисление баллов...`)
               try {
+                console.log(`🔍 [PATCH full ${id}] Загрузка пользователя ${currentOrder.user_id}...`)
                 const user = await fetchUserById(currentOrder.user_id, true)
                 if (user) {
+                  console.log(`✅ [PATCH full ${id}] Пользователь найден:`, {
+                    userId: user.Id,
+                    loyaltyPoints: user.loyalty_points,
+                    totalSpent: user.total_spent,
+                  })
                   const orderTotal = order.total || (typeof currentOrder.total === 'number' 
                     ? currentOrder.total 
                     : parseFloat(String(currentOrder.total)) || 0)
@@ -556,11 +563,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                       loyalty_points_earned: calculatedPoints,
                     })
                     console.log(`✅ [PATCH full] Обновлен заказ ${id} с loyalty_points_earned: ${calculatedPoints}`)
+                  } else {
+                    console.warn(`⚠️ [PATCH full ${id}] calculatedPoints = ${calculatedPoints}, баллы не начислены`)
                   }
+                } else {
+                  console.error(`❌ [PATCH full ${id}] Пользователь ${currentOrder.user_id} не найден в базе данных!`)
                 }
               } catch (error) {
                 console.error(`❌ Ошибка при расчете и начислении баллов для заказа ${id}:`, error)
+                console.error(`❌ Stack trace:`, error instanceof Error ? error.stack : 'No stack trace')
               }
+            } else {
+              console.log(`ℹ️ [PATCH full ${id}] Условие не выполнено:`, {
+                'order.paid': order.paid,
+                'order.paymentMethod': order.paymentMethod,
+                'condition': order.paid && (order.paymentMethod === 'card' || order.paymentMethod === 'sbp'),
+              })
             }
           }
         } catch (error) {
@@ -1104,6 +1122,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                                           (currentOrder as any)['Payment Method'] === 'card' || (currentOrder as any)['Payment Method'] === 'sbp')
       
       console.log(`\n🔍 ========== НАЧАЛО ПРОВЕРКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial ${id}) ==========`)
+      
+      // ✅ ДОБАВЛЕНО: Проверяем транзакции в БД для диагностики
+      let existingTransactionsCount = 0
+      let existingCompletedTransactionsCount = 0
+      try {
+        const { fetchLoyaltyPointsTransactions } = await import("@/lib/nocodb")
+        if (currentOrder.user_id) {
+          const allTransactions = await fetchLoyaltyPointsTransactions(currentOrder.user_id)
+          const orderTransactions = allTransactions.filter((t: any) => 
+            (t.order_id === Number(id) || t['Order ID'] === Number(id))
+          )
+          existingTransactionsCount = orderTransactions.length
+          existingCompletedTransactionsCount = orderTransactions.filter((t: any) => 
+            (t.transaction_type === 'earned' || t['Transaction Type'] === 'earned') &&
+            (t.transaction_status === 'completed' || t['Transaction Status'] === 'completed')
+          ).length
+        }
+      } catch (error) {
+        console.warn(`⚠️ Ошибка при проверке транзакций: ${error}`)
+      }
+      
       console.log(`🔍 Проверка начисления баллов при оплате ${id}:`, {
         wasPaid,
         willBePaid,
@@ -1115,6 +1154,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         'currentOrder.subtotal': currentOrder.subtotal || (currentOrder as any).Subtotal,
         'currentOrder.promo_discount': currentOrder.promo_discount || (currentOrder as any)['Promo Discount'],
         'currentOrder.payment_method': currentOrder.payment_method || (currentOrder as any)['Payment Method'],
+        'existingTransactionsCount': existingTransactionsCount,
+        'existingCompletedTransactionsCount': existingCompletedTransactionsCount,
         condition: (!wasPaid && willBePaid) || (isPaymentMethodChangedFromCash && willBePaid && pendingPointsEarned === 0) || (willBePaid && existingPointsEarnedPartial === 0 && pendingPointsEarned === 0 && isPaidOnline),
         '!wasPaid': !wasPaid,
         'willBePaid': willBePaid,
