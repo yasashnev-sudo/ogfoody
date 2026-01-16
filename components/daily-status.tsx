@@ -23,8 +23,20 @@ const formatShortDate = (date: Date): string => {
   return `${date.getDate()} ${months[date.getMonth()]}`
 }
 
-// Helper: Find next available delivery date (prefer Sunday if today is empty)
-const findNextAvailableDate = (availableDates?: Date[]): Date | null => {
+// Helper: Check if there's an order for a specific date
+const hasOrderForDate = (orders: Order[], date: Date): boolean => {
+  const checkDate = new Date(date)
+  checkDate.setHours(0, 0, 0, 0)
+
+  return orders.some((order) => {
+    const orderDate = new Date(order.startDate)
+    orderDate.setHours(0, 0, 0, 0)
+    return orderDate.getTime() === checkDate.getTime()
+  })
+}
+
+// Helper: Find next available delivery date (prefer Sunday if today is empty, but skip if already ordered)
+const findNextAvailableDate = (availableDates?: Date[], orders: Order[] = []): Date | null => {
   if (!availableDates || availableDates.length === 0) {
     return null
   }
@@ -33,22 +45,27 @@ const findNextAvailableDate = (availableDates?: Date[]): Date | null => {
   today.setHours(0, 0, 0, 0)
 
   // If today is empty, prefer Sunday (day 0) for delivery
-  // First, try to find the next Sunday
+  // First, try to find the next Sunday that doesn't have an order yet
   const nextSunday = availableDates.find((date) => {
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
-    return checkDate.getDay() === 0 && checkDate.getTime() >= today.getTime()
+    const isSunday = checkDate.getDay() === 0
+    const isFutureOrToday = checkDate.getTime() >= today.getTime()
+    const hasNoOrder = !hasOrderForDate(orders, checkDate)
+    return isSunday && isFutureOrToday && hasNoOrder
   })
 
   if (nextSunday) {
     return new Date(nextSunday)
   }
 
-  // If no Sunday found, find the first available date that is >= today
+  // If no free Sunday found, find the first available date that is >= today and has no order
   const nextDate = availableDates.find((date) => {
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
-    return checkDate.getTime() >= today.getTime()
+    const isFutureOrToday = checkDate.getTime() >= today.getTime()
+    const hasNoOrder = !hasOrderForDate(orders, checkDate)
+    return isFutureOrToday && hasNoOrder
   })
 
   return nextDate ? new Date(nextDate) : null
@@ -114,7 +131,7 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
   }
 
   // Empty day - Smart timeline version
-  const nextAvailableDate = findNextAvailableDate(availableDates)
+  const nextAvailableDate = findNextAvailableDate(availableDates, orders)
   const hasNextDate = nextAvailableDate !== null
 
   return (
