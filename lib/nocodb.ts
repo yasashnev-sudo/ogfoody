@@ -186,6 +186,43 @@ async function serverCreateRecord<T>(
 
   const tableId = getTableId(tableName)
   if (!tableId) {
+    // ✅ ИСПРАВЛЕНО: Для Loyalty_Points_Transactions используем fallback, если переменная не установлена
+    // Это позволяет транзакциям создаваться даже если переменная окружения не загружена в PM2
+    if (tableName === "Loyalty_Points_Transactions") {
+      console.warn(`⚠️ NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS не установлена, используем fallback: mn244txmccpwmhx`)
+      const fallbackTableId = "mn244txmccpwmhx"
+      // Продолжаем с fallback ID
+      const baseUrl = getNocoDBUrl().replace(/\/$/, "")
+      const actualBaseUrl = baseUrl.endsWith("/api/v2") ? baseUrl : `${baseUrl}/api/v2`
+      const url = `${actualBaseUrl}/tables/${fallbackTableId}/records`
+      const token = getNocoDBToken()
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "xc-token": token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+      
+      const text = await response.text()
+      if (!response.ok) {
+        console.error(`❌ NocoDB POST error for ${tableName}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          url,
+          response: text.substring(0, 500),
+        })
+        throw new Error(`NocoDB API error: ${response.status} - ${text.substring(0, 200)}`)
+      }
+      
+      const result = JSON.parse(text)
+      if (Array.isArray(result)) {
+        return result[0] as T
+      }
+      return result as T
+    }
     throw new Error(`TABLE_NOT_CONFIGURED:${tableName}`)
   }
 
