@@ -961,9 +961,9 @@ export async function POST(request: Request) {
         // Проблема: В схеме БД есть дефолтное значение "cash" для payment_method
         // Когда мы создаем заказ с payment_method: undefined, БД автоматически устанавливает "cash"
         // Поэтому fetchOrderById возвращает "cash" из БД, хотя мы не отправляли это значение
-        // Решение: Используем paymentMethod из исходного order (который undefined для новых заказов)
+        // Решение: Для новых заказов (paid=false) ВСЕГДА возвращаем undefined, даже если в БД есть "cash"
         // Только если заказ уже оплачен (paid=true), используем paymentMethod из БД
-        paymentMethod: order.paid ? (order.paymentMethod || (nocoOrder as any).payment_method || (nocoOrder as any)["Payment Method"]) : (order.paymentMethod || undefined),
+        paymentMethod: order.paid ? (order.paymentMethod || (nocoOrder as any).payment_method || (nocoOrder as any)["Payment Method"]) : undefined,
         paid: order.paid || false,
         paymentStatus: order.paymentStatus || "pending",
         orderStatus: "pending",
