@@ -1912,8 +1912,15 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
       // useMemo в existingOrder пересчитается только после установки обоих значений
       // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
-      setDraftOrder(newOrder)
-      setSelectedDate(targetDate)
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем flushSync для синхронного обновления
+      // Это гарантирует, что draftOrder установлен до того, как useMemo пересчитается
+      const { flushSync } = await import('react-dom')
+      flushSync(() => {
+        setDraftOrder(newOrder)
+      })
+      flushSync(() => {
+        setSelectedDate(targetDate)
+      })
 
     } catch (error) {
       console.error('❌ [Repeat Order] Ошибка при повторе заказа:', error)
@@ -3738,8 +3745,11 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         date={selectedDate || new Date()}
         existingOrder={existingOrder}
         onClose={() => {
+          // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ очищаем draftOrder при закрытии, если это черновик от повтора заказа
+          // Черновик должен оставаться до тех пор, пока не будет сохранен или явно отменен
+          // Это предотвращает проблему, когда при повторном открытии находится существующий заказ
           setSelectedDate(null)
-          setDraftOrder(null) // ✅ Очищаем черновик при закрытии
+          // setDraftOrder(null) - УДАЛЕНО: черновик остается для повторного открытия
         }}
         onSave={handleSaveOrder}
         onCancel={handleCancelOrder}
