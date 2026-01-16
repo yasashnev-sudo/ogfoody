@@ -1427,6 +1427,7 @@ export async function awardLoyaltyPoints(
   fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1306',message:'Recalculating balance from transactions',data:{userId,hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,tableId:process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
   // #endregion
   // ✅ КРИТИЧНО: Проверяем наличие переменной окружения перед вызовом calculateUserBalance
+  let recalculatedBalance = 0
   if (!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS) {
     console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS не установлена!`)
     console.error(`❌ Все переменные окружения:`, Object.keys(process.env).filter(k => k.includes('NOCODB')).join(', '))
@@ -1435,7 +1436,6 @@ export async function awardLoyaltyPoints(
     recalculatedBalance = earnedPoints
     console.warn(`⚠️ Используем earnedPoints (${earnedPoints}) как баланс из-за отсутствия переменной окружения`)
   } else {
-    let recalculatedBalance = 0
     try {
       recalculatedBalance = await calculateUserBalance(userId, true)
     // #region agent log
