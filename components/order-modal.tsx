@@ -1136,7 +1136,7 @@ export function OrderModal({
                   {existingOrder && existingOrder.id && onRepeatOrder && (() => {
                     const freeDates = getFreeDates()
                     return freeDates.length > 0 ? (
-                      <div className="relative shrink-0">
+                      <div className="relative shrink-0 mr-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -1180,7 +1180,7 @@ export function OrderModal({
                                   Нет доступных дат
                                 </div>
                               ) : (
-                                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                                 {freeDates.map((date) => {
                                   const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
                                   const dayName = dayNames[date.getDay()]
