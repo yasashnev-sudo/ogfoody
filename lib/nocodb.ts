@@ -1257,8 +1257,9 @@ export async function awardLoyaltyPoints(
   
   console.log(`✅ [awardLoyaltyPoints] total_spent обновлен в БД: ${newTotalSpent}`)
 
-  // ✅ КРИТИЧНО: Небольшая задержка для того, чтобы транзакции были видны в БД
-  await new Promise((resolve) => setTimeout(resolve, 500))
+  // ✅ КРИТИЧНО: Увеличиваем задержку для того, чтобы транзакции были видны в БД
+  // NocoDB может иметь задержку индексации, поэтому увеличиваем до 2 секунд
+  await new Promise((resolve) => setTimeout(resolve, 2000))
 
   // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций (единственный источник правды)
   // #region agent log
