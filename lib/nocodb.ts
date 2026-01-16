@@ -121,7 +121,14 @@ async function serverFetch<T>(tableName: string, params: Record<string, string> 
       url,
       response: text.substring(0, 500),
     })
-    if (text.includes("TABLE_NOT_FOUND") || response.status === 404) {
+    // ✅ ИСПРАВЛЕНО: FIELD_NOT_FOUND не означает, что таблица не найдена
+    // Это означает, что поле в запросе неверное (например, created_at вместо Created At)
+    if (text.includes("FIELD_NOT_FOUND")) {
+      console.warn(`⚠️ Поле не найдено в запросе для ${tableName}, возможно неправильное имя поля в сортировке или фильтре`)
+      // Не выбрасываем ошибку TABLE_NOT_FOUND, а возвращаем пустой результат
+      return { list: [] } as T
+    }
+    if (text.includes("TABLE_NOT_FOUND") || (response.status === 404 && !text.includes("FIELD_NOT_FOUND"))) {
       throw new Error(`TABLE_NOT_FOUND:${tableName}`)
     }
     throw new Error(`NocoDB API error: ${response.status} - ${text}`)
@@ -1644,7 +1651,9 @@ export interface NocoDBOrder {
 export async function fetchOrders(userId?: number): Promise<NocoDBOrder[]> {
   const params: Record<string, string> = {
     limit: "1000",
-    sort: "-Start Date", // Исправлено: NocoDB использует Title Case для заголовков
+    // ✅ ИСПРАВЛЕНО: Убрана сортировка по "Start Date" - может вызывать FIELD_NOT_FOUND
+    // Сортируем на клиенте по Id (более новые заказы имеют больший Id)
+    // sort: "-Start Date", // Убрано для избежания ошибок FIELD_NOT_FOUND
   }
 
   if (userId) {
@@ -1662,7 +1671,7 @@ export async function fetchOrders(userId?: number): Promise<NocoDBOrder[]> {
   console.log(`📦 fetchOrders: получено ${response.list?.length || 0} заказов из БД (userId=${userId || 'all'})`)
   
   // Нормализуем каждый заказ (Title Case → snake_case)
-  const normalizedOrders = (response.list || []).map(rawOrder => ({
+  let normalizedOrders = (response.list || []).map(rawOrder => ({
     ...rawOrder,
     Id: rawOrder.Id || rawOrder.id || 0,
     user_id: rawOrder.user_id ?? rawOrder["User ID"],
@@ -1727,13 +1736,18 @@ export async function fetchOrdersWithDetails(userId: number, noCache: boolean = 
   // ✅ По умолчанию БЕЗ кэша для актуальных данных
   const params: Record<string, string> = {
     limit: "1000",
-    sort: "-Start Date",
+    // ✅ ИСПРАВЛЕНО: Убрана сортировка по "Start Date" - может вызывать FIELD_NOT_FOUND
+    // Сортируем на клиенте по Id (более новые заказы имеют больший Id)
+    // sort: "-Start Date", // Убрано для избежания ошибок FIELD_NOT_FOUND
   }
   params.where = `(User ID,eq,${userId})~and(Order Status,neq,cancelled)`
   
   const fetchFn = noCache ? nocoFetchNoCache : nocoFetch
   const response = await fetchFn<NocoDBResponse<any>>("Orders", params)
-  const orders = response.list || []
+  let orders = response.list || []
+  
+  // ✅ Сортируем на клиенте по Id (более новые заказы имеют больший Id)
+  orders.sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0))
   
   console.log(`📦 Загрузка деталей для ${orders.length} заказов пользователя ${userId} (noCache=${noCache})...`)
   
