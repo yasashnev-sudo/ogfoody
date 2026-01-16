@@ -953,16 +953,15 @@ async function test10_CronJobProcessing(): Promise<TestResult> {
     
     const initialBalance = await getUserBalance(userId)
     
-    // Создаем заказ на наличные с датой доставки вчера (cron обрабатывает заказы до вчера включительно)
-    // Важно: cron проверяет deliveryDate <= yesterday, поэтому используем вчерашнюю дату
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(0, 0, 0, 0)
-    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    // Создаем заказ на наличные с датой доставки = сегодня
+    // Systemd timer обрабатывает заказы с датой доставки = сегодня в 15:00
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayStr = today.toISOString().split('T')[0]
     
     const orderData = {
       userId,
-      startDate: yesterdayStr,
+      startDate: todayStr,
       deliveryTime: '18:00-21:00',
       paymentMethod: 'cash',
       paid: false,
