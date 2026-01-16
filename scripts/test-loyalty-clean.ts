@@ -857,10 +857,11 @@ async function test8_PromoAndPointsCombined(): Promise<TestResult> {
     await sleep(5000)
     
     const balanceAfter = await getUserBalance(userId)
-    // Баллы начисляются на orderTotal = 1750 (после промокода и баллов)
-    // Но использованные баллы не влияют на расчет, так что начисление на 1800 (2000 - 200 промокод)
-    // На самом деле, orderTotal должен быть 1750, но начисление идет на orderTotal
-    const expectedBalance = balanceAfterEarn - pointsToUse + Math.floor(1750 * 0.03) // 52 балла (3% от 1750)
+    // Баллы начисляются на orderTotal БЕЗ учета использованных баллов
+    // orderTotal для начисления = subtotal + deliveryFee - promoDiscount = 2000 - 200 = 1800
+    // Использованные баллы (50) НЕ влияют на расчет начисления
+    const orderTotalForPoints = 2000 - 200 // 1800 (промокод учитывается, баллы - нет)
+    const expectedBalance = balanceAfterEarn - pointsToUse + Math.floor(orderTotalForPoints * 0.03) // 60 - 50 + 54 = 64
     
     console.log(`   Баланс после комбинации: ${balanceAfter}`)
     console.log(`   Ожидаемый баланс: ${expectedBalance}`)
@@ -952,14 +953,15 @@ async function test10_CronJobProcessing(): Promise<TestResult> {
     
     const initialBalance = await getUserBalance(userId)
     
-    // Создаем заказ на наличные с вчерашней датой доставки
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    // Создаем заказ на наличные с датой доставки 2 дня назад (cron обрабатывает заказы до вчера включительно)
+    const twoDaysAgo = new Date()
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+    twoDaysAgo.setHours(0, 0, 0, 0)
+    const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0]
     
     const orderData = {
       userId,
-      startDate: yesterdayStr,
+      startDate: twoDaysAgoStr,
       deliveryTime: '18:00-21:00',
       paymentMethod: 'cash',
       paid: false,
@@ -997,7 +999,12 @@ async function test10_CronJobProcessing(): Promise<TestResult> {
     const pendingTransactions = transactionsData.list || []
     
     if (pendingTransactions.length === 0) {
-      await deleteOrder(orderId, userId)
+      // Пытаемся удалить заказ через API (может не получиться из-за даты)
+      try {
+        await deleteOrder(orderId, userId)
+      } catch (e) {
+        // Игнорируем ошибку удаления
+      }
       return { name: testName, status: 'FAIL', message: 'Pending транзакция не создана' }
     }
     
@@ -1008,22 +1015,34 @@ async function test10_CronJobProcessing(): Promise<TestResult> {
     })
     
     if (!cronResponse.ok) {
-      await deleteOrder(orderId, userId)
-      return { name: testName, status: 'FAIL', message: `Cron job не выполнился: ${cronResponse.status}` }
+      const errorText = await cronResponse.text()
+      try {
+        await deleteOrder(orderId, userId)
+      } catch (e) {
+        // Игнорируем ошибку удаления
+      }
+      return { name: testName, status: 'FAIL', message: `Cron job не выполнился: ${cronResponse.status} ${errorText}` }
     }
+    
+    const cronResult = await cronResponse.json()
+    console.log(`   Cron job результат:`, cronResult)
     
     await sleep(5000)
     
     const balanceAfterCron = await getUserBalance(userId)
     const expectedBalance = initialBalance + Math.floor(2000 * 0.03) // 60 баллов
     
-    // Очистка
-    await deleteOrder(orderId, userId)
+    // Очистка (пытаемся удалить, но может не получиться из-за даты)
+    try {
+      await deleteOrder(orderId, userId)
+    } catch (e) {
+      console.log(`   ⚠️ Не удалось удалить заказ ${orderId} (ожидаемо для старых заказов)`)
+    }
     
     if (balanceAfterCron === expectedBalance) {
       return { name: testName, status: 'PASS', message: `Cron job обработал pending транзакцию: баланс ${balanceAfterCron}` }
     } else {
-      return { name: testName, status: 'FAIL', message: `Баланс ${balanceAfterCron} вместо ${expectedBalance}` }
+      return { name: testName, status: 'FAIL', message: `Баланс ${balanceAfterCron} вместо ${expectedBalance}. Cron обработал: ${JSON.stringify(cronResult)}` }
     }
   } catch (error: any) {
     return { name: testName, status: 'FAIL', message: `Ошибка: ${error.message}` }
