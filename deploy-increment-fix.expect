@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 
-set timeout 600
+set timeout 300
 
 spawn ssh root@5.129.194.168
 
@@ -34,14 +34,14 @@ expect {
         expect "root@"
         send "pm2 stop all 2>/dev/null || true\r"
         expect "root@"
-        send "sleep 2\r"
+        send "sleep 1\r"
         expect "root@"
         
         send "echo '=== Building project ==='\r"
         expect "root@"
         send "npm run build\r"
         expect {
-            -timeout 300
+            -timeout 180
             "Compiled successfully" {
                 expect "root@"
             }
@@ -57,7 +57,7 @@ expect {
         
         send "echo '=== Waiting for build to complete ==='\r"
         expect "root@"
-        send "sleep 5\r"
+        send "sleep 2\r"
         expect "root@"
         
         send "echo '=== Checking build ==='\r"
