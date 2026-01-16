@@ -313,6 +313,9 @@ export function OrderModal({
         existingOrderId: existingOrder?.id,
         existingOrderDate: existingOrder?.startDate,
         existingOrderIsDraft: !existingOrder?.id,
+        existingOrderOrderNumber: existingOrder?.orderNumber,
+        existingOrderPersonsCount: existingOrder?.persons?.length,
+        existingOrderTotal: existingOrder?.total,
         date: date.toISOString(),
       })
       // #endregion

@@ -3509,10 +3509,13 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         location: 'app/page.tsx:3407',
         hypothesisId: 'B',
         orderId: found.id,
+        orderNumber: found.orderNumber,
         orderDate: found.startDate,
+        orderStatus: found.orderStatus,
         selectedDate: selectedDate.toISOString(),
         hasDraftOrder: !!draftOrder,
         draftOrderId: draftOrder?.id,
+        draftOrderDate: draftOrder?.startDate,
       })
       // #endregion
     } else {
