@@ -1231,7 +1231,7 @@ export async function awardLoyaltyPoints(
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1191',message:'Creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
     // #endregion
-    await createLoyaltyPointsTransaction({
+    const createdTransaction = await createLoyaltyPointsTransaction({
       user_id: userId,
       order_id: orderId,
       transaction_type: "earned",
@@ -1245,7 +1245,13 @@ export async function awardLoyaltyPoints(
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1203',message:'Earned transaction created',data:{userId,orderId,earnedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
     // #endregion
-    console.log(`✅ Транзакция "earned" создана: +${earnedPoints} баллов`)
+    console.log(`✅ Транзакция "earned" создана: +${earnedPoints} баллов`, {
+      transactionId: createdTransaction?.Id,
+      userId,
+      orderId,
+      points: earnedPoints,
+      status: createdTransaction?.transaction_status || createdTransaction?.['Transaction Status'],
+    })
   } else {
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1206',message:'No earned transaction: earnedPoints is 0',data:{earnedPoints,orderTotal,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
