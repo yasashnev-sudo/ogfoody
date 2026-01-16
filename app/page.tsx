@@ -3702,14 +3702,22 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             console.log("✅ Авторизован И район есть - проверяем профиль")
             setSelectedDistrict(hasDistrict)
             
+            // ✅ ИСПРАВЛЕНО: Проверяем userProfile на null перед доступом к свойствам
             const isProfileComplete = 
+              userProfile &&
               userProfile.district && 
               userProfile.name && 
               userProfile.street && 
               userProfile.building
             
             if (!isProfileComplete) {
-              console.log("⚠️ Профиль неполный, открываем ProfileModal")
+              console.log("⚠️ Профиль неполный или отсутствует, открываем ProfileModal", {
+                hasUserProfile: !!userProfile,
+                hasDistrict: !!userProfile?.district,
+                hasName: !!userProfile?.name,
+                hasStreet: !!userProfile?.street,
+                hasBuilding: !!userProfile?.building,
+              })
               setShouldAutoCheckout(true)
               setShowProfile(true)
             } else {
