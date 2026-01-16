@@ -1684,8 +1684,9 @@ export async function fetchOrders(userId?: number): Promise<NocoDBOrder[]> {
     "Delivery Time": rawOrder["Delivery Time"] ?? rawOrder.delivery_time ?? "",
     payment_status: (rawOrder.payment_status ?? rawOrder["Payment Status"] ?? "pending") as "pending" | "paid" | "refunded" | "failed",
     "Payment Status": (rawOrder["Payment Status"] ?? rawOrder.payment_status ?? "pending") as "pending" | "paid" | "refunded" | "failed",
-    payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? "cash") as "cash" | "card" | "sbp" | "online",
-    "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? "cash") as "cash" | "card" | "sbp" | "online",
+    // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+    payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? undefined) as "cash" | "card" | "sbp" | "online" | undefined,
+    "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? undefined) as "cash" | "card" | "sbp" | "online" | undefined,
     // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно нормализуем paid как boolean для всех форматов
     paid: (() => {
       const paidValue = rawOrder.paid !== undefined ? rawOrder.paid : rawOrder["Paid"]
@@ -1942,7 +1943,8 @@ export async function fetchOrdersWithDetails(userId: number, noCache: boolean = 
           orderNumber: order.order_number || order["Order Number"],
           startDate: order.start_date || order["Start Date"],
           deliveryTime: order.delivery_time || order["Delivery Time"] || "",
-          paymentMethod: order.payment_method || order["Payment Method"] || "cash",
+          // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+          paymentMethod: order.payment_method || order["Payment Method"] || undefined,
           paid: order.paid ?? order.Paid ?? false,
           paidAt: order.paid_at || order["Paid At"],
           paymentStatus: order.payment_status || order["Payment Status"] || "pending",
@@ -1970,7 +1972,8 @@ export async function fetchOrdersWithDetails(userId: number, noCache: boolean = 
           orderNumber: order.order_number || order["Order Number"],
           startDate: order.start_date || order["Start Date"],
           deliveryTime: order.delivery_time || order["Delivery Time"] || "",
-          paymentMethod: order.payment_method || order["Payment Method"] || "cash",
+          // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+          paymentMethod: order.payment_method || order["Payment Method"] || undefined,
           paid: order.paid ?? order.Paid ?? false,
           paidAt: order.paid_at || order["Paid At"],
           paymentStatus: order.payment_status || order["Payment Status"] || "pending",
@@ -2036,8 +2039,9 @@ export async function fetchOrderById(id: number, noCache: boolean = false): Prom
     "Delivery Time": rawOrder["Delivery Time"] ?? rawOrder.delivery_time ?? "",
     payment_status: (rawOrder.payment_status ?? rawOrder["Payment Status"] ?? "pending") as "pending" | "paid" | "refunded" | "failed",
     "Payment Status": (rawOrder["Payment Status"] ?? rawOrder.payment_status ?? "pending") as "pending" | "paid" | "refunded" | "failed",
-    payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? "cash") as "cash" | "card" | "sbp" | "online",
-    "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? "cash") as "cash" | "card" | "sbp" | "online",
+    // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+    payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? undefined) as "cash" | "card" | "sbp" | "online" | undefined,
+    "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? undefined) as "cash" | "card" | "sbp" | "online" | undefined,
     // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно нормализуем paid как boolean для всех форматов
     paid: (() => {
       const paidValue = rawOrder.paid !== undefined ? rawOrder.paid : rawOrder["Paid"]
@@ -2097,8 +2101,9 @@ export async function fetchOrderByNumber(orderNumber: string): Promise<NocoDBOrd
     "Delivery Time": rawOrder["Delivery Time"] ?? rawOrder.delivery_time ?? "",
     payment_status: (rawOrder.payment_status ?? rawOrder["Payment Status"] ?? "pending") as "pending" | "paid" | "refunded" | "failed",
     "Payment Status": (rawOrder["Payment Status"] ?? rawOrder.payment_status ?? "pending") as "pending" | "paid" | "refunded" | "failed",
-    payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? "cash") as "cash" | "card" | "sbp" | "online",
-    "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? "cash") as "cash" | "card" | "sbp" | "online",
+    // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+    payment_method: (rawOrder.payment_method ?? rawOrder["Payment Method"] ?? undefined) as "cash" | "card" | "sbp" | "online" | undefined,
+    "Payment Method": (rawOrder["Payment Method"] ?? rawOrder.payment_method ?? undefined) as "cash" | "card" | "sbp" | "online" | undefined,
     // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно нормализуем paid как boolean для всех форматов
     paid: (() => {
       const paidValue = rawOrder.paid !== undefined ? rawOrder.paid : rawOrder["Paid"]

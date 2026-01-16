@@ -972,7 +972,8 @@ export async function POST(request: Request) {
       },
       loyaltyPointsEarned: actualPointsEarned || 0, // Количество начисленных баллов (всегда число, даже если 0)
       loyaltyPointsUsed: order.loyaltyPointsUsed || 0, // Количество использованных баллов
-      loyaltyPointsStatus: order.paymentMethod === 'cash' ? 'pending' : 'earned',
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Если paymentMethod не указан (undefined), считаем как 'earned' (будет установлен при оплате)
+      loyaltyPointsStatus: order.paymentMethod === 'cash' ? 'pending' : (order.paymentMethod ? 'earned' : undefined),
       loyaltyPointsMessage: order.paymentMethod === 'cash' && actualPointsEarned > 0
         ? `При оплате наличными баллы (${actualPointsEarned}) будут начислены на следующий день после доставки`
         : actualPointsEarned > 0 

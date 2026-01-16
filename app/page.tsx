@@ -572,7 +572,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                   orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
                   startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
                   deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
-                  paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
+                  // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+                  paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? undefined,
                   paid: db.paid ?? db.Paid ?? false,
                   paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
                   paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
@@ -3809,7 +3810,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                     orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
                     startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
                     deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
-                    paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
+                    // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+                  paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? undefined,
                     paid: db.paid ?? db.Paid ?? false,
                     paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
                     paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
