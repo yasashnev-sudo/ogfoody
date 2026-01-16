@@ -33,7 +33,8 @@ import {
   Coins,
   MessageCircle,
   RotateCcw,
-  X
+  X,
+  AlertTriangle
 } from "lucide-react"
 import { MealSelector } from "@/components/meal-selector"
 import { ExtrasSelector } from "@/components/extras-selector"
@@ -82,6 +83,7 @@ interface OrderModalProps {
   onPaymentSuccess?: (order: Order) => void
   onRepeatOrder?: (order: Order, targetDate: Date) => Promise<void> // ✅ НОВОЕ: Повтор заказа
   availableDates?: Date[] // ✅ НОВОЕ: Доступные даты для повтора
+  unavailableItems?: string[] // ✅ НОВОЕ: Недоступные товары для показа предупреждения
   userLoyaltyPoints?: number
   isAuthenticated?: boolean
   onRequestAuth?: (order: Order, total: number) => void
@@ -169,6 +171,7 @@ export function OrderModal({
   onPaymentSuccess,
   onRepeatOrder,
   availableDates = [],
+  unavailableItems = [],
   userLoyaltyPoints = 0,
   isAuthenticated = false,
   onRequestAuth,
@@ -1272,6 +1275,21 @@ export function OrderModal({
               style={{ scrollBehavior: 'auto' }}
             >
               <div className="px-1.5 py-1.5 sm:p-4 pb-20">
+                {/* ✅ НОВОЕ: Предупреждение о недоступных товарах при повторе заказа */}
+                {unavailableItems.length > 0 && (
+                  <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-orange-700 dark:text-orange-400">Внимание!</p>
+                        <p className="text-xs text-orange-600 dark:text-orange-400/80 mt-1">
+                          Следующие позиции больше не в меню и будут пропущены: {unavailableItems.join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {!isInDeliveryZone && userCity && (
                   <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <div className="flex items-start gap-3">

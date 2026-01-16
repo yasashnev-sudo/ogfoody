@@ -272,6 +272,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [draftOrder, setDraftOrder] = useState<Order | null>(null) // ✅ Черновик для повторения заказа
+  const [draftOrderUnavailableItems, setDraftOrderUnavailableItems] = useState<string[]>([]) // ✅ Недоступные товары для черновика
   const [view, setView] = useState<"calendar" | "history">("calendar")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
@@ -1834,16 +1835,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         unavailableItems,
       })
 
-      // ⚠️ Если были недоступные товары - показываем предупреждение
-      if (hasUnavailableItems) {
-        showWarning(
-          'Некоторые товары недоступны',
-          `Следующие позиции больше не в меню и будут пропущены: ${unavailableItems.join(', ')}`,
-          'warning'
-        )
-      }
-
       // ✅ Создаем новый заказ с актуальными товарами и ценами
+      // ⚠️ ПРИМЕЧАНИЕ: Предупреждение о недоступных товарах показывается в OrderModal после открытия
       // ✅ КРИТИЧНО: Сначала очищаем все поля оплаты из validatedOrder, чтобы гарантировать чистый заказ
       const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanValidatedOrder } = validatedOrder
       
@@ -1928,6 +1921,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       const { flushSync } = await import('react-dom')
       flushSync(() => {
         setDraftOrder(newOrder)
+        // ✅ Сохраняем недоступные товары вместе с черновиком
+        setDraftOrderUnavailableItems(hasUnavailableItems ? unavailableItems : [])
       })
       flushSync(() => {
         setSelectedDate(targetDate)
