@@ -53,10 +53,12 @@ async function deleteAllRecords(tableId: string, tableName: string): Promise<num
     return 0
   }
   
-  // Удаляем записи батчами по 100
+  // Удаляем записи батчами по 100, передавая объекты с Id в body
   let deleted = 0
   for (let i = 0; i < recordIds.length; i += 100) {
     const batch = recordIds.slice(i, i + 100)
+    // Формируем массив объектов с Id для каждого ID
+    const batchObjects = batch.map(id => ({ Id: id }))
     
     const deleteUrl = `${baseUrl}/api/v2/tables/${tableId}/records`
     const deleteResponse = await fetch(deleteUrl, {
@@ -65,7 +67,7 @@ async function deleteAllRecords(tableId: string, tableName: string): Promise<num
         'xc-token': NOCODB_TOKEN,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(batch),
+      body: JSON.stringify(batchObjects),
     })
     
     if (deleteResponse.ok) {
@@ -73,7 +75,25 @@ async function deleteAllRecords(tableId: string, tableName: string): Promise<num
       console.log(`   Удалено: ${deleted}/${recordIds.length}`)
     } else {
       const errorText = await deleteResponse.text()
-      console.error(`   ❌ Ошибка удаления батча: ${deleteResponse.status} ${errorText}`)
+      console.error(`   ❌ Ошибка удаления батча ${i}-${i + batch.length}: ${deleteResponse.status} ${errorText}`)
+      // Пробуем удалить по одной записи из батча
+      for (const recordId of batch) {
+        try {
+          const singleDeleteResponse = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+              'xc-token': NOCODB_TOKEN,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([{ Id: recordId }]),
+          })
+          if (singleDeleteResponse.ok) {
+            deleted++
+          }
+        } catch (e) {
+          // Игнорируем ошибки при одиночном удалении
+        }
+      }
     }
   }
   

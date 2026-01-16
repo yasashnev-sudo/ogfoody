@@ -378,19 +378,25 @@ async function test3_PointsUsage(): Promise<TestResult> {
     await sleep(5000)
     
     const balanceAfterUse = await getUserBalance(userId)
-    const pointsUsed = balanceAfterEarn - balanceAfterUse
+    
+    // При втором заказе начисляются новые баллы (3% от 2000 = 60)
+    // И списываются использованные баллы (50)
+    // Итого: 60 (первый заказ) + 60 (второй заказ) - 50 (использовано) = 70
+    const expectedBalanceAfterUse = balanceAfterEarn + Math.floor(2000 * 0.03) - pointsToUse
+    const actualPointsUsed = balanceAfterEarn - (balanceAfterUse - Math.floor(2000 * 0.03))
     
     console.log(`   Баланс после использования: ${balanceAfterUse}`)
-    console.log(`   Использовано баллов: ${pointsUsed}`)
+    console.log(`   Ожидаемый баланс: ${expectedBalanceAfterUse} (${balanceAfterEarn} + 60 - ${pointsToUse})`)
+    console.log(`   Фактически списано баллов: ${actualPointsUsed}`)
     
     // Очистка
     await deleteOrder(order1Id, userId)
     await deleteOrder(order2Id, userId)
     
-    if (pointsUsed === pointsToUse) {
-      return { name: testName, status: 'PASS', message: `Баллы использованы правильно: ${pointsUsed}` }
+    if (actualPointsUsed === pointsToUse && balanceAfterUse === expectedBalanceAfterUse) {
+      return { name: testName, status: 'PASS', message: `Баллы использованы правильно: списано ${actualPointsUsed}, баланс ${balanceAfterUse}` }
     } else {
-      return { name: testName, status: 'FAIL', message: `Баллы использованы неправильно: использовано ${pointsUsed}, ожидалось ${pointsToUse}` }
+      return { name: testName, status: 'FAIL', message: `Баллы использованы неправильно: списано ${actualPointsUsed} (ожидалось ${pointsToUse}), баланс ${balanceAfterUse} (ожидался ${expectedBalanceAfterUse})` }
     }
   } catch (error: any) {
     return { name: testName, status: 'FAIL', message: `Ошибка: ${error.message}` }
