@@ -125,6 +125,9 @@ export async function POST(request: Request) {
       try {
         // ✅ КРИТИЧНО: Используем noCache=true для получения СВЕЖЕГО баланса
         // Это учитывает все транзакции в реальном времени
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:128',message:'BEFORE calculateUserBalance',data:{userId,pointsUsed:order.loyaltyPointsUsed,hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,tableId:process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         const currentBalance = await calculateUserBalance(userId, true)
         
         if (order.loyaltyPointsUsed > currentBalance) {
@@ -148,6 +151,9 @@ export async function POST(request: Request) {
         })
       } catch (error) {
         console.error(`❌ Ошибка при валидации баллов:`, error)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:150',message:'ERROR in calculateUserBalance validation',data:{userId,error:String(error),errorMessage:error instanceof Error ? error.message : String(error),hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         // Не прерываем процесс создания заказа, но логируем ошибку
       }
     }
@@ -877,8 +883,16 @@ export async function POST(request: Request) {
           console.warn(`⚠️ Пользователь ${userId} не найден в базе данных`)
         }
       } catch (error) {
-        console.error(`❌ Ошибка при начислении баллов:`, error)
+        console.error(`❌ Ошибка при расчете и начислении баллов для заказа ${nocoOrder.Id}:`, error)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/route.ts:882',message:'ERROR in loyalty points award',data:{orderId:nocoOrder.Id,userId,error:String(error),errorMessage:error instanceof Error ? error.message : String(error),hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,tableId:process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         // Не прерываем процесс создания заказа из-за ошибки начисления баллов
+        // Но логируем критическую ошибку для диагностики
+        if (error instanceof Error && error.message.includes('TABLE_NOT_FOUND')) {
+          console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Таблица Loyalty_Points_Transactions не найдена!`)
+          console.error(`❌ Проверьте переменную окружения NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS на сервере`)
+        }
       }
     } else {
       console.log(`🔍 [POST] ❌ userId отсутствует - баллы не будут начислены`)

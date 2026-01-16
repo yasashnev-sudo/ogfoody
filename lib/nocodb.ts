@@ -81,7 +81,10 @@ function buildNocoDBUrl(tableName: string, params: Record<string, string> = {}):
   const tableId = getTableId(tableName)
 
   if (!tableId) {
-    throw new Error(`TABLE_NOT_CONFIGURED:${tableName}`)
+    console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Таблица ${tableName} не настроена!`)
+    console.error(`❌ Переменная окружения для таблицы ${tableName} не установлена`)
+    console.error(`❌ Проверьте переменные окружения на сервере`)
+    throw new Error(`TABLE_NOT_CONFIGURED:${tableName} - переменная окружения не установлена`)
   }
 
   return `${baseUrl}/tables/${tableId}/records${queryString ? `?${queryString}` : ""}`
