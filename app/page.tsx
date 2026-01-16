@@ -272,7 +272,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [draftOrder, setDraftOrder] = useState<Order | null>(null) // ✅ Черновик для повторения заказа
-  const [isRepeatOrderMode, setIsRepeatOrderMode] = useState(false) // ✅ Флаг режима повтора заказа
   const [view, setView] = useState<"calendar" | "history">("calendar")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
@@ -846,16 +845,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         // Добавляем новый
         return [...prevOrders, order]
       })
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] CLEARING draftOrder in handleSaveOrder', {
-        location: 'app/page.tsx:848',
-        hypothesisId: 'C',
-        draftOrderId: draftOrder?.id,
-        draftOrderDate: draftOrder?.startDate,
-      })
-      // #endregion
       setDraftOrder(null) // Очищаем черновик
-      setIsRepeatOrderMode(false) // ✅ Сбрасываем флаг режима повтора
     }
     
     const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
@@ -1813,10 +1803,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         id: undefined,
         orderNumber: undefined,
         startDate: targetDate,
-        delivered: false,
+        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем все поля, связанные с оплатой
         paid: false,
         paidAt: undefined,
         paymentMethod: undefined,
+        paymentStatus: undefined, // ✅ КРИТИЧНО: Очищаем статус оплаты
+        paymentId: undefined, // ✅ КРИТИЧНО: Очищаем ID платежа
         orderStatus: 'pending',
         // Цены будут пересчитаны автоматически в OrderModal
         total: undefined,
@@ -1870,39 +1862,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
       // useMemo в existingOrder пересчитается только после установки обоих значений
       // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
-      // ✅ КРИТИЧНО: Устанавливаем флаг режима повтора заказа
-      // Это гарантирует, что useMemo всегда вернет черновик, даже если пересчитается
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] BEFORE setDraftOrder and setSelectedDate', {
-        location: 'app/page.tsx:1859',
-        hypothesisId: 'D',
-        draftOrderId: newOrder.id,
-        draftOrderDate: newOrder.startDate,
-        targetDate: targetDate.toISOString(),
-        hasDraftOrder: !!draftOrder,
-      })
-      // #endregion
-      setIsRepeatOrderMode(true) // ✅ Устанавливаем флаг режима повтора
       setDraftOrder(newOrder)
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] AFTER setDraftOrder BEFORE setSelectedDate', {
-        location: 'app/page.tsx:1862',
-        hypothesisId: 'D',
-        draftOrderId: newOrder.id,
-        draftOrderDate: newOrder.startDate,
-        targetDate: targetDate.toISOString(),
-      })
-      // #endregion
       setSelectedDate(targetDate)
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] AFTER setDraftOrder and setSelectedDate', {
-        location: 'app/page.tsx:1865',
-        hypothesisId: 'D',
-        draftOrderId: newOrder.id,
-        draftOrderDate: newOrder.startDate,
-        targetDate: targetDate.toISOString(),
-      })
-      // #endregion
 
     } catch (error) {
       console.error('❌ [Repeat Order] Ошибка при повторе заказа:', error)
@@ -3402,57 +3363,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   // ✅ ИСПРАВЛЕНО 2026-01-16: Исправлена проблема с открытием существующего заказа вместо черновика при повторе заказа
   // ✅ ИСПРАВЛЕНО 2026-01-16: Используем useMemo для предотвращения race condition при установке draftOrder и selectedDate
   const existingOrder = useMemo(() => {
-    // #region agent log
-    console.log('[DEBUG REPEAT ORDER] useMemo existingOrder ENTRY', {
-      location: 'app/page.tsx:3363',
-      hypothesisId: 'A',
-      hasSelectedDate: !!selectedDate,
-      selectedDate: selectedDate?.toISOString(),
-      hasDraftOrder: !!draftOrder,
-      draftOrderId: draftOrder?.id,
-      draftOrderDate: draftOrder?.startDate,
-      ordersCount: orders.length,
-    })
-    // #endregion
-    if (!selectedDate) {
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] useMemo existingOrder EXIT no selectedDate', {
-        location: 'app/page.tsx:3366',
-        hypothesisId: 'A',
-      })
-      // #endregion
-      return undefined
-    }
-    
-    // ✅ КРИТИЧНО: В режиме повтора заказа всегда возвращаем черновик, если он есть
-    // Это гарантирует, что при повторе заказа всегда открывается черновик, а не существующий заказ
-    if (isRepeatOrderMode && draftOrder) {
-      const draftTimestamp = getDateTimestamp(draftOrder.startDate)
-      const selectedTimestamp = getDateTimestamp(selectedDate)
-      
-      if (draftTimestamp === selectedTimestamp) {
-        console.log('📝 [existingOrder] Режим повтора: используем черновик:', {
-          draftDate: draftOrder.startDate,
-          selectedDate: selectedDate,
-          draftId: draftOrder.id,
-          draftDateTimestamp: draftTimestamp,
-          selectedDateTimestamp: selectedTimestamp,
-        })
-        // #region agent log
-        console.log('[DEBUG REPEAT ORDER] useMemo existingOrder RETURNING DRAFT (REPEAT MODE)', {
-          location: 'app/page.tsx:3422',
-          hypothesisId: 'A',
-          draftId: draftOrder.id,
-          draftDate: draftOrder.startDate,
-          selectedDate: selectedDate.toISOString(),
-          draftTimestamp,
-          selectedTimestamp,
-          isRepeatOrderMode,
-        })
-        // #endregion
-        return draftOrder
-      }
-    }
+    if (!selectedDate) return undefined
     
     // ✅ КРИТИЧНО: Сначала проверяем черновик - он имеет приоритет
     if (draftOrder) {
@@ -3467,17 +3378,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           draftDateTimestamp: draftTimestamp,
           selectedDateTimestamp: selectedTimestamp,
         })
-        // #region agent log
-        console.log('[DEBUG REPEAT ORDER] useMemo existingOrder RETURNING DRAFT', {
-          location: 'app/page.tsx:3379',
-          hypothesisId: 'A',
-          draftId: draftOrder.id,
-          draftDate: draftOrder.startDate,
-          selectedDate: selectedDate.toISOString(),
-          draftTimestamp,
-          selectedTimestamp,
-        })
-        // #endregion
         return draftOrder
       } else {
         console.log('⚠️ [existingOrder] Черновик есть, но даты не совпадают:', {
@@ -3486,27 +3386,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           draftTimestamp,
           selectedTimestamp,
         })
-        // #region agent log
-        console.log('[DEBUG REPEAT ORDER] useMemo existingOrder DRAFT DATES MISMATCH', {
-          location: 'app/page.tsx:3386',
-          hypothesisId: 'A',
-          draftDate: draftOrder.startDate,
-          selectedDate: selectedDate.toISOString(),
-          draftTimestamp,
-          selectedTimestamp,
-        })
-        // #endregion
       }
-    } else {
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] useMemo existingOrder NO DRAFT', {
-        location: 'app/page.tsx:3389',
-        hypothesisId: 'A',
-        selectedDate: selectedDate.toISOString(),
-      })
-      // #endregion
     }
     
+    // ✅ Если черновика нет или даты не совпадают, ищем существующий заказ
     const checkTimestamp = getDateTimestamp(selectedDate)
     
     const found = orders.find((o) => {
@@ -3533,20 +3416,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         checkTimestamp,
         hasDraftOrder: !!draftOrder,
       })
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] useMemo existingOrder RETURNING EXISTING ORDER', {
-        location: 'app/page.tsx:3407',
-        hypothesisId: 'B',
-        orderId: found.id,
-        orderNumber: found.orderNumber,
-        orderDate: found.startDate,
-        orderStatus: found.orderStatus,
-        selectedDate: selectedDate.toISOString(),
-        hasDraftOrder: !!draftOrder,
-        draftOrderId: draftOrder?.id,
-        draftOrderDate: draftOrder?.startDate,
-      })
-      // #endregion
     } else {
       console.log('🔍 [existingOrder] Заказ на дату не найден:', {
         selectedDate: selectedDate,
@@ -3560,29 +3429,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           status: o.orderStatus,
         })),
       })
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] useMemo existingOrder NO ORDER FOUND', {
-        location: 'app/page.tsx:3418',
-        hypothesisId: 'A',
-        selectedDate: selectedDate.toISOString(),
-        checkTimestamp,
-        totalOrders: orders.length,
-        hasDraftOrder: !!draftOrder,
-      })
-      // #endregion
     }
     
-    // #region agent log
-    console.log('[DEBUG REPEAT ORDER] useMemo existingOrder EXIT', {
-      location: 'app/page.tsx:3421',
-      hypothesisId: 'A',
-      returnValueId: found?.id,
-      returnValueDate: found?.startDate,
-      returnValueIsDraft: !found?.id,
-    })
-    // #endregion
     return found
-  }, [selectedDate, draftOrder, orders, isRepeatOrderMode])
+  }, [selectedDate, draftOrder, orders])
 
   const availableDates = getAvailableDates()
 
@@ -3836,33 +3686,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       <OrderModal
         key={`order-${selectedDate?.getTime()}-${existingOrder?.id}-${existingOrder?.paid}-${existingOrder?.total}-${existingOrder?.loyaltyPointsEarned}`}
         date={selectedDate || new Date()}
-        existingOrder={(() => {
-          // #region agent log
-          console.log('[DEBUG REPEAT ORDER] OrderModal RENDER - existingOrder prop', {
-            location: 'app/page.tsx:3802',
-            hypothesisId: 'B',
-            existingOrderId: existingOrder?.id,
-            existingOrderDate: existingOrder?.startDate,
-            existingOrderIsDraft: !existingOrder?.id,
-            hasDraftOrder: !!draftOrder,
-            draftOrderId: draftOrder?.id,
-            selectedDate: selectedDate?.toISOString(),
-          })
-          // #endregion
-          return existingOrder
-        })()}
+        existingOrder={existingOrder}
         onClose={() => {
           setSelectedDate(null)
-          // #region agent log
-          console.log('[DEBUG REPEAT ORDER] CLEARING draftOrder on modal close', {
-            location: 'app/page.tsx:3726',
-            hypothesisId: 'C',
-            draftOrderId: draftOrder?.id,
-            draftOrderDate: draftOrder?.startDate,
-          })
-          // #endregion
           setDraftOrder(null) // ✅ Очищаем черновик при закрытии
-          setIsRepeatOrderMode(false) // ✅ Сбрасываем флаг режима повтора
         }}
         onSave={handleSaveOrder}
         onCancel={handleCancelOrder}
