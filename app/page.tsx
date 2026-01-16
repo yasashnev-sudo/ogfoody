@@ -1797,13 +1797,17 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       }
 
       // ✅ Создаем новый заказ с актуальными товарами и ценами
+      // ✅ КРИТИЧНО: Сначала очищаем все поля оплаты из validatedOrder, чтобы гарантировать чистый заказ
+      const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanValidatedOrder } = validatedOrder
+      
       const newOrder: Order = {
-        ...validatedOrder,
+        ...cleanValidatedOrder,
         // Важно: очищаем поля старого заказа
         id: undefined,
         orderNumber: undefined,
         startDate: targetDate,
         // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем все поля, связанные с оплатой
+        // Явно устанавливаем значения, чтобы гарантировать, что они не копируются из старого заказа
         paid: false,
         paidAt: undefined,
         paymentMethod: undefined,
@@ -1821,6 +1825,16 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         promoCode: undefined,
         promoDiscount: undefined,
       }
+      
+      // ✅ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Логируем, чтобы убедиться, что поля оплаты очищены
+      console.log('🔍 [Repeat Order] Проверка очистки полей оплаты:', {
+        paid: newOrder.paid,
+        paymentStatus: newOrder.paymentStatus,
+        paymentId: newOrder.paymentId,
+        paymentMethod: newOrder.paymentMethod,
+        paidAt: newOrder.paidAt,
+        orderStatus: newOrder.orderStatus,
+      })
 
       // ✅ ИСПРАВЛЕНО 2026-01-13: НЕ добавляем заказ в state сразу
       // Заказ будет добавлен только после нажатия "Сохранить" в OrderModal через handleSaveOrder
