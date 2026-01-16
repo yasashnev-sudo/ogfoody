@@ -1,0 +1,55 @@
+#!/usr/bin/expect -f
+
+# Скрипт для установки systemd timer на продакшн-сервере
+# Автоматически подключается, устанавливает timer и проверяет статус
+
+set timeout 300
+
+spawn ssh root@5.129.194.168
+
+expect {
+    "password:" {
+        send "pULRoAvF@P-@4Y\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "root@" {
+
+        # Переходим в директорию проекта
+        send "cd /var/www/ogfoody\r"
+        expect "root@"
+        
+        # Обновляем код
+        send "git pull\r"
+        expect "root@"
+        
+        # Устанавливаем systemd timer
+        send "bash scripts/install-systemd-timer.sh\r"
+        expect "root@"
+        
+        # Проверяем статус timer
+        send "systemctl status ogfoody-loyalty-points.timer --no-pager -l\r"
+        expect "root@"
+        
+        # Показываем следующий запуск
+        send "systemctl list-timers ogfoody-loyalty-points.timer --no-pager\r"
+        expect "root@"
+        
+        # Тестовый запуск service
+        send "systemctl start ogfoody-loyalty-points.service\r"
+        expect "root@"
+        
+        # Проверяем логи
+        send "journalctl -u ogfoody-loyalty-points.service -n 30 --no-pager\r"
+        expect "root@"
+        
+        send "echo '=== SYSTEMD TIMER INSTALLATION COMPLETED ==='\r"
+        expect "root@"
+        
+        send "exit\r"
+        expect eof
+    }
+}
