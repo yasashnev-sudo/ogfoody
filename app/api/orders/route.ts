@@ -230,7 +230,9 @@ export async function POST(request: Request) {
       // Новые статусы оплаты
       // Определяем статус оплаты: если явно указан paymentStatus, используем его, иначе на основе paid
       payment_status: order.paymentStatus || (order.paid === true || String(order.paid).toLowerCase() === 'true' ? "paid" : "pending"),
-      payment_method: order.paymentMethod || "cash",
+      // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
+      // paymentMethod должен быть установлен только при оплате, а не при создании заказа
+      payment_method: order.paymentMethod || undefined,
       paid: order.paid === true || String(order.paid).toLowerCase() === 'true' || order.paymentStatus === 'paid' || String(order.paymentStatus).toLowerCase() === 'paid',
       paid_at: order.paidAt || (order.paid ? now : undefined),
       payment_id: order.paymentId || undefined,
@@ -952,7 +954,9 @@ export async function POST(request: Request) {
         orderNumber: orderNumberToReturn,
         startDate: order.startDate,
         deliveryTime: order.deliveryTime,
-        paymentMethod: order.paymentMethod || "cash",
+        // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию для новых заказов
+        // paymentMethod должен быть undefined до выбора способа оплаты
+        paymentMethod: order.paymentMethod || undefined,
         paid: order.paid || false,
         paymentStatus: order.paymentStatus || "pending",
         orderStatus: "pending",

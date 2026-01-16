@@ -1186,6 +1186,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           deliveryFee: result.order?.deliveryFee ?? newOrder.deliveryFee ?? 0, // ✅ ДОБАВЛЕНО
           loyaltyPointsEarned: result.loyaltyPointsEarned || 0,
           loyaltyPointsUsed: newOrder.loyaltyPointsUsed || 0,
+          // ✅ КРИТИЧНО 2026-01-16: Явно очищаем поля оплаты для нового заказа
+          // Не копируем paymentMethod из API ответа, если он там есть (может быть "cash" по умолчанию)
+          paymentMethod: undefined,
+          paymentStatus: undefined,
+          paymentId: undefined,
+          paidAt: undefined,
         }
         
         console.log("💾 Saving order to state:", { 

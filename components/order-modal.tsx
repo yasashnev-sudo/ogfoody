@@ -554,10 +554,10 @@ export function OrderModal({
     }
 
     onSave(order)
-
-    if (onPaymentSuccess) {
-      onPaymentSuccess(order)
-    }
+    
+    // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ вызываем onPaymentSuccess здесь
+    // onPaymentSuccess должен вызываться только после фактической оплаты в handlePaymentComplete
+    // Заказ еще не оплачен, поэтому не нужно вызывать onPaymentSuccess
 
     setIsProcessingPayment(false)
   }
