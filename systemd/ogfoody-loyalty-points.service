@@ -1,0 +1,30 @@
+[Unit]
+Description=OGFoody Loyalty Points Processor
+Documentation=https://github.com/yasashnev-sudo/ogfoody
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/var/www/ogfoody
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+# Переменные окружения загружаются из .env.production
+EnvironmentFile=/var/www/ogfoody/.env.production
+# Используем curl для вызова API endpoint
+# Альтернатива: можно использовать node напрямую, но curl проще и надежнее
+ExecStart=/usr/bin/curl -X GET http://localhost:3000/api/cron/process-pending-points \
+  -H "Content-Type: application/json" \
+  --max-time 300 \
+  --fail \
+  --silent \
+  --show-error \
+  --output /dev/null
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ogfoody-loyalty-points
+
+[Install]
+WantedBy=multi-user.target

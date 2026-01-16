@@ -1,0 +1,15 @@
+[Unit]
+Description=OGFoody Loyalty Points Processor Timer
+Documentation=https://github.com/yasashnev-sudo/ogfoody
+Requires=ogfoody-loyalty-points.service
+
+[Timer]
+# Запуск каждый день в 15:00
+OnCalendar=*-*-* 15:00:00
+# Если пропустили запуск (сервер был выключен), запустить при следующей возможности
+Persistent=true
+# Точность: 1 минута (запуск в 15:00:00-15:00:59)
+AccuracySec=1m
+
+[Install]
+WantedBy=timers.target

@@ -1,10 +1,7 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/process-pending-points",
-      "schedule": "0 * * * *"
-    }
-  ]
+  "crons": []
+  // Cron job заменен на systemd timer для более надежной работы
+  // См. SYSTEMD_TIMER_SETUP.md для инструкций по установке
 }
 
 
