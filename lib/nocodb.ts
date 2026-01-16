@@ -1472,6 +1472,12 @@ export async function refundLoyaltyPoints(
 
   // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций и обновляем в БД
   const recalculatedBalance = await calculateUserBalance(userId, true)
+  console.log(`🔍 [refundLoyaltyPoints] recalculatedBalance ПЕРЕД console.log:`, {
+    value: recalculatedBalance,
+    type: typeof recalculatedBalance,
+    isNaN: isNaN(recalculatedBalance),
+    isNegative: recalculatedBalance < 0,
+  })
   console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
   
   // Обновляем баланс в БД на основе пересчитанного значения
