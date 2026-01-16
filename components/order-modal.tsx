@@ -614,44 +614,18 @@ export function OrderModal({
   }
 
 
-  // ✅ НОВОЕ: Получаем свободные даты (без заказов) - как в истории заказов
+  // ✅ НОВОЕ: Получаем свободные даты (без заказов) - точно как в истории заказов
   const getFreeDates = (): Date[] => {
-    const formatDateKey = (d: Date): string => {
-      return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`
-    }
+    // Фильтруем активные заказы (как в order-history.tsx)
+    const activeOrders = allOrders.filter((o) => o.orderStatus !== "cancelled")
     
-    const orderDates = new Set(
-      allOrders
-        .filter((o) => o.id && o.orderStatus !== 'cancelled') // Только активные заказы с id
-        .map((o) => {
-          const d = new Date(o.startDate)
-          d.setHours(0, 0, 0, 0)
-          return formatDateKey(d)
-        })
-    )
+    // Создаем Set дат с заказами (используем formatDateKey из начала файла)
+    const orderDates = new Set(activeOrders.map((o) => formatDateKey(new Date(o.startDate))))
     
-    return availableDates.filter((d) => {
-      const dateKey = formatDateKey(d)
-      return !orderDates.has(dateKey)
-    })
+    // Возвращаем только даты без заказов
+    return availableDates.filter((d) => !orderDates.has(formatDateKey(d)))
   }
 
-  // ✅ НОВОЕ: Обработчик выбора даты для повтора заказа
-  const handleRepeatOrderDateSelect = async (targetDate: Date) => {
-    if (!existingOrder || !existingOrder.id || !onRepeatOrder || isRepeatingOrder) return
-
-    setIsRepeatingOrder(true)
-    setShowRepeatDateMenu(false)
-    try {
-      await onRepeatOrder(existingOrder, targetDate)
-      // После успешного повтора закрываем текущий модал
-      onClose()
-    } catch (error) {
-      console.error('❌ Ошибка при повторе заказа:', error)
-    } finally {
-      setIsRepeatingOrder(false)
-    }
-  }
 
   const handleContactSupport = () => {
     const orderNumber = existingOrder?.orderNumber
@@ -1212,14 +1186,9 @@ export function OrderModal({
                                   const isTomorrow = daysFromNow === 1
                                   const isThisWeek = daysFromNow >= 2 && daysFromNow <= 7
                                   
-                                  const formatDisplayDate = (d: Date): string => {
-                                    const months = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]
-                                    return `${d.getDate()} ${months[d.getMonth()]}`
-                                  }
-                                  
                                   return (
                                     <button
-                                      key={`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`}
+                                      key={formatDateKey(date)}
                                       className={`flex-shrink-0 flex flex-col items-center justify-center w-[70px] h-[80px] rounded-lg border-2 transition-all font-bold relative ${
                                         isToday 
                                           ? 'border-[#FFEA00] bg-[#FFEA00]/20 hover:bg-[#FFEA00]/40' 
@@ -1229,9 +1198,21 @@ export function OrderModal({
                                           ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-100'
                                           : 'border-gray-300 bg-white hover:bg-gray-50'
                                       } ${isRepeatingOrder ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                      onClick={() => {
+                                      onClick={async () => {
                                         if (isRepeatingOrder) return
-                                        handleRepeatOrderDateSelect(date)
+                                        // ✅ КРИТИЧНО: Устанавливаем loading перед вызовом (как в order-history.tsx)
+                                        setIsRepeatingOrder(true)
+                                        try {
+                                          if (existingOrder && onRepeatOrder) {
+                                            await onRepeatOrder(existingOrder, date)
+                                            // После успешного повтора закрываем текущий модал
+                                            onClose()
+                                          }
+                                        } finally {
+                                          // ✅ Всегда снимаем loading даже при ошибке
+                                          setIsRepeatingOrder(false)
+                                          setShowRepeatDateMenu(false)
+                                        }
                                       }}
                                       disabled={isRepeatingOrder}
                                     >
