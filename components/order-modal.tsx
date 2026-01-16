@@ -1538,11 +1538,13 @@ export function OrderModal({
                                 value={promoCode}
                                 onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                                 placeholder="Введите промокод"
+                                data-testid="order-promo-code-input"
                                 className="flex-1 px-3 py-2 border-2 border-black rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black font-medium"
                               />
                               <Button 
                                 onClick={handleApplyPromo} 
                                 size="sm"
+                                data-testid="order-apply-promo-btn"
                                 className="bg-[#9D00FF] text-white border-2 border-black hover:bg-[#B033FF] shadow-brutal font-black"
                               >
                                 Применить
@@ -1610,6 +1612,7 @@ export function OrderModal({
                             <Button
                               onClick={handlePayAndOrder}
                               disabled={!hasContent || isProcessingPayment}
+                              data-testid="order-submit-btn"
                               className="w-full h-16 text-lg bg-[#ff4d6d] hover:bg-[#e8445f] rounded-2xl shadow-lg shadow-[#ff4d6d]/20 active:scale-[0.98] transition-transform"
                             >
                               {isProcessingPayment ? (

@@ -82,6 +82,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
                       if (!e.target.checked) setPointsToUse(0)
                       else setPointsToUse(Math.floor(maxPointsToUse / 2)) // ✅ ИСПРАВЛЕНО 2026-01-14: Устанавливаем на середину
                     }}
+                    data-testid="payment-use-points-checkbox"
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
@@ -102,6 +103,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
                       max={maxPointsToUse}
                       value={pointsToUse}
                       onChange={(e) => handlePointsChange(Number(e.target.value))}
+                      data-testid="payment-points-slider"
                       className="w-full range-slider-mobile"
                     />
                   </div>
@@ -187,6 +189,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
         <div className="p-4 border-t border-border">
           <Button 
             onClick={handlePayment} 
+            data-testid="payment-submit-btn"
             className="w-full btn-press transition-all duration-200"
           >
             <CreditCard className="w-4 h-4 mr-2" />

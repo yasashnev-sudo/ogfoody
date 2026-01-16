@@ -319,6 +319,7 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
                   value={profile.name}
                   onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                   placeholder=""
+                  data-testid="profile-name-input"
                   className={isCheckoutFlow && !profile.name ? 'border-red-300' : ''}
                 />
                 {isCheckoutFlow && !profile.name && (
@@ -580,6 +581,7 @@ export function ProfileModal({ phone, onClose, onSave, userProfile, isCheckoutFl
           <button
             onClick={handleSave}
             disabled={!isCheckoutFlow && !hasChanges()}
+            data-testid="profile-save-btn"
             className={`w-full py-4 px-6 font-black text-lg rounded-xl border-2 border-black shadow-brutal btn-press transition-all ${
               !isCheckoutFlow && !hasChanges()
                 ? "bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
