@@ -1408,7 +1408,9 @@ export async function awardLoyaltyPoints(
     // #endregion
   }
 
-  // Обновляем total_spent
+  // ✅ КРИТИЧНО: Обновляем total_spent на сумму заказа С учетом промокода (orderTotal)
+  // total_spent - это фактически потраченная сумма, поэтому учитываем промокод
+  // Но для начисления баллов используем полную сумму БЕЗ промокода (передается отдельно)
   const newTotalSpent = currentTotalSpent + orderTotal - pointsUsed
 
   console.log(`💳 Обновление total_spent:`, {
@@ -1417,6 +1419,7 @@ export async function awardLoyaltyPoints(
     pointsUsed,
     newTotalSpent,
     calculation_totalSpent: `${currentTotalSpent} + ${orderTotal} - ${pointsUsed} = ${newTotalSpent}`,
+    note: 'total_spent обновляется на сумму заказа С учетом промокода (фактически потраченная сумма)',
   })
 
   // ✅ КРИТИЧНО: Обновляем total_spent в БД
