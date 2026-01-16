@@ -31,7 +31,8 @@ import {
   ArrowRight,
   Receipt,
   Coins,
-  MessageCircle
+  MessageCircle,
+  RotateCcw
 } from "lucide-react"
 import { MealSelector } from "@/components/meal-selector"
 import { ExtrasSelector } from "@/components/extras-selector"
@@ -78,6 +79,8 @@ interface OrderModalProps {
   onCancel?: (order: Order) => void
   allOrders: Order[]
   onPaymentSuccess?: (order: Order) => void
+  onRepeatOrder?: (order: Order, targetDate: Date) => Promise<void> // ✅ НОВОЕ: Повтор заказа
+  availableDates?: Date[] // ✅ НОВОЕ: Доступные даты для повтора
   userLoyaltyPoints?: number
   isAuthenticated?: boolean
   onRequestAuth?: (order: Order, total: number) => void
@@ -163,6 +166,8 @@ export function OrderModal({
   onCancel,
   allOrders,
   onPaymentSuccess,
+  onRepeatOrder,
+  availableDates = [],
   userLoyaltyPoints = 0,
   isAuthenticated = false,
   onRequestAuth,
@@ -228,6 +233,7 @@ export function OrderModal({
   const [promoCode, setPromoCode] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [isRepeatingOrder, setIsRepeatingOrder] = useState(false) // ✅ НОВОЕ: Loading для повтора заказа
   
   // ✅ Инициализируем промокод из existingOrder при загрузке
   useEffect(() => {
@@ -602,6 +608,57 @@ export function OrderModal({
       setShowCancelConfirm(false)
       onClose()
       // Warning dialog will be shown by handleCancelOrder in parent component
+    }
+  }
+
+  // ✅ НОВОЕ: Обработчик повтора заказа
+  const handleRepeatOrder = async () => {
+    if (!existingOrder || !existingOrder.id || !onRepeatOrder || isRepeatingOrder) return
+
+    // Находим следующую доступную дату (через неделю от даты текущего заказа)
+    const orderDate = existingOrder.startDate ? new Date(existingOrder.startDate) : date
+    const nextWeekDate = new Date(orderDate)
+    nextWeekDate.setDate(nextWeekDate.getDate() + 7)
+    nextWeekDate.setHours(0, 0, 0, 0)
+
+    // Ищем первую доступную дату из availableDates, которая >= nextWeekDate
+    let targetDate = nextWeekDate
+    if (availableDates.length > 0) {
+      const availableAfterNextWeek = availableDates
+        .map(d => new Date(d))
+        .filter(d => {
+          d.setHours(0, 0, 0, 0)
+          return d.getTime() >= nextWeekDate.getTime()
+        })
+        .sort((a, b) => a.getTime() - b.getTime())
+      
+      if (availableAfterNextWeek.length > 0) {
+        targetDate = availableAfterNextWeek[0]
+      } else {
+        // Если нет доступных дат после следующей недели, берем последнюю доступную
+        const sortedDates = availableDates
+          .map(d => new Date(d))
+          .map(d => {
+            d.setHours(0, 0, 0, 0)
+            return d
+          })
+          .sort((a, b) => b.getTime() - a.getTime())
+        
+        if (sortedDates.length > 0) {
+          targetDate = sortedDates[0]
+        }
+      }
+    }
+
+    setIsRepeatingOrder(true)
+    try {
+      await onRepeatOrder(existingOrder, targetDate)
+      // После успешного повтора закрываем текущий модал
+      onClose()
+    } catch (error) {
+      console.error('❌ Ошибка при повторе заказа:', error)
+    } finally {
+      setIsRepeatingOrder(false)
     }
   }
 
@@ -1716,15 +1773,44 @@ export function OrderModal({
                         </>
                       )}
 
-                      {canCancel && existingOrder && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCancelClick}
-                          className="w-full mt-4 bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          Отменить заказ
-                        </Button>
+                      {/* ✅ НОВОЕ: Кнопки действий для существующего заказа */}
+                      {existingOrder && existingOrder.id && (
+                        <div className="flex gap-2 mt-4">
+                          {/* Кнопка повтора заказа */}
+                          {onRepeatOrder && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRepeatOrder}
+                              disabled={isRepeatingOrder || isDataLoading}
+                              className="flex-1 bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20 text-[#9D00FF] border-2 border-[#9D00FF] hover:border-[#9D00FF] font-medium"
+                            >
+                              {isRepeatingOrder ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                                  Загрузка...
+                                </>
+                              ) : (
+                                <>
+                                  <RotateCcw className="w-3 h-3 mr-1.5" />
+                                  Повторить
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          
+                          {/* Кнопка отмены заказа */}
+                          {canCancel && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCancelClick}
+                              className="flex-1 bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              Отменить
+                            </Button>
+                          )}
+                        </div>
                       )}
                       
                       {!canCancel && existingOrder && isToday && (
@@ -1767,28 +1853,54 @@ export function OrderModal({
                   </div>
                 )}
 
-                {/* Кнопка отмены для оплаченных заказов - вне блока canEdit */}
-                {!canEdit && existingOrder && (
+                {/* ✅ НОВОЕ: Кнопки действий для оплаченных заказов - вне блока canEdit */}
+                {!canEdit && existingOrder && existingOrder.id && (
                   <div className="mt-6 border-t border-border pt-6">
-                    {canCancel ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancelClick}
-                        className="w-full bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        Отменить заказ
-                      </Button>
-                    ) : isToday ? (
-                      <Button
-                        size="sm"
-                        onClick={handleContactSupport}
-                        className="w-full bg-green-500 hover:bg-green-600 text-white border-2 border-black shadow-brutal font-black"
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Связаться с поддержкой
-                      </Button>
-                    ) : null}
+                    <div className="flex gap-2">
+                      {/* Кнопка повтора заказа */}
+                      {onRepeatOrder && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRepeatOrder}
+                          disabled={isRepeatingOrder || isDataLoading}
+                          className="flex-1 bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20 text-[#9D00FF] border-2 border-[#9D00FF] hover:border-[#9D00FF] font-medium"
+                        >
+                          {isRepeatingOrder ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                              Загрузка...
+                            </>
+                          ) : (
+                            <>
+                              <RotateCcw className="w-3 h-3 mr-1.5" />
+                              Повторить
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      
+                      {/* Кнопка отмены заказа */}
+                      {canCancel ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelClick}
+                          className="flex-1 bg-transparent text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          Отменить
+                        </Button>
+                      ) : isToday ? (
+                        <Button
+                          size="sm"
+                          onClick={handleContactSupport}
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white border-2 border-black shadow-brutal font-black"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Поддержка
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 )}
               </div>

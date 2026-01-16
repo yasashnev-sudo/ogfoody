@@ -3764,6 +3764,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         }}
         onSave={handleSaveOrder}
         onCancel={handleCancelOrder}
+        onRepeatOrder={handleRepeatOrder} // ✅ НОВОЕ: Добавлен обработчик повтора заказа
+        availableDates={availableDates} // ✅ НОВОЕ: Передаем доступные даты для умного выбора
         allOrders={orders}
         open={!!selectedDate}
         isDataLoading={isUserLoading || isOrdersLoading || isPointsLoading}
