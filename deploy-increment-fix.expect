@@ -67,7 +67,7 @@ expect {
         
         send "echo '=== Updating nginx configuration ==='\r"
         expect "root@"
-        send "if [ -f nginx-ogfoody.conf ]; then sudo cp nginx-ogfoody.conf /etc/nginx/sites-available/ogfoody.conf && sudo nginx -t && sudo systemctl reload nginx && echo '✅ Nginx configuration updated' || echo '⚠️ Nginx update failed or file not found'; fi\r"
+        send "if test -f nginx-ogfoody.conf; then sudo cp nginx-ogfoody.conf /etc/nginx/sites-available/ogfoody.conf && sudo nginx -t && sudo systemctl reload nginx && echo '✅ Nginx configuration updated' || echo '⚠️ Nginx update failed or file not found'; else echo '⚠️ nginx-ogfoody.conf not found, skipping nginx update'; fi\r"
         expect "root@"
         
         send "echo '=== Restarting application ==='\r"
