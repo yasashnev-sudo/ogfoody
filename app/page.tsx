@@ -1814,6 +1814,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         deliveryFee: undefined,
         loyaltyPointsEarned: 0,
         loyaltyPointsUsed: 0,
+        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем промокод и скидку при повторе заказа
+        // Пользователь может применить новый промокод или не применять его вообще
+        promoCode: undefined,
+        promoDiscount: undefined,
       }
 
       // ✅ ИСПРАВЛЕНО 2026-01-13: НЕ добавляем заказ в state сразу
