@@ -894,7 +894,10 @@ export async function updateUser(id: number, data: Partial<NocoDBUser>): Promise
   if (data.district !== undefined) mappedData["District"] = data.district
   if (data.delivery_comment !== undefined) mappedData["Delivery Comment"] = data.delivery_comment
   // ВАЖНО: loyalty_points ОБНОВЛЯЕТСЯ через updateUser (вычисляется из транзакций, но синхронизируется!)
-  if (data.loyalty_points !== undefined) mappedData["Loyalty Points"] = data.loyalty_points
+  if (data.loyalty_points !== undefined) {
+    mappedData["Loyalty Points"] = data.loyalty_points
+    console.log(`🔍 updateUser: loyalty_points=${data.loyalty_points} (тип: ${typeof data.loyalty_points}) → mappedData["Loyalty Points"]=${mappedData["Loyalty Points"]}`)
+  }
   if (data.total_spent !== undefined) mappedData["Total Spent"] = data.total_spent
   if (data.updated_at !== undefined) mappedData["Updated At"] = data.updated_at
   if (data.user_id !== undefined) mappedData["User ID"] = data.user_id
@@ -1316,6 +1319,12 @@ export async function awardLoyaltyPoints(
   // #region agent log
   fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1309',message:'Balance recalculated',data:{userId,recalculatedBalance,earnedPoints,orderId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
   // #endregion
+  console.log(`🔍 [awardLoyaltyPoints] recalculatedBalance ПЕРЕД console.log:`, {
+    value: recalculatedBalance,
+    type: typeof recalculatedBalance,
+    isNaN: isNaN(recalculatedBalance),
+    isNegative: recalculatedBalance < 0,
+  })
   console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
   
   // #region agent log
