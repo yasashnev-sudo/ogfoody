@@ -272,6 +272,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [draftOrder, setDraftOrder] = useState<Order | null>(null) // ✅ Черновик для повторения заказа
+  const [isRepeatOrderMode, setIsRepeatOrderMode] = useState(false) // ✅ Флаг режима повтора заказа
   const [view, setView] = useState<"calendar" | "history">("calendar")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
@@ -854,6 +855,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       })
       // #endregion
       setDraftOrder(null) // Очищаем черновик
+      setIsRepeatOrderMode(false) // ✅ Сбрасываем флаг режима повтора
     }
     
     const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
@@ -1868,6 +1870,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
       // useMemo в existingOrder пересчитается только после установки обоих значений
       // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
+      // ✅ КРИТИЧНО: Устанавливаем флаг режима повтора заказа
+      // Это гарантирует, что useMemo всегда вернет черновик, даже если пересчитается
       // #region agent log
       console.log('[DEBUG REPEAT ORDER] BEFORE setDraftOrder and setSelectedDate', {
         location: 'app/page.tsx:1859',
@@ -1878,6 +1882,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         hasDraftOrder: !!draftOrder,
       })
       // #endregion
+      setIsRepeatOrderMode(true) // ✅ Устанавливаем флаг режима повтора
       setDraftOrder(newOrder)
       // #region agent log
       console.log('[DEBUG REPEAT ORDER] AFTER setDraftOrder BEFORE setSelectedDate', {
@@ -3419,6 +3424,36 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       return undefined
     }
     
+    // ✅ КРИТИЧНО: В режиме повтора заказа всегда возвращаем черновик, если он есть
+    // Это гарантирует, что при повторе заказа всегда открывается черновик, а не существующий заказ
+    if (isRepeatOrderMode && draftOrder) {
+      const draftTimestamp = getDateTimestamp(draftOrder.startDate)
+      const selectedTimestamp = getDateTimestamp(selectedDate)
+      
+      if (draftTimestamp === selectedTimestamp) {
+        console.log('📝 [existingOrder] Режим повтора: используем черновик:', {
+          draftDate: draftOrder.startDate,
+          selectedDate: selectedDate,
+          draftId: draftOrder.id,
+          draftDateTimestamp: draftTimestamp,
+          selectedDateTimestamp: selectedTimestamp,
+        })
+        // #region agent log
+        console.log('[DEBUG REPEAT ORDER] useMemo existingOrder RETURNING DRAFT (REPEAT MODE)', {
+          location: 'app/page.tsx:3422',
+          hypothesisId: 'A',
+          draftId: draftOrder.id,
+          draftDate: draftOrder.startDate,
+          selectedDate: selectedDate.toISOString(),
+          draftTimestamp,
+          selectedTimestamp,
+          isRepeatOrderMode,
+        })
+        // #endregion
+        return draftOrder
+      }
+    }
+    
     // ✅ КРИТИЧНО: Сначала проверяем черновик - он имеет приоритет
     if (draftOrder) {
       const draftTimestamp = getDateTimestamp(draftOrder.startDate)
@@ -3470,34 +3505,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         selectedDate: selectedDate.toISOString(),
       })
       // #endregion
-    }
-    
-    // ✅ Если черновика нет или даты не совпадают, ищем существующий заказ
-    // ✅ КРИТИЧНО: Если есть draftOrder с совпадающей датой, НЕ ищем существующий заказ
-    // Это предотвращает переключение на существующий заказ при обновлении orders
-    // Но если даты не совпадают, ищем существующий заказ для selectedDate
-    // (draftOrder для другой даты не должен блокировать поиск существующего заказа)
-    
-    // ✅ КРИТИЧНО: Если есть draftOrder с совпадающей датой, НЕ ищем существующий заказ
-    // Это предотвращает ситуацию, когда useMemo пересчитывается после открытия модалки
-    // и находит существующий заказ вместо черновика
-    if (draftOrder) {
-      const draftTimestamp = getDateTimestamp(draftOrder.startDate)
-      const selectedTimestamp = getDateTimestamp(selectedDate)
-      if (draftTimestamp === selectedTimestamp) {
-        // #region agent log
-        console.log('[DEBUG REPEAT ORDER] useMemo existingOrder SKIPPING ORDER SEARCH - draftOrder matches date', {
-          location: 'app/page.tsx:3482',
-          hypothesisId: 'B',
-          draftOrderId: draftOrder.id,
-          draftOrderDate: draftOrder.startDate,
-          selectedDate: selectedDate.toISOString(),
-          draftTimestamp,
-          selectedTimestamp,
-        })
-        // #endregion
-        return undefined // Не возвращаем существующий заказ, если есть черновик с совпадающей датой
-      }
     }
     
     const checkTimestamp = getDateTimestamp(selectedDate)
@@ -3575,7 +3582,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     })
     // #endregion
     return found
-  }, [selectedDate, draftOrder, orders])
+  }, [selectedDate, draftOrder, orders, isRepeatOrderMode])
 
   const availableDates = getAvailableDates()
 
@@ -3855,6 +3862,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           })
           // #endregion
           setDraftOrder(null) // ✅ Очищаем черновик при закрытии
+          setIsRepeatOrderMode(false) // ✅ Сбрасываем флаг режима повтора
         }}
         onSave={handleSaveOrder}
         onCancel={handleCancelOrder}
