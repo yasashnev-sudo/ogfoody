@@ -1526,83 +1526,82 @@ export function OrderModal({
                       return null;
                     })()}
                     {/* #endregion */}
-                    {isAuthenticated ? (
-                      <>
-                        {/* Промокод */}
-                        <div
-                          className="flex items-center justify-between py-3 px-4 bg-white border-2 border-black rounded-lg cursor-pointer hover:bg-[#FFEA00] transition-colors shadow-brutal mb-2"
-                          onClick={() => {
-                            // #region agent log
-                            fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:1511',message:'Promo section clicked',data:{currentActiveSectionId:activeSectionId,willOpen:activeSectionId !== 'promo'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H9'})}).catch(()=>{});
-                            // #endregion
-                            setActiveSectionId(activeSectionId === "promo" ? null : "promo")
-                          }}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
-                              <Tag className="w-4 h-4 text-[#9D00FF] stroke-[2.5px]" />
-                            </div>
-                            <div>
-                              <p className="font-black text-black">Промокод</p>
-                              {appliedPromo ? (
-                                <p className="text-sm text-[#9D00FF] font-medium">Скидка {appliedPromo.discount} ₽ применена</p>
-                              ) : (
-                                <p className="text-sm text-black/70 font-medium">Введите промокод</p>
-                              )}
-                            </div>
-                          </div>
-                          {activeSectionId === "promo" ? (
-                            <ChevronDown className="w-5 h-5 text-black stroke-[2.5px]" />
+                    {/* Промокод - доступен для всех пользователей (авторизованных и неавторизованных) */}
+                    <div
+                      className="flex items-center justify-between py-3 px-4 bg-white border-2 border-black rounded-lg cursor-pointer hover:bg-[#FFEA00] transition-colors shadow-brutal mb-2"
+                      onClick={() => {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:1534',message:'Promo section clicked',data:{currentActiveSectionId:activeSectionId,willOpen:activeSectionId !== 'promo',isAuthenticated},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H9'})}).catch(()=>{});
+                        // #endregion
+                        setActiveSectionId(activeSectionId === "promo" ? null : "promo")
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal">
+                          <Tag className="w-4 h-4 text-[#9D00FF] stroke-[2.5px]" />
+                        </div>
+                        <div>
+                          <p className="font-black text-black">Промокод</p>
+                          {appliedPromo ? (
+                            <p className="text-sm text-[#9D00FF] font-medium">Скидка {appliedPromo.discount} ₽ применена</p>
                           ) : (
-                            <ChevronRight className="w-5 h-5 text-black stroke-[2.5px]" />
+                            <p className="text-sm text-black/70 font-medium">Введите промокод</p>
                           )}
                         </div>
+                      </div>
+                      {activeSectionId === "promo" ? (
+                        <ChevronDown className="w-5 h-5 text-black stroke-[2.5px]" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-black stroke-[2.5px]" />
+                      )}
+                    </div>
 
-                        {activeSectionId === "promo" && (
-                          <div className="py-3 px-4 bg-white border-2 border-black rounded-lg shadow-brutal mb-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={promoCode}
-                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                                placeholder="Введите промокод"
-                                data-testid="order-promo-code-input"
-                                className="flex-1 px-3 py-2 border-2 border-black rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black font-medium"
-                              />
-                              <Button 
-                                onClick={handleApplyPromo} 
-                                size="sm"
-                                data-testid="order-apply-promo-btn"
-                                className="bg-[#9D00FF] text-white border-2 border-black hover:bg-[#B033FF] shadow-brutal font-black"
-                              >
-                                Применить
-                              </Button>
-                            </div>
-                            {appliedPromo && (
-                              <div className="mt-2 text-xs">
-                                <button 
-                                  onClick={() => setAppliedPromo(null)} 
-                                  className="text-[#9D00FF] hover:underline font-medium"
-                                >
-                                  Удалить промокод
-                                </button>
-                              </div>
-                            )}
+                    {activeSectionId === "promo" && (
+                      <div className="py-3 px-4 bg-white border-2 border-black rounded-lg shadow-brutal mb-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={promoCode}
+                            onChange={(e) => {
+                              // Если промокод уже применен, очищаем его при изменении
+                              if (appliedPromo) {
+                                setAppliedPromo(null)
+                              }
+                              setPromoCode(e.target.value.toUpperCase())
+                            }}
+                            placeholder="Введите промокод"
+                            data-testid="order-promo-code-input"
+                            disabled={!!appliedPromo}
+                            className="flex-1 px-3 py-2 border-2 border-black rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black font-medium disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+                          <Button 
+                            onClick={handleApplyPromo} 
+                            size="sm"
+                            data-testid="order-apply-promo-btn"
+                            disabled={!!appliedPromo || !promoCode.trim()}
+                            className="bg-[#9D00FF] text-white border-2 border-black hover:bg-[#B033FF] shadow-brutal font-black disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
+                          >
+                            Применить
+                          </Button>
+                        </div>
+                        {appliedPromo && (
+                          <div className="mt-2 text-xs">
+                            <button 
+                              onClick={() => {
+                                setAppliedPromo(null)
+                                setPromoCode("")
+                              }} 
+                              className="text-[#9D00FF] hover:underline font-medium"
+                            >
+                              Удалить промокод
+                            </button>
                           </div>
                         )}
-
-                      </>
-                    ) : (
-                      <div className="bg-primary/5 rounded-xl p-4 border border-primary/10 mb-6">
-                        {/* #region agent log */}
-                        {(() => {
-                          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'order-modal.tsx:1597',message:'Promo section not shown - not authenticated',data:{canUsePromo,hasContent,isAuthenticated},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H8'})}).catch(()=>{});
-                          return null;
-                        })()}
-                        {/* #endregion */}
-                        <p className="text-sm text-center text-muted-foreground">
-                          Войдите в профиль, чтобы применить скидки и выбрать способ оплаты
-                        </p>
+                        {!isAuthenticated && (
+                          <p className="mt-2 text-xs text-center text-muted-foreground">
+                            Промокод будет применен при оформлении заказа
+                          </p>
+                        )}
                       </div>
                     )}
 
