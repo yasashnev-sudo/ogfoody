@@ -542,9 +542,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                   // #region agent log
                   fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:528',message:'User not found - cannot award points',data:{orderId:id,userId:currentOrder.user_id,possibleReason:'User deleted from DB but order still references user_id'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1'})}).catch(()=>{});
                   // #endregion
-                  // Не прерываем процесс обновления заказа, но логируем критическую ошибку
-                  // ✅ ВАЖНО: Не начисляем баллы для удаленных пользователей
-                  return // Выходим из функции, чтобы не продолжать обработку
+                  // ✅ ВАЖНО: Не начисляем баллы для удаленных пользователей, но продолжаем обновление заказа
+                  // Не используем return, чтобы заказ все равно обновился
                 } else {
                   // #region agent log
                   fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:528',message:'User found - proceeding with award',data:{orderId:id,userId:user.Id,loyaltyPoints:user.loyalty_points,totalSpent:user.total_spent},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1'})}).catch(()=>{});

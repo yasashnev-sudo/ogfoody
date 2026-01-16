@@ -481,7 +481,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       const savedProfile = localStorage.getItem(oldProfileKey)
       let tempProfile = null
       
-      if (savedProfile) {
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Не используем кэшированный профиль из localStorage
+      // Всегда загружаем свежие данные из БД через API
+      // Это предотвращает использование данных удаленных пользователей
+      console.log('⚠️ Игнорируем кэшированный профиль из localStorage, загружаем свежие данные из БД')
+      
+      if (false && savedProfile) // Отключено для предотвращения использования удаленных пользователей {
         tempProfile = JSON.parse(savedProfile)
         // ⚠️ Временно устанавливаем профиль БЕЗ баллов (они загрузятся из API)
         setUserProfile({ ...tempProfile, loyaltyPoints: 0, totalSpent: 0 })
@@ -504,6 +509,21 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               баллы: data.userProfile?.loyaltyPoints,
               потрачено: data.userProfile?.totalSpent
             })
+            
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, существует ли пользователь в БД
+            // Если userProfile отсутствует в ответе API, значит пользователь был удален из БД
+            if (!data.userProfile) {
+              console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: Пользователь не найден в БД (возможно, был удален)')
+              console.error('❌ Очищаем кэшированный профиль из localStorage')
+              localStorage.removeItem(oldProfileKey)
+              localStorage.removeItem(`orders_${user}`)
+              setUserProfile(null)
+              setIsAuthenticated(false)
+              setCurrentUser(null)
+              localStorage.removeItem("currentUser")
+              console.error('❌ Пользователь удален из системы')
+              return
+            }
             
             // ✅ Обновляем профиль с актуальными данными из БД
             if (data.userProfile) {
@@ -2388,7 +2408,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     try {
       const { fetchUserByPhone, createUser, updateUser } = await import("@/lib/nocodb")
       console.log("📡 Ищем пользователя в базе по телефону:", phone)
-      dbUser = await fetchUserByPhone(phone)
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Явно указываем noCache=true, чтобы избежать возврата удаленных пользователей
+      dbUser = await fetchUserByPhone(phone, true)
       
       if (dbUser) {
         console.log("✅ Пользователь найден в базе:", dbUser.Id)
