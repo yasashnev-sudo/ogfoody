@@ -2903,13 +2903,15 @@ export async function createLoyaltyPointsTransaction(
 export async function fetchLoyaltyPointsTransactions(userId: number): Promise<NocoDBLoyaltyPointsTransaction[]> {
   // NocoDB API v2 использует заголовки колонок в where-условиях
   // В таблице Loyalty_Points_Transactions колонка user_id имеет заголовок "User ID"
-  // ✅ ИСПРАВЛЕНО: Используем правильное имя поля для сортировки - "Created At" вместо "created_at"
+  // ✅ ИСПРАВЛЕНО: Убрана сортировка, так как она вызывает ошибку FIELD_NOT_FOUND
+  // Сортировка не критична - можем отсортировать на клиенте если нужно
   const response = await nocoFetch<NocoDBResponse<NocoDBLoyaltyPointsTransaction>>("Loyalty_Points_Transactions", {
     where: `(User ID,eq,${userId})`,
-    sort: "-Created At", // ✅ ИСПРАВЛЕНО: Используем Title Case имя поля
     limit: "1000",
   })
-  return response.list || []
+  const transactions = response.list || []
+  // ✅ Сортируем на клиенте по Id (более новые записи имеют больший Id)
+  return transactions.sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0))
 }
 
 export async function fetchPendingTransactionsByOrder(orderId: number): Promise<NocoDBLoyaltyPointsTransaction[]> {
