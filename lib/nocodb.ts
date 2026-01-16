@@ -629,6 +629,9 @@ export async function fetchUserByPhone(phone: string): Promise<NocoDBUser | null
  * @returns Текущий баланс баллов
  */
 export async function calculateUserBalance(userId: number, noCache: boolean = false): Promise<number> {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:631',message:'calculateUserBalance entry',data:{userId,noCache},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
   try {
     // Используем nocoFetch - работает и на клиенте (через API proxy) и на сервере
     const fetchFn = noCache ? nocoFetchNoCache : nocoFetch
@@ -638,6 +641,9 @@ export async function calculateUserBalance(userId: number, noCache: boolean = fa
     })
     
     const transactions = response.list || []
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:640',message:'Transactions fetched',data:{userId,transactionCount:transactions.length,recentTransactions:transactions.slice(-3).map((t:any)=>({id:t.Id,type:t['Transaction Type']||t.transaction_type,status:t['Transaction Status']||t.transaction_status,points:t['Points']||t.points,orderId:t['Order ID']||t.order_id}))},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     
     // Фильтруем транзакции: учитываем только реально начисленные баллы
     // - undefined/null/"": учитываем (старые транзакции без статуса или NocoDB не заполнил)
@@ -652,6 +658,10 @@ export async function calculateUserBalance(userId: number, noCache: boolean = fa
       // Учитываем только completed транзакции
       return status === 'completed'
     })
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:647',message:'Transactions filtered',data:{userId,totalTransactions:transactions.length,activeTransactions:activeTransactions.length,filteredOut:transactions.length-activeTransactions.length,recentEarned:transactions.filter((t:any)=>(t['Transaction Type']||t.transaction_type)==='earned').slice(-2).map((t:any)=>({id:t.Id,status:t['Transaction Status']||t.transaction_status,points:t['Points']||t.points,orderId:t['Order ID']||t.order_id}))},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
     
     // ✅ ДОБАВЛЕНО: Логирование для диагностики
     if (transactions.length > 0 && activeTransactions.length === 0) {
@@ -669,16 +679,22 @@ export async function calculateUserBalance(userId: number, noCache: boolean = fa
     
     // Вычисляем баланс
     let balance = 0
+    const parsedAmounts: any[] = []
     activeTransactions.forEach((t: any) => {
       const type = t['Transaction Type'] || t.transaction_type
       const amountRaw = t['Points'] || t.points || t['Points Amount'] || 0
       // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно парсим amount как число
       const amount = typeof amountRaw === 'number' ? amountRaw : parseFloat(String(amountRaw)) || 0
+      parsedAmounts.push({ id: t.Id, type, amountRaw, amount, amountRawType: typeof amountRaw })
       
       // Все типы транзакций используют значение Points напрямую
       // (Points уже содержит правильный знак: +141 для earned, -141 для cancelled)
       balance += amount
     })
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:672',message:'Balance calculated',data:{userId,balance,activeTransactionsCount:activeTransactions.length,parsedAmounts:parsedAmounts.slice(-5)},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     
     console.log(`💰 calculateUserBalance(${userId}): ${balance} баллов (из ${activeTransactions.length} активных транзакций, всего ${transactions.length})`)
     
@@ -1227,11 +1243,15 @@ export async function awardLoyaltyPoints(
   }
 
   // Создаем транзакцию на начисление баллов
+  let createdTransaction: NocoDBLoyaltyPointsTransaction | undefined = undefined
   if (earnedPoints > 0) {
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1191',message:'Creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1247',message:'Creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
     // #endregion
-    const createdTransaction = await createLoyaltyPointsTransaction({
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1250',message:'Before creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
+    createdTransaction = await createLoyaltyPointsTransaction({
       user_id: userId,
       order_id: orderId,
       transaction_type: "earned",
@@ -1243,7 +1263,7 @@ export async function awardLoyaltyPoints(
       processed_at: now,
     })
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1203',message:'Earned transaction created',data:{userId,orderId,earnedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1245',message:'Earned transaction created',data:{userId,orderId,earnedPoints,transactionId:createdTransaction?.Id,transactionStatus:createdTransaction?.transaction_status||createdTransaction?.['Transaction Status'],transactionPoints:createdTransaction?.points||createdTransaction?.['Points'],fullTransaction:JSON.stringify(createdTransaction)},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
     // #endregion
     console.log(`✅ Транзакция "earned" создана: +${earnedPoints} баллов`, {
       transactionId: createdTransaction?.Id,
@@ -1280,23 +1300,35 @@ export async function awardLoyaltyPoints(
 
   // ✅ КРИТИЧНО: Увеличиваем задержку для того, чтобы транзакции были видны в БД
   // NocoDB может иметь задержку индексации, поэтому увеличиваем до 2 секунд
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1300',message:'Before delay for transaction indexing',data:{userId,orderId,earnedPoints,createdTransactionId:createdTransaction?.Id},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
   await new Promise((resolve) => setTimeout(resolve, 2000))
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1303',message:'After delay, recalculating balance',data:{userId,orderId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
 
   // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций (единственный источник правды)
   // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1228',message:'Recalculating balance from transactions',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1306',message:'Recalculating balance from transactions',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
   // #endregion
   const recalculatedBalance = await calculateUserBalance(userId, true)
   // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1230',message:'Balance recalculated',data:{userId,recalculatedBalance},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1309',message:'Balance recalculated',data:{userId,recalculatedBalance,earnedPoints,orderId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
   // #endregion
   console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
   
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1314',message:'Before updateUser with balance',data:{userId,recalculatedBalance},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H5'})}).catch(()=>{});
+  // #endregion
   // Обновляем баланс в БД на основе пересчитанного значения
   await updateUser(userId, {
     loyalty_points: recalculatedBalance,
     updated_at: now,
   })
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1319',message:'After updateUser with balance',data:{userId,recalculatedBalance},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H5'})}).catch(()=>{});
+  // #endregion
   // #region agent log
   fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1237',message:'Balance updated in DB',data:{userId,recalculatedBalance},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H4'})}).catch(()=>{});
   // #endregion
@@ -2770,6 +2802,9 @@ export async function createLoyaltyPointsTransaction(
     }
     
     console.log(`✅ Транзакция успешно создана:`, result)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:2746',message:'Transaction created result',data:{transactionId:result?.Id,userId:transactionData['User ID'],orderId:transactionData['Order ID'],type:transactionData['Transaction Type'],status:result?.transaction_status||result?.['Transaction Status'],points:result?.points||result?.['Points'],fullResult:JSON.stringify(result)},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     return result
   } catch (error) {
     console.error(`❌ Ошибка при создании транзакции:`, error)
