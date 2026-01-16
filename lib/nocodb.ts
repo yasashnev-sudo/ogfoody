@@ -635,11 +635,14 @@ export async function fetchUserByPhone(phone: string, noCache: boolean = true): 
  */
 export async function calculateUserBalance(userId: number, noCache: boolean = false): Promise<number> {
   // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:631',message:'calculateUserBalance entry',data:{userId,noCache},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:631',message:'calculateUserBalance entry',data:{userId,noCache,hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,tableId:process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
   // #endregion
   try {
     // Используем nocoFetch - работает и на клиенте (через API proxy) и на сервере
     const fetchFn = noCache ? nocoFetchNoCache : nocoFetch
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:643',message:'calculateUserBalance BEFORE fetch',data:{userId,noCache,tableName:'Loyalty_Points_Transactions',hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     const response = await fetchFn<NocoDBResponse<any>>("Loyalty_Points_Transactions", {
       where: `(User ID,eq,${userId})`,
       limit: 10000,
