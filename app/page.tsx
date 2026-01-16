@@ -438,6 +438,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         setShowProfile(true)
       } else {
         console.log("✅ Профиль заполнен, запускаем автооформление")
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:441',message:'useEffect CALLING handleAutoCheckout',data:{isAuthenticated,hasUserProfile:!!userProfile,userId:userProfile?.id,shouldAutoCheckout,hasPendingCheckout:!!pendingCheckout},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         handleAutoCheckout()
       }
     } else {
@@ -2360,6 +2363,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setReviews(JSON.parse(savedReviews))
     }
     const savedProfile = localStorage.getItem(`profile_${phone}`)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2362',message:'handleAuthSuccess localStorage CHECK',data:{phone,hasSavedProfile:!!savedProfile,profileName:savedProfile?JSON.parse(savedProfile)?.name:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     let profile: UserProfile
     
     if (savedProfile) {
@@ -2370,6 +2376,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           delete parsed.address
         }
         profile = parsed
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2372',message:'handleAuthSuccess PROFILE FROM localStorage',data:{profileName:profile.name,hasName:!!profile.name,profileId:profile.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
       } catch {
         profile = {
           phone,
@@ -2435,6 +2444,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         }
       } else {
         console.log("⚠️ Пользователя нет в базе, создаем нового...")
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2437',message:'BEFORE createUser',data:{phone,hasName:!!profile.name,name:profile.name,hasDistrict:!!profile.district,district:profile.district},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         // Пользователя нет в базе, создаем
         const newDbUser = await createUser({
           phone,
@@ -2443,6 +2455,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           loyalty_points: profile.loyaltyPoints || 0,
           total_spent: profile.totalSpent || 0,
         })
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2446',message:'AFTER createUser',data:{userId:newDbUser?.Id,hasUserId:!!newDbUser?.Id,userName:newDbUser?.name,userDistrict:newDbUser?.district},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         profile.id = newDbUser.Id
         dbUser = newDbUser
         console.log("✅ Пользователь создан в базе данных:", newDbUser.Id, "userProfile.id установлен:", profile.id, "с районом:", profile.district)
@@ -2595,8 +2610,14 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   }
 
   const handleAutoCheckout = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2597',message:'handleAutoCheckout ENTRY',data:{hasPendingCheckout:!!pendingCheckout,hasUserProfile:!!userProfile,userId:userProfile?.id,userName:userProfile?.name,orderDate:pendingCheckout?.order?.startDate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     if (!pendingCheckout || !userProfile) {
       console.log("❌ Нет данных для автооформления")
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2600',message:'handleAutoCheckout EARLY EXIT',data:{hasPendingCheckout:!!pendingCheckout,hasUserProfile:!!userProfile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       return
     }
 
@@ -2612,6 +2633,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     console.log(`🔍 [handleAutoCheckout] Проверка заказов на дату ${orderDateNormalized.toISOString().split('T')[0]} (timestamp: ${orderDateTimestamp})`)
     console.log(`🔍 [handleAutoCheckout] Всего заказов в локальном стейте: ${orders.length}`)
     
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2615',message:'handleAutoCheckout BEFORE DUPLICATE CHECK',data:{ordersCount:orders.length,orderDate:orderDateNormalized.toISOString().split('T')[0],orderDateTimestamp,ordersWithId:orders.filter(o=>o.id).length,ordersData:orders.map(o=>({id:o.id,startDate:o.startDate,orderStatus:o.orderStatus}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     const existingOrderOnDate = orders.find((o) => {
       if (!o.id) return false // Черновики не учитываем
       // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем orderStatus вместо cancelled
@@ -2638,6 +2662,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       
       return oDateTimestamp === orderDateTimestamp
     })
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2640',message:'handleAutoCheckout AFTER DUPLICATE CHECK',data:{foundExistingOrder:!!existingOrderOnDate,existingOrderId:existingOrderOnDate?.id,existingOrderNumber:existingOrderOnDate?.orderNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     if (existingOrderOnDate) {
       const orderStatus = existingOrderOnDate.orderStatus || 'pending'
@@ -2824,12 +2851,19 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         const createOrderPayload = { order: updatedOrder, userId: userProfile.id }
         debug.log("📤 POST /api/orders PAYLOAD:", createOrderPayload)
         
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2820',message:'handleAutoCheckout BEFORE POST /api/orders',data:{userId:userProfile.id,userIdType:typeof userProfile.id,orderStartDate:updatedOrder.startDate,orderPersonsCount:updatedOrder.persons?.length,hasOrderId:!!updatedOrder.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         try {
           const response = await fetch("/api/orders", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(createOrderPayload),
           })
+          
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:2833',message:'handleAutoCheckout POST /api/orders RESPONSE',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          // #endregion
           
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: "Unknown error" }))

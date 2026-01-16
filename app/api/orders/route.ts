@@ -153,6 +153,9 @@ export async function POST(request: Request) {
     }
 
     // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату для этого пользователя
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/orders/route.ts:155',message:'POST /api/orders BEFORE DUPLICATE CHECK',data:{hasUserId:!!userId,userId,userIdType:typeof userId,orderStartDate:typeof order.startDate === "string" ? order.startDate.split('T')[0] : order.startDate.toISOString().split("T")[0]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     if (userId) {
       // ✅ ИСПРАВЛЕНО 2026-01-13: Нормализуем дату заказа (берем только дату без времени)
       const orderStartDate = typeof order.startDate === "string" 
@@ -163,6 +166,9 @@ export async function POST(request: Request) {
       
       try {
         const existingOrders = await fetchOrdersByUser(userId)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/orders/route.ts:165',message:'POST /api/orders FETCHED EXISTING ORDERS',data:{userId,existingOrdersCount:existingOrders.length,orderStartDate,existingOrdersDates:existingOrders.map((o:any)=>({id:o.Id,date:o.start_date||o["Start Date"],status:o.order_status||o["Order Status"]}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         
         // ✅ ИСПРАВЛЕНО 2026-01-13: Детальное логирование для отладки
         console.log(`🔍 [ВАЛИДАЦИЯ] Проверка заказов на дату ${orderStartDate} для пользователя ${userId}`)
@@ -197,6 +203,10 @@ export async function POST(request: Request) {
             paid: existingOrderOnDate.paid || existingOrderOnDate["Paid"],
           })
           
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/orders/route.ts:189',message:'POST /api/orders DUPLICATE FOUND',data:{userId,orderStartDate,existingOrderId:existingOrderOnDate.Id,existingOrderNumber:orderNumber,orderStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+          // #endregion
+          
           return NextResponse.json({ 
             error: "Order already exists for this date",
             details: `На эту дату (${orderStartDate}) у вас уже есть активный заказ (${orderNumber}). Отмените существующий заказ или выберите другую дату.`,
@@ -207,6 +217,9 @@ export async function POST(request: Request) {
         }
         
         console.log(`✅ Валидация: На дату ${orderStartDate} нет активного заказа, можно создавать`)
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/orders/route.ts:209',message:'POST /api/orders NO DUPLICATE - PROCEEDING',data:{userId,orderStartDate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
       } catch (error) {
         console.error(`❌ Ошибка при проверке существующего заказа:`, error)
         // Не прерываем процесс создания заказа, но логируем ошибку
@@ -254,8 +267,14 @@ export async function POST(request: Request) {
     
     let nocoOrder
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/orders/route.ts:256',message:'POST /api/orders BEFORE createOrder',data:{userId:orderData.user_id,orderStartDate:orderData.start_date,orderNumber:orderData.order_number},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       nocoOrder = await createOrder(orderData)
       console.log("✅ Created NocoDB order - full response:", JSON.stringify(nocoOrder, null, 2))
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/orders/route.ts:258',message:'POST /api/orders AFTER createOrder',data:{orderId:nocoOrder?.Id,hasOrderId:!!nocoOrder?.Id,orderUserId:nocoOrder?.user_id||nocoOrder?.["User ID"]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       
       // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перезагружаем заказ из БД, чтобы получить актуальные значения paid и payment_status
       if (nocoOrder?.Id) {
