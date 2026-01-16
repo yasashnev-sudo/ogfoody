@@ -582,14 +582,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                     // #region agent log
                     fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:554',message:'Calling awardLoyaltyPoints',data:{orderId:id,userId:currentOrder.user_id,orderTotalForPoints,pointsUsed:0,earnedPoints:calculatedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5'})}).catch(()=>{});
                     // #endregion
+                    // ✅ КРИТИЧНО: Для обновления total_spent используем фактическую сумму заказа (с промокодом)
+                    // Для начисления баллов используем полную сумму (без промокода) - передается через earnedPoints
+                    const orderTotalForTotalSpent = order.total || (typeof currentOrder.total === 'number' 
+                      ? currentOrder.total 
+                      : parseFloat(String(currentOrder.total)) || 0)
                     console.log(`🔍 [PATCH full] Вызов awardLoyaltyPoints с параметрами:`, {
                       userId: currentOrder.user_id,
-                      orderTotal: orderTotalForPoints,
+                      orderTotal: orderTotalForTotalSpent, // ✅ Для total_spent: сумма С промокодом
+                      orderTotalForPoints, // ✅ Для начисления баллов: сумма БЕЗ промокода
                       pointsUsed: 0,
                       loyaltyPointsEarned: calculatedPoints,
                       orderId: id,
                     })
-                    await awardLoyaltyPoints(currentOrder.user_id, orderTotalForPoints, 0, calculatedPoints, Number(id))
+                    await awardLoyaltyPoints(currentOrder.user_id, orderTotalForTotalSpent, 0, calculatedPoints, Number(id))
                     console.log(`✅ [PATCH full] Начислено ${calculatedPoints} баллов пользователю ${currentOrder.user_id} при оплате заказа ${id}`)
                     // #region agent log
                     fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'orders/[id]/route.ts:562',message:'awardLoyaltyPoints completed',data:{orderId:id,userId:currentOrder.user_id,calculatedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5'})}).catch(()=>{});
