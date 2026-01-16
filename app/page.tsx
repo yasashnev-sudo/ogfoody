@@ -3473,20 +3473,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     }
     
     // ✅ Если черновика нет или даты не совпадают, ищем существующий заказ
-    // ✅ КРИТИЧНО: Если есть draftOrder (даже если даты не совпадают), НЕ ищем существующий заказ
+    // ✅ КРИТИЧНО: Если есть draftOrder с совпадающей датой, НЕ ищем существующий заказ
     // Это предотвращает переключение на существующий заказ при обновлении orders
-    if (draftOrder) {
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] useMemo existingOrder SKIPPING ORDER SEARCH - draftOrder exists', {
-        location: 'app/page.tsx:3478',
-        hypothesisId: 'B',
-        draftOrderId: draftOrder.id,
-        draftOrderDate: draftOrder.startDate,
-        selectedDate: selectedDate.toISOString(),
-      })
-      // #endregion
-      return undefined // Не возвращаем существующий заказ, если есть черновик
-    }
+    // Но если даты не совпадают, ищем существующий заказ для selectedDate
+    // (draftOrder для другой даты не должен блокировать поиск существующего заказа)
     
     const checkTimestamp = getDateTimestamp(selectedDate)
     
