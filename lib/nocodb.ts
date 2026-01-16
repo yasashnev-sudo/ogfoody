@@ -653,6 +653,20 @@ export async function calculateUserBalance(userId: number, noCache: boolean = fa
       return status === 'completed'
     })
     
+    // ✅ ДОБАВЛЕНО: Логирование для диагностики
+    if (transactions.length > 0 && activeTransactions.length === 0) {
+      console.log(`⚠️ calculateUserBalance(${userId}): Все транзакции отфильтрованы!`, {
+        total: transactions.length,
+        active: activeTransactions.length,
+        sampleStatuses: transactions.slice(0, 5).map((t: any) => ({
+          id: t.Id,
+          status: t['Transaction Status'] || t.transaction_status,
+          type: t['Transaction Type'] || t.transaction_type,
+          points: t['Points'] || t.points,
+        })),
+      })
+    }
+    
     // Вычисляем баланс
     let balance = 0
     activeTransactions.forEach((t: any) => {
