@@ -182,7 +182,14 @@ export function OrderModal({
         existingOrderDate: existingOrder?.startDate,
       })
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/order-modal.tsx:177',message:'OrderModal OPEN useEffect',data:{date:date.toISOString(),existingOrderId:existingOrder?.id,existingOrderDate:existingOrder?.startDate,existingOrderIsDraft:!existingOrder?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      console.log('[DEBUG REPEAT ORDER] OrderModal OPEN useEffect', {
+        location: 'components/order-modal.tsx:177',
+        hypothesisId: 'E',
+        date: date.toISOString(),
+        existingOrderId: existingOrder?.id,
+        existingOrderDate: existingOrder?.startDate,
+        existingOrderIsDraft: !existingOrder?.id,
+      })
       // #endregion
     }
   }, [open, date, existingOrder])
@@ -300,7 +307,14 @@ export function OrderModal({
   useEffect(() => {
     if (open) {
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/order-modal.tsx:297',message:'OrderModal RESET useEffect ENTRY',data:{existingOrderId:existingOrder?.id,existingOrderDate:existingOrder?.startDate,existingOrderIsDraft:!existingOrder?.id,date:date.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      console.log('[DEBUG REPEAT ORDER] OrderModal RESET useEffect ENTRY', {
+        location: 'components/order-modal.tsx:297',
+        hypothesisId: 'E',
+        existingOrderId: existingOrder?.id,
+        existingOrderDate: existingOrder?.startDate,
+        existingOrderIsDraft: !existingOrder?.id,
+        date: date.toISOString(),
+      })
       // #endregion
       // Reset to initial values when modal opens with new date/order
       const newPersons = existingOrder?.persons?.map((p) => ({
@@ -322,7 +336,12 @@ export function OrderModal({
       setActiveSectionId(null)
       setShowFloatingButton(false)
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/order-modal.tsx:318',message:'OrderModal RESET useEffect EXIT',data:{personsCount:newPersons.length,hasExtras:!!existingOrder?.extras?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      console.log('[DEBUG REPEAT ORDER] OrderModal RESET useEffect EXIT', {
+        location: 'components/order-modal.tsx:318',
+        hypothesisId: 'E',
+        personsCount: newPersons.length,
+        hasExtras: !!existingOrder?.extras?.length,
+      })
       // #endregion
     }
   }, [open, date.getTime(), existingOrder?.id, deliveryTimes.length, deliveryTimes.join(",")])
