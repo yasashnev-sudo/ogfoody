@@ -3478,6 +3478,28 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     // Но если даты не совпадают, ищем существующий заказ для selectedDate
     // (draftOrder для другой даты не должен блокировать поиск существующего заказа)
     
+    // ✅ КРИТИЧНО: Если есть draftOrder с совпадающей датой, НЕ ищем существующий заказ
+    // Это предотвращает ситуацию, когда useMemo пересчитывается после открытия модалки
+    // и находит существующий заказ вместо черновика
+    if (draftOrder) {
+      const draftTimestamp = getDateTimestamp(draftOrder.startDate)
+      const selectedTimestamp = getDateTimestamp(selectedDate)
+      if (draftTimestamp === selectedTimestamp) {
+        // #region agent log
+        console.log('[DEBUG REPEAT ORDER] useMemo existingOrder SKIPPING ORDER SEARCH - draftOrder matches date', {
+          location: 'app/page.tsx:3482',
+          hypothesisId: 'B',
+          draftOrderId: draftOrder.id,
+          draftOrderDate: draftOrder.startDate,
+          selectedDate: selectedDate.toISOString(),
+          draftTimestamp,
+          selectedTimestamp,
+        })
+        // #endregion
+        return undefined // Не возвращаем существующий заказ, если есть черновик с совпадающей датой
+      }
+    }
+    
     const checkTimestamp = getDateTimestamp(selectedDate)
     
     const found = orders.find((o) => {
