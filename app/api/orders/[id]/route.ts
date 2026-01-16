@@ -556,21 +556,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                     loyaltyPoints: user.loyalty_points,
                     totalSpent: user.total_spent,
                   })
-                  const orderTotal = order.total || (typeof currentOrder.total === 'number' 
-                    ? currentOrder.total 
-                    : parseFloat(String(currentOrder.total)) || 0)
-                  // ✅ ИСПРАВЛЕНО: Учитываем промокод при расчете orderTotal
+                  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Для начисления баллов используем subtotal + deliveryFee (БЕЗ учета промокода)
+                  // Баллы начисляются на полную сумму заказа до применения промокода
+                  const subtotal = order.subtotal || (typeof currentOrder.subtotal === 'number' ? currentOrder.subtotal : parseFloat(String(currentOrder.subtotal)) || 0)
+                  const deliveryFee = order.deliveryFee || (typeof currentOrder.delivery_fee === 'number' ? currentOrder.delivery_fee : parseFloat(String(currentOrder.delivery_fee)) || 0)
+                  const orderTotalForPoints = subtotal + deliveryFee // ✅ БЕЗ учета промокода для начисления баллов
                   const promoDiscount = order.promoDiscount || 0
-                  let orderTotalForPoints = orderTotal
-                  if (promoDiscount > 0 && orderTotal > 0) {
-                    const subtotal = order.subtotal || (typeof currentOrder.subtotal === 'number' ? currentOrder.subtotal : parseFloat(String(currentOrder.subtotal)) || 0)
-                    const deliveryFee = order.deliveryFee || (typeof currentOrder.delivery_fee === 'number' ? currentOrder.delivery_fee : parseFloat(String(currentOrder.delivery_fee)) || 0)
-                    const expectedTotal = subtotal + deliveryFee - promoDiscount
-                    if (Math.abs(orderTotal - expectedTotal) > 0.01) {
-                      console.log(`⚠️ [PATCH full] orderTotal не учитывает промокод, пересчитываем для начисления баллов: ${orderTotal} → ${expectedTotal}`)
-                      orderTotalForPoints = expectedTotal
-                    }
-                  }
+                  console.log(`💰 [PATCH full] Расчет суммы для начисления баллов:`, {
+                    subtotal,
+                    deliveryFee,
+                    promoDiscount,
+                    orderTotalForPoints,
+                    note: 'Баллы начисляются на полную сумму БЕЗ учета промокода'
+                  })
                   const pointsUsed = order.loyaltyPointsUsed || 0
                   const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
                   const calculatedPoints = calculateEarnedPoints(orderTotalForPoints, pointsUsed, currentTotalSpent)

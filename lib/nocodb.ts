@@ -1359,34 +1359,49 @@ export async function awardLoyaltyPoints(
   // Создаем транзакцию на начисление баллов
   let createdTransaction: NocoDBLoyaltyPointsTransaction | undefined = undefined
   if (earnedPoints > 0) {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1247',message:'Creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1250',message:'Before creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
-    createdTransaction = await createLoyaltyPointsTransaction({
+    // ✅ КРИТИЧНО: Проверяем наличие переменной окружения перед созданием транзакции
+    if (!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS) {
+      console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS не установлена!`)
+      console.error(`❌ Все переменные окружения NOCODB:`, Object.keys(process.env).filter(k => k.includes('NOCODB')).join(', '))
+      console.error(`❌ Проверьте ecosystem.config.js и перезапустите PM2 с помощью: pm2 delete all && pm2 start ecosystem.config.js`)
+      console.warn(`⚠️ Пропускаем создание транзакции, но обновляем total_spent и баланс`)
+      // ✅ ИСПРАВЛЕНО: Пропускаем создание транзакции, но продолжаем обновление total_spent и баланса
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1247',message:'Creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal,hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1250',message:'Before creating earned transaction',data:{userId,orderId,earnedPoints,orderTotal},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
+      try {
+        createdTransaction = await createLoyaltyPointsTransaction({
       user_id: userId,
       order_id: orderId,
       transaction_type: "earned",
       transaction_status: "completed",
       points: earnedPoints,
-      description: `Начислено ${earnedPoints} баллов за заказ на сумму ${orderTotal} руб.`,
-      created_at: now,
-      updated_at: now,
-      processed_at: now,
-    })
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1245',message:'Earned transaction created',data:{userId,orderId,earnedPoints,transactionId:createdTransaction?.Id,transactionStatus:createdTransaction?.transaction_status||createdTransaction?.['Transaction Status'],transactionPoints:createdTransaction?.points||createdTransaction?.['Points'],fullTransaction:JSON.stringify(createdTransaction)},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
-    console.log(`✅ Транзакция "earned" создана: +${earnedPoints} баллов`, {
-      transactionId: createdTransaction?.Id,
-      userId,
-      orderId,
-      points: earnedPoints,
-      status: createdTransaction?.transaction_status || createdTransaction?.['Transaction Status'],
-      fullTransaction: JSON.stringify(createdTransaction),
-    })
+          description: `Начислено ${earnedPoints} баллов за заказ на сумму ${orderTotal} руб.`,
+          created_at: now,
+          updated_at: now,
+          processed_at: now,
+        })
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1245',message:'Earned transaction created',data:{userId,orderId,earnedPoints,transactionId:createdTransaction?.Id,transactionStatus:createdTransaction?.transaction_status||createdTransaction?.['Transaction Status'],transactionPoints:createdTransaction?.points||createdTransaction?.['Points'],fullTransaction:JSON.stringify(createdTransaction)},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
+        console.log(`✅ Транзакция "earned" создана: +${earnedPoints} баллов`, {
+          transactionId: createdTransaction?.Id,
+          userId,
+          orderId,
+          points: earnedPoints,
+          status: createdTransaction?.transaction_status || createdTransaction?.['Transaction Status'],
+          fullTransaction: JSON.stringify(createdTransaction),
+        })
+      } catch (error) {
+        console.error(`❌ Ошибка при создании транзакции:`, error)
+        console.warn(`⚠️ Продолжаем обновление total_spent и баланса без транзакции`)
+        // ✅ ИСПРАВЛЕНО: Продолжаем выполнение даже если транзакция не создана
+      }
+    }
   } else {
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1206',message:'No earned transaction: earnedPoints is 0',data:{earnedPoints,orderTotal,pointsUsed,currentTotalSpent},timestamp:Date.now(),sessionId:'debug-session',runId:'loyalty-points-debug',hypothesisId:'H3'})}).catch(()=>{});
