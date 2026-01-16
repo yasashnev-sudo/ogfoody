@@ -1,3 +1,31 @@
+// Загружаем переменные окружения из .env.production
+const fs = require('fs');
+const path = require('path');
+
+function loadEnvFile() {
+  const envPath = path.join(__dirname, '.env.production');
+  const env = { NODE_ENV: 'production', PORT: 3000 };
+  
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !trimmedLine.startsWith('#')) {
+        const [key, ...valueParts] = trimmedLine.split('=');
+        if (key && valueParts.length > 0) {
+          const value = valueParts.join('=').trim();
+          // Убираем кавычки если есть
+          env[key.trim()] = value.replace(/^["']|["']$/g, '');
+        }
+      }
+    });
+  } else {
+    console.warn('⚠️ .env.production not found, using default env vars');
+  }
+  
+  return env;
+}
+
 module.exports = {
   apps: [
     {
@@ -8,11 +36,8 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       
-      // Environment
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000,
-      },
+      // Environment - загружаем из .env.production
+      env: loadEnvFile(),
       
       // Logging
       error_file: './logs/err.log',
