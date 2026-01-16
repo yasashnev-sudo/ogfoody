@@ -1251,6 +1251,7 @@ export async function awardLoyaltyPoints(
       orderId,
       points: earnedPoints,
       status: createdTransaction?.transaction_status || createdTransaction?.['Transaction Status'],
+      fullTransaction: JSON.stringify(createdTransaction),
     })
   } else {
     // #region agent log
