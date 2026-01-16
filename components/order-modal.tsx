@@ -32,7 +32,8 @@ import {
   Receipt,
   Coins,
   MessageCircle,
-  RotateCcw
+  RotateCcw,
+  X
 } from "lucide-react"
 import { MealSelector } from "@/components/meal-selector"
 import { ExtrasSelector } from "@/components/extras-selector"
@@ -234,6 +235,7 @@ export function OrderModal({
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [isRepeatingOrder, setIsRepeatingOrder] = useState(false) // ✅ НОВОЕ: Loading для повтора заказа
+  const [showRepeatDateMenu, setShowRepeatDateMenu] = useState(false) // ✅ НОВОЕ: Меню выбора даты для повтора
   
   // ✅ Инициализируем промокод из existingOrder при загрузке
   useEffect(() => {
@@ -611,87 +613,6 @@ export function OrderModal({
     }
   }
 
-  // ✅ НОВОЕ: Обработчик повтора заказа
-  const handleRepeatOrder = async () => {
-    if (!existingOrder || !existingOrder.id || !onRepeatOrder || isRepeatingOrder) return
-
-    // Находим следующую доступную дату (через неделю от даты текущего заказа)
-    const orderDate = existingOrder.startDate ? new Date(existingOrder.startDate) : date
-    const nextWeekDate = new Date(orderDate)
-    nextWeekDate.setDate(nextWeekDate.getDate() + 7)
-    nextWeekDate.setHours(0, 0, 0, 0)
-
-    // Функция для проверки, есть ли заказ на дату
-    const hasOrderOnDate = (checkDate: Date): boolean => {
-      const checkTimestamp = checkDate.getTime()
-      return allOrders.some((o) => {
-        if (!o.id) return false // Черновики не учитываем
-        const orderStatus = o.orderStatus || 'pending'
-        if (orderStatus === 'cancelled') return false // Отмененные заказы не учитываем
-        
-        const oDate = new Date(o.startDate)
-        oDate.setHours(0, 0, 0, 0)
-        return oDate.getTime() === checkTimestamp
-      })
-    }
-
-    // Ищем первую доступную дату из availableDates, которая >= nextWeekDate и без заказа
-    let targetDate = nextWeekDate
-    if (availableDates.length > 0) {
-      const availableAfterNextWeek = availableDates
-        .map(d => new Date(d))
-        .map(d => {
-          d.setHours(0, 0, 0, 0)
-          return d
-        })
-        .filter(d => {
-          return d.getTime() >= nextWeekDate.getTime() && !hasOrderOnDate(d)
-        })
-        .sort((a, b) => a.getTime() - b.getTime())
-      
-      if (availableAfterNextWeek.length > 0) {
-        targetDate = availableAfterNextWeek[0]
-      } else {
-        // Если нет доступных дат после следующей недели без заказов, ищем любую доступную дату без заказа
-        const availableWithoutOrder = availableDates
-          .map(d => new Date(d))
-          .map(d => {
-            d.setHours(0, 0, 0, 0)
-            return d
-          })
-          .filter(d => !hasOrderOnDate(d))
-          .sort((a, b) => a.getTime() - b.getTime())
-        
-        if (availableWithoutOrder.length > 0) {
-          targetDate = availableWithoutOrder[0]
-        } else {
-          // Если все даты заняты, берем последнюю доступную (пользователь увидит предупреждение)
-          const sortedDates = availableDates
-            .map(d => new Date(d))
-            .map(d => {
-              d.setHours(0, 0, 0, 0)
-              return d
-            })
-            .sort((a, b) => b.getTime() - a.getTime())
-          
-          if (sortedDates.length > 0) {
-            targetDate = sortedDates[0]
-          }
-        }
-      }
-    }
-
-    setIsRepeatingOrder(true)
-    try {
-      await onRepeatOrder(existingOrder, targetDate)
-      // После успешного повтора закрываем текущий модал
-      onClose()
-    } catch (error) {
-      console.error('❌ Ошибка при повторе заказа:', error)
-    } finally {
-      setIsRepeatingOrder(false)
-    }
-  }
 
   const handleContactSupport = () => {
     const orderNumber = existingOrder?.orderNumber
@@ -1195,28 +1116,125 @@ export function OrderModal({
                       </div>
                     )}
                   </div>
-                  {/* ✅ НОВОЕ: Кнопка повтора заказа в верхней части модалки */}
-                  {existingOrder && existingOrder.id && onRepeatOrder && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRepeatOrder}
-                      disabled={isRepeatingOrder || isDataLoading}
-                      className="bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20 text-[#9D00FF] border-2 border-[#9D00FF] hover:border-[#9D00FF] font-medium shrink-0"
-                    >
-                      {isRepeatingOrder ? (
-                        <>
-                          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                          Загрузка...
-                        </>
-                      ) : (
-                        <>
-                          <RotateCcw className="w-3 h-3 mr-1.5" />
-                          Повторить
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  {/* ✅ НОВОЕ: Кнопка повтора заказа в верхней части модалки с меню выбора даты */}
+                  {existingOrder && existingOrder.id && onRepeatOrder && (() => {
+                    const freeDates = getFreeDates()
+                    return freeDates.length > 0 ? (
+                      <div className="relative shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowRepeatDateMenu(!showRepeatDateMenu)}
+                          disabled={isRepeatingOrder || isDataLoading}
+                          className="bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20 text-[#9D00FF] border-2 border-[#9D00FF] hover:border-[#9D00FF] font-medium"
+                        >
+                          {isRepeatingOrder ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                              Загрузка...
+                            </>
+                          ) : (
+                            <>
+                              <RotateCcw className="w-3 h-3 mr-1.5" />
+                              Повторить
+                            </>
+                          )}
+                        </Button>
+
+                        {showRepeatDateMenu && (
+                          <>
+                            {/* Backdrop для закрытия по клику вне окна */}
+                            <div 
+                              className="fixed inset-0 z-[60]"
+                              onClick={() => setShowRepeatDateMenu(false)}
+                            />
+                            <div className="absolute top-full right-0 mt-2 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-[70] min-w-[280px] max-w-[95vw]">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-[10px] font-black text-gray-600">📅 ВЫБЕРИТЕ ДАТУ ДОСТАВКИ:</div>
+                                <button
+                                  onClick={() => setShowRepeatDateMenu(false)}
+                                  className="w-5 h-5 flex items-center justify-center rounded-md border border-black hover:bg-gray-100 transition-colors"
+                                  aria-label="Закрыть"
+                                >
+                                  <X className="w-3 h-3 text-black" />
+                                </button>
+                              </div>
+                              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                                {freeDates.map((date) => {
+                                  const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+                                  const dayName = dayNames[date.getDay()]
+                                  const today = new Date()
+                                  today.setHours(0, 0, 0, 0)
+                                  const dateTime = new Date(date)
+                                  dateTime.setHours(0, 0, 0, 0)
+                                  const daysFromNow = Math.floor((dateTime.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                                  
+                                  const isToday = daysFromNow === 0
+                                  const isTomorrow = daysFromNow === 1
+                                  const isThisWeek = daysFromNow >= 2 && daysFromNow <= 7
+                                  
+                                  const formatDisplayDate = (d: Date): string => {
+                                    const months = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]
+                                    return `${d.getDate()} ${months[d.getMonth()]}`
+                                  }
+                                  
+                                  return (
+                                    <button
+                                      key={`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`}
+                                      className={`flex-shrink-0 flex flex-col items-center justify-center w-[70px] h-[80px] rounded-lg border-2 transition-all font-bold relative ${
+                                        isToday 
+                                          ? 'border-[#FFEA00] bg-[#FFEA00]/20 hover:bg-[#FFEA00]/40' 
+                                          : isTomorrow
+                                          ? 'border-[#9D00FF] bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20'
+                                          : isThisWeek
+                                          ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-100'
+                                          : 'border-gray-300 bg-white hover:bg-gray-50'
+                                      } ${isRepeatingOrder ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                      onClick={() => {
+                                        if (isRepeatingOrder) return
+                                        handleRepeatOrderDateSelect(date)
+                                      }}
+                                      disabled={isRepeatingOrder}
+                                    >
+                                      {/* День недели */}
+                                      <span className="text-[10px] font-black uppercase text-gray-600 mb-1">
+                                        {dayName}
+                                      </span>
+                                      
+                                      {/* Число и месяц */}
+                                      <span className={`text-base font-black mb-1 ${
+                                        isToday || isTomorrow ? 'text-black' : 'text-gray-800'
+                                      }`}>
+                                        {date.getDate()}
+                                      </span>
+                                      
+                                      {/* Месяц */}
+                                      <span className="text-[9px] font-bold text-gray-500">
+                                        {formatDisplayDate(date).split(' ')[1]}
+                                      </span>
+                                      
+                                      {/* Бейдж */}
+                                      {(isToday || isTomorrow || isThisWeek) && (
+                                        <div className={`absolute top-1 right-1 text-[7px] px-1 py-0.5 rounded font-black ${
+                                          isToday 
+                                            ? 'bg-[#FFEA00] text-black' 
+                                            : isTomorrow 
+                                            ? 'bg-[#9D00FF] text-white'
+                                            : 'bg-blue-500 text-white'
+                                        }`}>
+                                          {isToday ? 'СЕГОДНЯ' : isTomorrow ? 'ЗАВТРА' : `+${daysFromNow}д`}
+                                        </div>
+                                      )}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
                 <DialogDescription className="text-sm text-muted-foreground">Набор на 2 дня</DialogDescription>
               </div>
