@@ -181,6 +181,9 @@ export function OrderModal({
         existingOrderId: existingOrder?.id,
         existingOrderDate: existingOrder?.startDate,
       })
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/order-modal.tsx:177',message:'OrderModal OPEN useEffect',data:{date:date.toISOString(),existingOrderId:existingOrder?.id,existingOrderDate:existingOrder?.startDate,existingOrderIsDraft:!existingOrder?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
     }
   }, [open, date, existingOrder])
   
@@ -296,6 +299,9 @@ export function OrderModal({
 
   useEffect(() => {
     if (open) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/order-modal.tsx:297',message:'OrderModal RESET useEffect ENTRY',data:{existingOrderId:existingOrder?.id,existingOrderDate:existingOrder?.startDate,existingOrderIsDraft:!existingOrder?.id,date:date.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       // Reset to initial values when modal opens with new date/order
       const newPersons = existingOrder?.persons?.map((p) => ({
         id: p.id,
@@ -315,6 +321,9 @@ export function OrderModal({
       // Initial active section: null to avoid auto-scroll on open
       setActiveSectionId(null)
       setShowFloatingButton(false)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/order-modal.tsx:318',message:'OrderModal RESET useEffect EXIT',data:{personsCount:newPersons.length,hasExtras:!!existingOrder?.extras?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
     }
   }, [open, date.getTime(), existingOrder?.id, deliveryTimes.length, deliveryTimes.join(",")])
 

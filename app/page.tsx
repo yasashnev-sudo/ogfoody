@@ -845,6 +845,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         // Добавляем новый
         return [...prevOrders, order]
       })
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:848',message:'CLEARING draftOrder in handleSaveOrder',data:{draftOrderId:draftOrder?.id,draftOrderDate:draftOrder?.startDate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       setDraftOrder(null) // Очищаем черновик
     }
     
@@ -1860,8 +1863,17 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
       // useMemo в existingOrder пересчитается только после установки обоих значений
       // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:1859',message:'BEFORE setDraftOrder and setSelectedDate',data:{draftOrderId:newOrder.id,draftOrderDate:newOrder.startDate,targetDate:targetDate.toISOString(),hasDraftOrder:!!draftOrder},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       setDraftOrder(newOrder)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:1862',message:'AFTER setDraftOrder BEFORE setSelectedDate',data:{draftOrderId:newOrder.id,draftOrderDate:newOrder.startDate,targetDate:targetDate.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       setSelectedDate(targetDate)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:1865',message:'AFTER setDraftOrder and setSelectedDate',data:{draftOrderId:newOrder.id,draftOrderDate:newOrder.startDate,targetDate:targetDate.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
 
     } catch (error) {
       console.error('❌ [Repeat Order] Ошибка при повторе заказа:', error)
@@ -3361,7 +3373,15 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   // ✅ ИСПРАВЛЕНО 2026-01-16: Исправлена проблема с открытием существующего заказа вместо черновика при повторе заказа
   // ✅ ИСПРАВЛЕНО 2026-01-16: Используем useMemo для предотвращения race condition при установке draftOrder и selectedDate
   const existingOrder = useMemo(() => {
-    if (!selectedDate) return undefined
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3363',message:'useMemo existingOrder ENTRY',data:{hasSelectedDate:!!selectedDate,selectedDate:selectedDate?.toISOString(),hasDraftOrder:!!draftOrder,draftOrderId:draftOrder?.id,draftOrderDate:draftOrder?.startDate,ordersCount:orders.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    if (!selectedDate) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3366',message:'useMemo existingOrder EXIT no selectedDate',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      return undefined
+    }
     
     // ✅ КРИТИЧНО: Сначала проверяем черновик - он имеет приоритет
     if (draftOrder) {
@@ -3376,6 +3396,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           draftDateTimestamp: draftTimestamp,
           selectedDateTimestamp: selectedTimestamp,
         })
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3379',message:'useMemo existingOrder RETURNING DRAFT',data:{draftId:draftOrder.id,draftDate:draftOrder.startDate,selectedDate:selectedDate.toISOString(),draftTimestamp,selectedTimestamp},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         return draftOrder
       } else {
         console.log('⚠️ [existingOrder] Черновик есть, но даты не совпадают:', {
@@ -3384,7 +3407,14 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           draftTimestamp,
           selectedTimestamp,
         })
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3386',message:'useMemo existingOrder DRAFT DATES MISMATCH',data:{draftDate:draftOrder.startDate,selectedDate:selectedDate.toISOString(),draftTimestamp,selectedTimestamp},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
       }
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3389',message:'useMemo existingOrder NO DRAFT',data:{selectedDate:selectedDate.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
     
     // ✅ Если черновика нет или даты не совпадают, ищем существующий заказ
@@ -3414,6 +3444,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         checkTimestamp,
         hasDraftOrder: !!draftOrder,
       })
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3407',message:'useMemo existingOrder RETURNING EXISTING ORDER',data:{orderId:found.id,orderDate:found.startDate,selectedDate:selectedDate.toISOString(),hasDraftOrder:!!draftOrder,draftOrderId:draftOrder?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
     } else {
       console.log('🔍 [existingOrder] Заказ на дату не найден:', {
         selectedDate: selectedDate,
@@ -3427,8 +3460,14 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           status: o.orderStatus,
         })),
       })
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3418',message:'useMemo existingOrder NO ORDER FOUND',data:{selectedDate:selectedDate.toISOString(),checkTimestamp,totalOrders:orders.length,hasDraftOrder:!!draftOrder},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
     
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3421',message:'useMemo existingOrder EXIT',data:{returnValueId:found?.id,returnValueDate:found?.startDate,returnValueIsDraft:!found?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     return found
   }, [selectedDate, draftOrder, orders])
 
@@ -3687,6 +3726,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         existingOrder={existingOrder}
         onClose={() => {
           setSelectedDate(null)
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:3726',message:'CLEARING draftOrder on modal close',data:{draftOrderId:draftOrder?.id,draftOrderDate:draftOrder?.startDate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          // #endregion
           setDraftOrder(null) // ✅ Очищаем черновик при закрытии
         }}
         onSave={handleSaveOrder}
