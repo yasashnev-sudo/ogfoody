@@ -1418,20 +1418,29 @@ export async function awardLoyaltyPoints(
   // #region agent log
   fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1306',message:'Recalculating balance from transactions',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
   // #endregion
-  const recalculatedBalance = await calculateUserBalance(userId, true)
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1309',message:'Balance recalculated',data:{userId,recalculatedBalance,earnedPoints,orderId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
-  console.log(`🔍 [awardLoyaltyPoints] recalculatedBalance ПЕРЕД console.log:`, {
-    value: recalculatedBalance,
-    type: typeof recalculatedBalance,
-    isNaN: isNaN(recalculatedBalance),
-    isNegative: recalculatedBalance < 0,
-  })
-  console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
+  let recalculatedBalance = 0
+  try {
+    recalculatedBalance = await calculateUserBalance(userId, true)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1309',message:'Balance recalculated',data:{userId,recalculatedBalance,earnedPoints,orderId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    console.log(`🔍 [awardLoyaltyPoints] recalculatedBalance ПЕРЕД console.log:`, {
+      value: recalculatedBalance,
+      type: typeof recalculatedBalance,
+      isNaN: isNaN(recalculatedBalance),
+      isNegative: recalculatedBalance < 0,
+    })
+    console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
+  } catch (error) {
+    console.error(`❌ Ошибка при пересчете баланса, используем earnedPoints:`, error)
+    // ✅ ИСПРАВЛЕНО: Если пересчет баланса не удался, используем earnedPoints как приблизительное значение
+    // Это лучше, чем возвращать 0, когда баллы уже начислены
+    recalculatedBalance = earnedPoints
+    console.warn(`⚠️ Используем earnedPoints (${earnedPoints}) как баланс из-за ошибки пересчета`)
+  }
   
   // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1314',message:'Before updateUser with balance',data:{userId,recalculatedBalance},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H5'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1314',message:'Before updateUser with balance',data:{userId,recalculatedBalance,earnedPoints},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H5'})}).catch(()=>{});
   // #endregion
   // Обновляем баланс в БД на основе пересчитанного значения
   await updateUser(userId, {
