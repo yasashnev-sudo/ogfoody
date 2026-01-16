@@ -519,7 +519,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               try {
                 console.log(`🔍 [PATCH full ${id}] Загрузка пользователя ${currentOrder.user_id}...`)
                 const user = await fetchUserById(currentOrder.user_id, true)
-                if (user) {
+                if (!user) {
+                  console.error(`❌ [PATCH full ${id}] КРИТИЧЕСКАЯ ОШИБКА: Пользователь ${currentOrder.user_id} не найден в базе данных!`)
+                  console.error(`❌ Заказ ${id} имеет user_id=${currentOrder.user_id}, но пользователь не существует в БД`)
+                  console.error(`❌ Невозможно начислить баллы - пользователь не найден`)
+                  // Не прерываем процесс обновления заказа, но логируем критическую ошибку
+                } else {
                   console.log(`✅ [PATCH full ${id}] Пользователь найден:`, {
                     userId: user.Id,
                     loyaltyPoints: user.loyalty_points,
@@ -566,8 +571,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                   } else {
                     console.warn(`⚠️ [PATCH full ${id}] calculatedPoints = ${calculatedPoints}, баллы не начислены`)
                   }
-                } else {
-                  console.error(`❌ [PATCH full ${id}] Пользователь ${currentOrder.user_id} не найден в базе данных!`)
                 }
               } catch (error) {
                 console.error(`❌ Ошибка при расчете и начислении баллов для заказа ${id}:`, error)
