@@ -489,24 +489,31 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       const savedProfile = localStorage.getItem(oldProfileKey)
       let tempProfile = null
       
-      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Не используем кэшированный профиль из localStorage
-      // Всегда загружаем свежие данные из БД через API
-      // Это предотвращает использование данных удаленных пользователей
-      console.log('⚠️ Игнорируем кэшированный профиль из localStorage, загружаем свежие данные из БД')
-      
-      // Отключено для предотвращения использования удаленных пользователей
-      if (false && savedProfile) {
-        tempProfile = JSON.parse(savedProfile)
-        // ⚠️ Временно устанавливаем профиль БЕЗ баллов (они загрузятся из API)
-        setUserProfile({ ...tempProfile, loyaltyPoints: 0, totalSpent: 0 })
-        console.log('⏳ Профиль загружен локально (без баллов), ожидаем API...')
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Загружаем профиль из localStorage для получения userId
+      // Используем его только для запроса к API, актуальные данные загрузим из БД
+      if (savedProfile) {
+        try {
+          tempProfile = JSON.parse(savedProfile)
+          // ⚠️ Временно устанавливаем профиль БЕЗ баллов (они загрузятся из API)
+          // Это нужно только для отображения имени/адреса во время загрузки
+          if (tempProfile?.id) {
+            setUserProfile({ ...tempProfile, loyaltyPoints: 0, totalSpent: 0 })
+            console.log('⏳ Профиль загружен локально (без баллов), ожидаем API...')
+          }
+        } catch (error) {
+          console.error('❌ Ошибка парсинга сохраненного профиля:', error)
+          tempProfile = null
+        }
       }
       
-      // 📡 ГЛАВНАЯ ЗАГРУЗКА: Только API, никакого localStorage!
-      if (tempProfile?.id) {
-        console.log('📡 Загрузка ВСЕХ данных из API для userId:', tempProfile.id)
+      // 📡 ГЛАВНАЯ ЗАГРУЗКА: Загружаем свежие данные из БД через API
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем tempProfile?.id ИЛИ пытаемся получить userId из API напрямую
+      const userId = tempProfile?.id
+      
+      if (userId) {
+        console.log('📡 Загрузка ВСЕХ данных из API для userId:', userId)
         
-        fetch(`/api/orders?userId=${tempProfile.id}`)
+        fetch(`/api/orders?userId=${userId}`)
           .then(res => {
             console.log('📥 Ответ API:', res.status)
             if (!res.ok) throw new Error(`API error: ${res.status}`)
@@ -537,7 +544,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             // ✅ Обновляем профиль с актуальными данными из БД
             if (data.userProfile) {
               const updatedProfile = {
-                ...tempProfile,
+                ...(tempProfile || {}),
+                ...data.userProfile,
                 loyaltyPoints: data.userProfile.loyaltyPoints ?? 0,
                 totalSpent: data.userProfile.totalSpent ?? 0,
               }
