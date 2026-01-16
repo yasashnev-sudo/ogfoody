@@ -618,7 +618,11 @@ export async function fetchUserByPhone(phone: string, noCache: boolean = true): 
     district: rawUser.district || rawUser["District"] || undefined,
     delivery_comment: rawUser.delivery_comment || rawUser["Delivery Comment"] || undefined,
     loyalty_points: calculatedBalance, // ✅ Используем вычисленный баланс!
-    total_spent: rawUser.total_spent !== undefined ? rawUser.total_spent : (rawUser["Total Spent"] !== undefined ? rawUser["Total Spent"] : 0),
+    total_spent: (() => {
+      const totalSpentRaw = rawUser.total_spent !== undefined ? rawUser.total_spent : rawUser["Total Spent"]
+      if (totalSpentRaw === undefined || totalSpentRaw === null) return 0
+      return typeof totalSpentRaw === 'number' ? totalSpentRaw : parseFloat(String(totalSpentRaw)) || 0
+    })(),
     created_at: rawUser.created_at || rawUser["Created At"] || "",
     updated_at: rawUser.updated_at || rawUser["Updated At"] || "",
     user_id: userIdValue,
@@ -804,7 +808,11 @@ export async function fetchUserById(id: number, noCache: boolean = false): Promi
     district: rawUser.district || rawUser["District"] || undefined,
     delivery_comment: rawUser.delivery_comment || rawUser["Delivery Comment"] || undefined,
     loyalty_points: 0, // Будет вычислено ниже из транзакций
-    total_spent: rawUser.total_spent !== undefined ? rawUser.total_spent : (rawUser["Total Spent"] !== undefined ? rawUser["Total Spent"] : 0),
+    total_spent: (() => {
+      const totalSpentRaw = rawUser.total_spent !== undefined ? rawUser.total_spent : rawUser["Total Spent"]
+      if (totalSpentRaw === undefined || totalSpentRaw === null) return 0
+      return typeof totalSpentRaw === 'number' ? totalSpentRaw : parseFloat(String(totalSpentRaw)) || 0
+    })(),
     created_at: rawUser.created_at || rawUser["Created At"] || "",
     updated_at: rawUser.updated_at || rawUser["Updated At"] || "",
     user_id: userIdValue,
