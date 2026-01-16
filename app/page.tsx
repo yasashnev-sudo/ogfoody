@@ -55,8 +55,11 @@ const toDate = (value: Date | string): Date => {
   return new Date(value)
 }
 
+// ✅ ИСПРАВЛЕНО 2026-01-16: Нормализуем дату к 00:00:00 для корректного сравнения
 const getDateTimestamp = (value: Date | string): number => {
-  return toDate(value).getTime()
+  const date = toDate(value)
+  date.setHours(0, 0, 0, 0)
+  return date.getTime()
 }
 
 const serializeOrders = (orders: Order[]): string => {
@@ -1819,7 +1822,18 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // Сохраняем черновик во временный state
       setDraftOrder(newOrder)
       
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлено логирование перед открытием модалки
+      console.log('🎯 [Repeat Order] Открываем OrderModal:', {
+        targetDate: targetDate.toISOString(),
+        targetDateTimestamp: getDateTimestamp(targetDate),
+        draftOrderDate: newOrder.startDate,
+        draftOrderDateTimestamp: getDateTimestamp(newOrder.startDate),
+        draftOrderId: newOrder.id,
+        draftOrderNumber: newOrder.orderNumber,
+      })
+      
       // Открываем модалку - теперь она получит черновик через useMemo ниже
+      // ✅ КРИТИЧНО: Устанавливаем selectedDate ПОСЛЕ draftOrder, чтобы черновик имел приоритет
       setSelectedDate(targetDate)
 
     } catch (error) {
@@ -3317,17 +3331,19 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
 
   // ✅ ИСПРАВЛЕНО 2026-01-13: Приоритет черновику над существующим заказом
   // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлена проверка статуса заказа и логирование для отладки
+  // ✅ ИСПРАВЛЕНО 2026-01-16: Исправлена проблема с открытием существующего заказа вместо черновика при повторе заказа
   const existingOrder = selectedDate
     ? (draftOrder && getDateTimestamp(draftOrder.startDate) === getDateTimestamp(selectedDate)
         ? (console.log('📝 [existingOrder] Используем черновик:', {
             draftDate: draftOrder.startDate,
             selectedDate: selectedDate,
             draftId: draftOrder.id,
+            draftDateTimestamp: getDateTimestamp(draftOrder.startDate),
+            selectedDateTimestamp: getDateTimestamp(selectedDate),
           }), draftOrder) // Черновик имеет приоритет
         : (() => {
-            const checkDate = new Date(selectedDate)
-            checkDate.setHours(0, 0, 0, 0)
-            const checkTimestamp = checkDate.getTime()
+            // ✅ ИСПРАВЛЕНО 2026-01-16: Используем getDateTimestamp для консистентности с handleRepeatOrder
+            const checkTimestamp = getDateTimestamp(selectedDate)
             
             const found = orders.find((o) => {
               // ✅ КРИТИЧНО: Пропускаем черновики (заказы без id)
@@ -3337,9 +3353,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               const orderStatus = o.orderStatus || 'pending'
               if (orderStatus === 'cancelled') return false
               
-              const orderStartDate = new Date(o.startDate)
-              orderStartDate.setHours(0, 0, 0, 0)
-              const orderTimestamp = orderStartDate.getTime()
+              // ✅ ИСПРАВЛЕНО 2026-01-16: Используем getDateTimestamp для консистентности
+              const orderTimestamp = getDateTimestamp(o.startDate)
               
               return orderTimestamp === checkTimestamp
             })
@@ -3350,6 +3365,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                 orderDate: found.startDate,
                 selectedDate: selectedDate,
                 orderStatus: found.orderStatus,
+                orderTimestamp: getDateTimestamp(found.startDate),
+                checkTimestamp,
               })
             } else {
               console.log('🔍 [existingOrder] Заказ на дату не найден:', {
@@ -3359,6 +3376,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                 ordersDates: orders.filter(o => o.id).map(o => ({
                   id: o.id,
                   date: o.startDate,
+                  dateTimestamp: getDateTimestamp(o.startDate),
                   status: o.orderStatus,
                 })),
               })
