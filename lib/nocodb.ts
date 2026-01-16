@@ -1424,11 +1424,20 @@ export async function awardLoyaltyPoints(
 
   // ✅ КРИТИЧНО: Пересчитываем баланс из транзакций (единственный источник правды)
   // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1306',message:'Recalculating balance from transactions',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1306',message:'Recalculating balance from transactions',data:{userId,hasTableId:!!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS,tableId:process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
   // #endregion
-  let recalculatedBalance = 0
-  try {
-    recalculatedBalance = await calculateUserBalance(userId, true)
+  // ✅ КРИТИЧНО: Проверяем наличие переменной окружения перед вызовом calculateUserBalance
+  if (!process.env.NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS) {
+    console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: NOCODB_TABLE_LOYALTY_POINTS_TRANSACTIONS не установлена!`)
+    console.error(`❌ Все переменные окружения:`, Object.keys(process.env).filter(k => k.includes('NOCODB')).join(', '))
+    console.error(`❌ Проверьте ecosystem.config.js и перезапустите PM2 с помощью: pm2 delete all && pm2 start ecosystem.config.js`)
+    // ✅ ИСПРАВЛЕНО: Используем earnedPoints как баланс, если таблица не настроена
+    recalculatedBalance = earnedPoints
+    console.warn(`⚠️ Используем earnedPoints (${earnedPoints}) как баланс из-за отсутствия переменной окружения`)
+  } else {
+    let recalculatedBalance = 0
+    try {
+      recalculatedBalance = await calculateUserBalance(userId, true)
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/2c31366c-6760-48ba-a8ce-4df6b54fcb0f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'nocodb.ts:1309',message:'Balance recalculated',data:{userId,recalculatedBalance,earnedPoints,orderId},timestamp:Date.now(),sessionId:'debug-session',runId:'balance-debug',hypothesisId:'H1'})}).catch(()=>{});
     // #endregion
@@ -1438,13 +1447,14 @@ export async function awardLoyaltyPoints(
       isNaN: isNaN(recalculatedBalance),
       isNegative: recalculatedBalance < 0,
     })
-    console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
-  } catch (error) {
-    console.error(`❌ Ошибка при пересчете баланса, используем earnedPoints:`, error)
-    // ✅ ИСПРАВЛЕНО: Если пересчет баланса не удался, используем earnedPoints как приблизительное значение
-    // Это лучше, чем возвращать 0, когда баллы уже начислены
-    recalculatedBalance = earnedPoints
-    console.warn(`⚠️ Используем earnedPoints (${earnedPoints}) как баланс из-за ошибки пересчета`)
+      console.log(`💳 Пересчитанный баланс из транзакций: ${recalculatedBalance} баллов`)
+    } catch (error) {
+      console.error(`❌ Ошибка при пересчете баланса, используем earnedPoints:`, error)
+      // ✅ ИСПРАВЛЕНО: Если пересчет баланса не удался, используем earnedPoints как приблизительное значение
+      // Это лучше, чем возвращать 0, когда баллы уже начислены
+      recalculatedBalance = earnedPoints
+      console.warn(`⚠️ Используем earnedPoints (${earnedPoints}) как баланс из-за ошибки пересчета`)
+    }
   }
   
   // #region agent log
