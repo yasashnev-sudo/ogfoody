@@ -863,14 +863,24 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       try {
         // ✅ ИСПРАВЛЕНО: Для существующего заказа НЕ пересчитываем total на клиенте!
         // Используем существующие значения из базы данных, т.к. цены хранятся только в Order_Meals
+        // ✅ КРИТИЧНО: НЕ копируем поля оплаты из order - они должны оставаться из existingOrder
+        // Это предотвращает случайное изменение статуса оплаты при редактировании заказа
+        const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanOrder } = order
+        
         const updatedOrder: Order = {
-          ...order,
+          ...cleanOrder,
           id: existingOrder.id,
           orderNumber: existingOrder.orderNumber,
           subtotal: existingOrder.subtotal,
           total: existingOrder.total,
           promoCode: order.promoCode,
           promoDiscount: order.promoDiscount,
+          // ✅ КРИТИЧНО: Используем поля оплаты из existingOrder, а не из order
+          paid: existingOrder.paid ?? false,
+          paidAt: existingOrder.paidAt,
+          paymentMethod: existingOrder.paymentMethod,
+          paymentStatus: existingOrder.paymentStatus,
+          paymentId: existingOrder.paymentId,
         }
         
         const response = await fetch(`/api/orders/${existingOrder.id}`, {
@@ -1079,16 +1089,29 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       
       try {
         const total = calculateOrderTotal(order)
+        // ✅ КРИТИЧНО: Очищаем все поля оплаты при создании нового заказа
+        // Это гарантирует, что новый заказ не будет создан как оплаченный
+        const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanOrder } = order
+        
         const newOrder: Order = {
-          ...order,
+          ...cleanOrder,
           subtotal: total,
           total: total,
+          // ✅ Явно устанавливаем поля оплаты для нового заказа
+          paid: false,
+          paidAt: undefined,
+          paymentMethod: undefined,
+          paymentStatus: undefined,
+          paymentId: undefined,
+          orderStatus: 'pending',
         }
         
         console.log("📤 Отправка заказа на сервер:", {
           personsCount: newOrder.persons?.length,
           extrasCount: newOrder.extras?.length,
           userId: userProfile.id,
+          paid: newOrder.paid,
+          paymentStatus: newOrder.paymentStatus,
         })
         
         const response = await fetch("/api/orders", {
@@ -1440,16 +1463,29 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     } else if (isAuthenticated && userProfile?.id) {
       try {
         const total = calculateOrderTotal(order)
+        // ✅ КРИТИЧНО: Очищаем все поля оплаты при создании нового заказа
+        // Это гарантирует, что новый заказ не будет создан как оплаченный
+        const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanOrder } = order
+        
         const newOrder: Order = {
-          ...order,
+          ...cleanOrder,
           subtotal: total,
           total: total,
+          // ✅ Явно устанавливаем поля оплаты для нового заказа
+          paid: false,
+          paidAt: undefined,
+          paymentMethod: undefined,
+          paymentStatus: undefined,
+          paymentId: undefined,
+          orderStatus: 'pending',
         }
         
         console.log("📤 Отправка заказа на сервер:", {
           personsCount: newOrder.persons?.length,
           extrasCount: newOrder.extras?.length,
           userId: userProfile.id,
+          paid: newOrder.paid,
+          paymentStatus: newOrder.paymentStatus,
         })
         
         const response = await fetch("/api/orders", {
