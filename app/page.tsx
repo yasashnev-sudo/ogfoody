@@ -1793,6 +1793,28 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // Заказ будет добавлен только после нажатия "Сохранить" в OrderModal через handleSaveOrder
       console.log('📝 [Repeat Order] Черновик заказа создан (не сохранен в state)')
       console.log('🎯 [Repeat Order] Открываем OrderModal для даты:', targetDate.toISOString())
+      console.log('🔍 [Repeat Order] Детали черновика:', {
+        draftDate: newOrder.startDate,
+        draftId: newOrder.id,
+        draftOrderNumber: newOrder.orderNumber,
+        targetDate: targetDate.toISOString(),
+        targetDateTimestamp: getDateTimestamp(targetDate),
+        draftDateTimestamp: getDateTimestamp(newOrder.startDate),
+        existingOrdersOnDate: orders.filter((o) => {
+          if (!o.id) return false
+          const orderStatus = o.orderStatus || 'pending'
+          if (orderStatus === 'cancelled') return false
+          const oDate = new Date(o.startDate)
+          oDate.setHours(0, 0, 0, 0)
+          const targetDateNormalized = new Date(targetDate)
+          targetDateNormalized.setHours(0, 0, 0, 0)
+          return oDate.getTime() === targetDateNormalized.getTime()
+        }).map(o => ({
+          id: o.id,
+          date: o.startDate,
+          status: o.orderStatus,
+        })),
+      })
       
       // Сохраняем черновик во временный state
       setDraftOrder(newOrder)
@@ -3294,18 +3316,56 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   }
 
   // ✅ ИСПРАВЛЕНО 2026-01-13: Приоритет черновику над существующим заказом
+  // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлена проверка статуса заказа и логирование для отладки
   const existingOrder = selectedDate
     ? (draftOrder && getDateTimestamp(draftOrder.startDate) === getDateTimestamp(selectedDate)
-        ? draftOrder // Черновик имеет приоритет
-        : orders.find((o) => {
-            const orderStartDate = new Date(o.startDate)
-            orderStartDate.setHours(0, 0, 0, 0)
-
+        ? (console.log('📝 [existingOrder] Используем черновик:', {
+            draftDate: draftOrder.startDate,
+            selectedDate: selectedDate,
+            draftId: draftOrder.id,
+          }), draftOrder) // Черновик имеет приоритет
+        : (() => {
             const checkDate = new Date(selectedDate)
             checkDate.setHours(0, 0, 0, 0)
-
-            return orderStartDate.getTime() === checkDate.getTime()
-          }))
+            const checkTimestamp = checkDate.getTime()
+            
+            const found = orders.find((o) => {
+              // ✅ КРИТИЧНО: Пропускаем черновики (заказы без id)
+              if (!o.id) return false
+              
+              // ✅ КРИТИЧНО: Пропускаем отмененные заказы
+              const orderStatus = o.orderStatus || 'pending'
+              if (orderStatus === 'cancelled') return false
+              
+              const orderStartDate = new Date(o.startDate)
+              orderStartDate.setHours(0, 0, 0, 0)
+              const orderTimestamp = orderStartDate.getTime()
+              
+              return orderTimestamp === checkTimestamp
+            })
+            
+            if (found) {
+              console.log('📋 [existingOrder] Найден существующий заказ:', {
+                orderId: found.id,
+                orderDate: found.startDate,
+                selectedDate: selectedDate,
+                orderStatus: found.orderStatus,
+              })
+            } else {
+              console.log('🔍 [existingOrder] Заказ на дату не найден:', {
+                selectedDate: selectedDate,
+                checkTimestamp,
+                totalOrders: orders.length,
+                ordersDates: orders.filter(o => o.id).map(o => ({
+                  id: o.id,
+                  date: o.startDate,
+                  status: o.orderStatus,
+                })),
+              })
+            }
+            
+            return found
+          })())
     : undefined
 
   const availableDates = getAvailableDates()
