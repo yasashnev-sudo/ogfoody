@@ -1161,7 +1161,7 @@ export function OrderModal({
                               className="fixed inset-0 z-[60]"
                               onClick={() => setShowRepeatDateMenu(false)}
                             />
-                            <div className="absolute top-full right-0 mt-2 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-[70] min-w-[280px] max-w-[95vw]">
+                            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border-2 border-black rounded-lg shadow-lg p-3 z-[70] min-w-[280px] max-w-[95vw] relative">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="text-[10px] font-black text-gray-600">📅 ВЫБЕРИТЕ ДАТУ ДОСТАВКИ:</div>
                                 <button
@@ -1172,7 +1172,12 @@ export function OrderModal({
                                   <X className="w-3 h-3 text-black" />
                                 </button>
                               </div>
-                              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                              {freeDates.length === 0 ? (
+                                <div className="text-[10px] text-gray-500 text-center py-2">
+                                  Нет доступных дат
+                                </div>
+                              ) : (
+                                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                                 {freeDates.map((date) => {
                                   const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
                                   const dayName = dayNames[date.getDay()]
@@ -1248,7 +1253,8 @@ export function OrderModal({
                                     </button>
                                   )
                                 })}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           </>
                         )}
