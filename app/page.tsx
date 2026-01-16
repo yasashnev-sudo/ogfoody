@@ -1318,7 +1318,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         console.log("🎯 Открываем PaymentModal для нового заказа: orderId =", savedOrder.id, "total =", savedOrder.total)
         setPaymentOrder({ 
           order: savedOrder, 
-          total: savedOrder.total 
+          total: savedOrder.total,
+          isNewOrder: true // ✅ ИСПРАВЛЕНО 2026-01-16: Помечаем как новый заказ, чтобы разрешить оплату наличными
         })
       } catch (error) {
         console.error("❌ Ошибка при создании заказа:", error)
