@@ -953,15 +953,16 @@ async function test10_CronJobProcessing(): Promise<TestResult> {
     
     const initialBalance = await getUserBalance(userId)
     
-    // Создаем заказ на наличные с датой доставки 2 дня назад (cron обрабатывает заказы до вчера включительно)
-    const twoDaysAgo = new Date()
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
-    twoDaysAgo.setHours(0, 0, 0, 0)
-    const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0]
+    // Создаем заказ на наличные с датой доставки вчера (cron обрабатывает заказы до вчера включительно)
+    // Важно: cron проверяет deliveryDate <= yesterday, поэтому используем вчерашнюю дату
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(0, 0, 0, 0)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
     
     const orderData = {
       userId,
-      startDate: twoDaysAgoStr,
+      startDate: yesterdayStr,
       deliveryTime: '18:00-21:00',
       paymentMethod: 'cash',
       paid: false,
