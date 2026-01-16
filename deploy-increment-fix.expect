@@ -1,6 +1,6 @@
 #!/usr/bin/expect -f
 
-set timeout 300
+set timeout 600
 
 spawn ssh root@5.129.194.168
 
@@ -30,14 +30,51 @@ expect {
         send "npm install --production=false\r"
         expect "root@"
         
+        send "echo '=== Stopping application before build ==='\r"
+        expect "root@"
+        send "pm2 stop all 2>/dev/null || true\r"
+        expect "root@"
+        send "sleep 2\r"
+        expect "root@"
+        
         send "echo '=== Building project ==='\r"
         expect "root@"
         send "npm run build\r"
+        expect {
+            -timeout 300
+            "Compiled successfully" {
+                expect "root@"
+            }
+            "Build error" {
+                expect "root@"
+            }
+            "root@" { }
+            timeout {
+                send "\r"
+                expect "root@"
+            }
+        }
+        
+        send "echo '=== Waiting for build to complete ==='\r"
+        expect "root@"
+        send "sleep 5\r"
+        expect "root@"
+        
+        send "echo '=== Checking build ==='\r"
+        expect "root@"
+        send "test -f .next/BUILD_ID && echo '✅ Build successful' || echo '❌ Build failed - BUILD_ID not found'\r"
+        expect "root@"
+        
+        send "echo '=== Updating nginx configuration ==='\r"
+        expect "root@"
+        send "if [ -f nginx-ogfoody.conf ]; then sudo cp nginx-ogfoody.conf /etc/nginx/sites-available/ogfoody.conf && sudo nginx -t && sudo systemctl reload nginx && echo '✅ Nginx configuration updated' || echo '⚠️ Nginx update failed or file not found'; fi\r"
         expect "root@"
         
         send "echo '=== Restarting application ==='\r"
         expect "root@"
-        send "pm2 restart all 2>/dev/null || pm2 start ecosystem.config.js\r"
+        send "pm2 delete all 2>/dev/null || true\r"
+        expect "root@"
+        send "pm2 start ecosystem.config.js\r"
         expect "root@"
         
         send "echo '=== Checking status ==='\r"
