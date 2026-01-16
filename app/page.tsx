@@ -56,10 +56,12 @@ const toDate = (value: Date | string): Date => {
 }
 
 // ✅ ИСПРАВЛЕНО 2026-01-16: Нормализуем дату к 00:00:00 для корректного сравнения
+// ✅ ИСПРАВЛЕНО 2026-01-16: Создаем новый объект Date, чтобы не мутировать исходный
 const getDateTimestamp = (value: Date | string): number => {
   const date = toDate(value)
-  date.setHours(0, 0, 0, 0)
-  return date.getTime()
+  // Создаем новый объект Date, чтобы не мутировать исходный
+  const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  return normalized.getTime()
 }
 
 const serializeOrders = (orders: Order[]): string => {
