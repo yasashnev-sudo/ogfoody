@@ -614,6 +614,45 @@ export function OrderModal({
   }
 
 
+  // ✅ НОВОЕ: Получаем свободные даты (без заказов) - как в истории заказов
+  const getFreeDates = (): Date[] => {
+    const formatDateKey = (d: Date): string => {
+      return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`
+    }
+    
+    const orderDates = new Set(
+      allOrders
+        .filter((o) => o.id && o.orderStatus !== 'cancelled') // Только активные заказы с id
+        .map((o) => {
+          const d = new Date(o.startDate)
+          d.setHours(0, 0, 0, 0)
+          return formatDateKey(d)
+        })
+    )
+    
+    return availableDates.filter((d) => {
+      const dateKey = formatDateKey(d)
+      return !orderDates.has(dateKey)
+    })
+  }
+
+  // ✅ НОВОЕ: Обработчик выбора даты для повтора заказа
+  const handleRepeatOrderDateSelect = async (targetDate: Date) => {
+    if (!existingOrder || !existingOrder.id || !onRepeatOrder || isRepeatingOrder) return
+
+    setIsRepeatingOrder(true)
+    setShowRepeatDateMenu(false)
+    try {
+      await onRepeatOrder(existingOrder, targetDate)
+      // После успешного повтора закрываем текущий модал
+      onClose()
+    } catch (error) {
+      console.error('❌ Ошибка при повторе заказа:', error)
+    } finally {
+      setIsRepeatingOrder(false)
+    }
+  }
+
   const handleContactSupport = () => {
     const orderNumber = existingOrder?.orderNumber
     const message = orderNumber 
