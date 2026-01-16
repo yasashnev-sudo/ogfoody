@@ -378,7 +378,7 @@ export async function POST(request: Request) {
 
 ${envVars}
 
-Или скопируйте и вставьте в ваш .env файл или настройки Vercel.
+Или скопируйте и вставьте в ваш .env файл или .env.production на сервере.
     `.trim(),
   })
 }

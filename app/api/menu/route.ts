@@ -85,7 +85,7 @@ export async function GET(request: Request) {
     
     const errorMessage = `NocoDB not configured. Missing variables: ${missingVars.join(", ")}`
     console.error(`[MENU API] ❌ ${errorMessage}`)
-    console.error(`[MENU API] 💡 Hint: Add missing environment variables in Vercel Dashboard → Settings → Environment Variables`)
+    console.error(`[MENU API] 💡 Hint: Add missing environment variables in .env.production on server`)
     
     return NextResponse.json({
       meals: {
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
       error: {
         type: "configuration",
         missingVariables: missingVars,
-        hint: "Add missing environment variables in Vercel Dashboard → Settings → Environment Variables and redeploy",
+        hint: "Add missing environment variables in .env.production on server and redeploy",
       },
     }, { 
       status: 503,
@@ -471,7 +471,7 @@ export async function GET(request: Request) {
       errorType = "configuration"
       userFriendlyMessage = "NocoDB не настроен"
       recommendations.push("Проверьте переменные окружения NOCODB_URL и NOCODB_TOKEN")
-      recommendations.push("Добавьте переменные в Vercel Dashboard → Settings → Environment Variables")
+      recommendations.push("Добавьте переменные в .env.production на сервере")
     } else if (errorMessage.includes("timeout") || errorMessage.includes("TIMEOUT")) {
       errorType = "timeout"
       userFriendlyMessage = "Таймаут при подключении к NocoDB"
@@ -496,7 +496,7 @@ export async function GET(request: Request) {
       errorType = "network"
       userFriendlyMessage = "Не удалось получить данные из NocoDB"
       recommendations.push("Проверьте доступность NocoDB сервера")
-      recommendations.push("Проверьте логи Vercel для деталей")
+      recommendations.push("Проверьте логи PM2 на сервере для деталей (pm2 logs ogfoody)")
     }
 
     console.error(`[MENU API] Error type: ${errorType}`)

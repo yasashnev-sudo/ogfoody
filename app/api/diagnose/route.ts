@@ -87,12 +87,12 @@ export async function GET() {
     masked: nocodbToken ? `${nocodbToken.substring(0, 10)}...${nocodbToken.slice(-4)}` : undefined,
   }
 
-  // Проверка окружения Vercel
+  // Проверка окружения (для совместимости, проект не на Vercel)
   const vercelEnv = process.env.VERCEL_ENV
   if (vercelEnv === "production" && (!nocodbUrl || !nocodbToken)) {
     result.summary.issues.push("⚠️ ВАЖНО: Переменные окружения не установлены для Production окружения!")
     result.summary.recommendations.push(
-      "В Vercel Dashboard → Settings → Environment Variables → для каждой переменной выберите 'Production' в разделе Environments",
+      "Проверьте переменные окружения в .env.production на сервере",
     )
   }
 
@@ -123,20 +123,20 @@ export async function GET() {
   if (!nocodbUrl) {
     result.summary.issues.push("NOCODB_URL не установлен")
     const envHint = vercelEnv === "production" 
-      ? "⚠️ Убедитесь, что переменная установлена для Production окружения (не только Preview)!"
-      : ""
+      ? "⚠️ Убедитесь, что переменная установлена в .env.production на сервере!"
+      : "В локальном .env файле"
     result.summary.recommendations.push(
-      `Добавьте переменную окружения NOCODB_URL в Vercel Dashboard → Settings → Environment Variables. ${envHint}`,
+      `Добавьте переменную окружения NOCODB_URL. ${envHint}`,
     )
   }
 
   if (!nocodbToken) {
     result.summary.issues.push("NOCODB_TOKEN не установлен")
     const envHint = vercelEnv === "production" 
-      ? "⚠️ Убедитесь, что переменная установлена для Production окружения (не только Preview)!"
-      : ""
+      ? "⚠️ Убедитесь, что переменная установлена в .env.production на сервере!"
+      : "В локальном .env файле"
     result.summary.recommendations.push(
-      `Добавьте переменную окружения NOCODB_TOKEN в Vercel Dashboard → Settings → Environment Variables. ${envHint}`,
+      `Добавьте переменную окружения NOCODB_TOKEN. ${envHint}`,
     )
   }
 
@@ -198,7 +198,7 @@ export async function GET() {
       result.connectivity.error = `HTTP ${status}: ${statusText}`
       result.summary.issues.push(`NocoDB недоступен: ${result.connectivity.error}`)
       result.summary.recommendations.push(
-        "Проверьте, что NocoDB доступен из интернета и не блокирует запросы с серверов Vercel",
+        "Проверьте, что NocoDB доступен из интернета и не блокирует запросы с сервера",
       )
     }
   } catch (error) {
@@ -285,9 +285,9 @@ export async function GET() {
   result.summary.configured = hasAllVariables && canConnect && canAccessTables
 
   if (result.summary.configured) {
-    result.summary.recommendations.push("✅ Конфигурация выглядит правильно! Если товары все еще не загружаются, проверьте логи Vercel.")
+    result.summary.recommendations.push("✅ Конфигурация выглядит правильно! Если товары все еще не загружаются, проверьте логи PM2 на сервере.")
   } else {
-    result.summary.recommendations.push("После исправления проблем пересоберите проект в Vercel (Redeploy)")
+    result.summary.recommendations.push("После исправления проблем пересоберите проект на сервере (npm run build && pm2 restart ogfoody)")
   }
 
   const totalTime = Date.now() - startTime

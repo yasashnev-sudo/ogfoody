@@ -4,11 +4,12 @@ Documentation=https://github.com/yasashnev-sudo/ogfoody
 Requires=ogfoody-loyalty-points.service
 
 [Timer]
-# Запуск каждый день в 15:00
-OnCalendar=*-*-* 15:00:00
+# Запуск каждый день в 15:00 по московскому времени (12:00 UTC)
+# Москва = UTC+3, поэтому 15:00 МСК = 12:00 UTC
+OnCalendar=*-*-* 12:00:00
 # Если пропустили запуск (сервер был выключен), запустить при следующей возможности
 Persistent=true
-# Точность: 1 минута (запуск в 15:00:00-15:00:59)
+# Точность: 1 минута (запуск в 12:00:00-12:00:59 UTC = 15:00:00-15:00:59 МСК)
 AccuracySec=1m
 
 [Install]
