@@ -657,7 +657,9 @@ export async function calculateUserBalance(userId: number, noCache: boolean = fa
     let balance = 0
     activeTransactions.forEach((t: any) => {
       const type = t['Transaction Type'] || t.transaction_type
-      const amount = t['Points'] || t.points || t['Points Amount'] || 0
+      const amountRaw = t['Points'] || t.points || t['Points Amount'] || 0
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильно парсим amount как число
+      const amount = typeof amountRaw === 'number' ? amountRaw : parseFloat(String(amountRaw)) || 0
       
       // Все типы транзакций используют значение Points напрямую
       // (Points уже содержит правильный знак: +141 для earned, -141 для cancelled)
