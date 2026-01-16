@@ -23,7 +23,7 @@ const formatShortDate = (date: Date): string => {
   return `${date.getDate()} ${months[date.getMonth()]}`
 }
 
-// Helper: Find next available delivery date
+// Helper: Find next available delivery date (prefer Sunday if today is empty)
 const findNextAvailableDate = (availableDates?: Date[]): Date | null => {
   if (!availableDates || availableDates.length === 0) {
     return null
@@ -32,7 +32,19 @@ const findNextAvailableDate = (availableDates?: Date[]): Date | null => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Find the first available date that is >= today
+  // If today is empty, prefer Sunday (day 0) for delivery
+  // First, try to find the next Sunday
+  const nextSunday = availableDates.find((date) => {
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
+    return checkDate.getDay() === 0 && checkDate.getTime() >= today.getTime()
+  })
+
+  if (nextSunday) {
+    return new Date(nextSunday)
+  }
+
+  // If no Sunday found, find the first available date that is >= today
   const nextDate = availableDates.find((date) => {
     const checkDate = new Date(date)
     checkDate.setHours(0, 0, 0, 0)
@@ -93,8 +105,8 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
         <div className="flex items-start gap-3 sm:gap-4">
           <UtensilsCrossed className="w-6 h-6 sm:w-8 sm:h-8 text-[#9D00FF] stroke-[2.5px] shrink-0" />
           <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-black text-black uppercase mb-1">СЕГОДНЯ ТЫ СЫТЫЙ</h3>
-            <p className="text-xs sm:text-sm text-gray-600 font-medium">Загляни в холодильник</p>
+            <h3 className="text-base sm:text-lg font-black text-black uppercase mb-1">СЕГОДНЯ У ВАС ЕСТЬ ЕДА</h3>
+            <p className="text-xs sm:text-sm text-gray-600 font-medium">Загляните в холодильник</p>
           </div>
         </div>
       </div>
@@ -116,7 +128,7 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
             {hasNextDate ? (
               <>
                 <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
-                  СЕГОДНЯ ПУСТО? ЗАПЛАНИРУЙ ЕДУ НА {getDayOfWeek(nextAvailableDate)}.
+                  СЕГОДНЯ ПУСТО? ЗАПЛАНИРУЙТЕ ДОСТАВКУ НА {getDayOfWeek(nextAvailableDate)}.
                 </h3>
                 <p className="text-xs sm:text-sm text-black/80 font-bold">
                   Привезем {formatShortDate(nextAvailableDate)} вечером. Еды хватит на 2 дня.
