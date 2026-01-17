@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Calendar } from "@/components/calendar"
 import { OrderModal } from "@/components/order-modal"
@@ -55,13 +55,8 @@ const toDate = (value: Date | string): Date => {
   return new Date(value)
 }
 
-// ✅ ИСПРАВЛЕНО 2026-01-16: Нормализуем дату к 00:00:00 для корректного сравнения
-// ✅ ИСПРАВЛЕНО 2026-01-16: Создаем новый объект Date, чтобы не мутировать исходный
 const getDateTimestamp = (value: Date | string): number => {
-  const date = toDate(value)
-  // Создаем новый объект Date, чтобы не мутировать исходный
-  const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  return normalized.getTime()
+  return toDate(value).getTime()
 }
 
 const serializeOrders = (orders: Order[]): string => {
@@ -272,7 +267,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [draftOrder, setDraftOrder] = useState<Order | null>(null) // ✅ Черновик для повторения заказа
-  const [draftOrderUnavailableItems, setDraftOrderUnavailableItems] = useState<string[]>([]) // ✅ Недоступные товары для черновика
   const [view, setView] = useState<"calendar" | "history">("calendar")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
@@ -490,31 +484,24 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       const savedProfile = localStorage.getItem(oldProfileKey)
       let tempProfile = null
       
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Загружаем профиль из localStorage для получения userId
-      // Используем его только для запроса к API, актуальные данные загрузим из БД
-      if (savedProfile) {
-        try {
-          tempProfile = JSON.parse(savedProfile)
-          // ⚠️ Временно устанавливаем профиль БЕЗ баллов (они загрузятся из API)
-          // Это нужно только для отображения имени/адреса во время загрузки
-          if (tempProfile?.id) {
-            setUserProfile({ ...tempProfile, loyaltyPoints: 0, totalSpent: 0 })
-            console.log('⏳ Профиль загружен локально (без баллов), ожидаем API...')
-          }
-        } catch (error) {
-          console.error('❌ Ошибка парсинга сохраненного профиля:', error)
-          tempProfile = null
-        }
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Не используем кэшированный профиль из localStorage
+      // Всегда загружаем свежие данные из БД через API
+      // Это предотвращает использование данных удаленных пользователей
+      console.log('⚠️ Игнорируем кэшированный профиль из localStorage, загружаем свежие данные из БД')
+      
+      // Отключено для предотвращения использования удаленных пользователей
+      if (false && savedProfile) {
+        tempProfile = JSON.parse(savedProfile)
+        // ⚠️ Временно устанавливаем профиль БЕЗ баллов (они загрузятся из API)
+        setUserProfile({ ...tempProfile, loyaltyPoints: 0, totalSpent: 0 })
+        console.log('⏳ Профиль загружен локально (без баллов), ожидаем API...')
       }
       
-      // 📡 ГЛАВНАЯ ЗАГРУЗКА: Загружаем свежие данные из БД через API
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем tempProfile?.id ИЛИ пытаемся получить userId из API напрямую
-      const userId = tempProfile?.id
-      
-      if (userId) {
-        console.log('📡 Загрузка ВСЕХ данных из API для userId:', userId)
+      // 📡 ГЛАВНАЯ ЗАГРУЗКА: Только API, никакого localStorage!
+      if (tempProfile?.id) {
+        console.log('📡 Загрузка ВСЕХ данных из API для userId:', tempProfile.id)
         
-        fetch(`/api/orders?userId=${userId}`)
+        fetch(`/api/orders?userId=${tempProfile.id}`)
           .then(res => {
             console.log('📥 Ответ API:', res.status)
             if (!res.ok) throw new Error(`API error: ${res.status}`)
@@ -545,8 +532,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             // ✅ Обновляем профиль с актуальными данными из БД
             if (data.userProfile) {
               const updatedProfile = {
-                ...(tempProfile || {}),
-                ...data.userProfile,
+                ...tempProfile,
                 loyaltyPoints: data.userProfile.loyaltyPoints ?? 0,
                 totalSpent: data.userProfile.totalSpent ?? 0,
               }
@@ -573,8 +559,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                   orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
                   startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
                   deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
-                  // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
-                  paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? undefined,
+                  paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
                   paid: db.paid ?? db.Paid ?? false,
                   paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
                   paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
@@ -865,24 +850,14 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       try {
         // ✅ ИСПРАВЛЕНО: Для существующего заказа НЕ пересчитываем total на клиенте!
         // Используем существующие значения из базы данных, т.к. цены хранятся только в Order_Meals
-        // ✅ КРИТИЧНО: НЕ копируем поля оплаты из order - они должны оставаться из existingOrder
-        // Это предотвращает случайное изменение статуса оплаты при редактировании заказа
-        const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanOrder } = order
-        
         const updatedOrder: Order = {
-          ...cleanOrder,
+          ...order,
           id: existingOrder.id,
           orderNumber: existingOrder.orderNumber,
           subtotal: existingOrder.subtotal,
           total: existingOrder.total,
           promoCode: order.promoCode,
           promoDiscount: order.promoDiscount,
-          // ✅ КРИТИЧНО: Используем поля оплаты из existingOrder, а не из order
-          paid: existingOrder.paid ?? false,
-          paidAt: existingOrder.paidAt,
-          paymentMethod: existingOrder.paymentMethod,
-          paymentStatus: existingOrder.paymentStatus,
-          paymentId: existingOrder.paymentId,
         }
         
         const response = await fetch(`/api/orders/${existingOrder.id}`, {
@@ -1091,29 +1066,16 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       
       try {
         const total = calculateOrderTotal(order)
-        // ✅ КРИТИЧНО: Очищаем все поля оплаты при создании нового заказа
-        // Это гарантирует, что новый заказ не будет создан как оплаченный
-        const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanOrder } = order
-        
         const newOrder: Order = {
-          ...cleanOrder,
+          ...order,
           subtotal: total,
           total: total,
-          // ✅ Явно устанавливаем поля оплаты для нового заказа
-          paid: false,
-          paidAt: undefined,
-          paymentMethod: undefined,
-          paymentStatus: undefined,
-          paymentId: undefined,
-          orderStatus: 'pending',
         }
         
         console.log("📤 Отправка заказа на сервер:", {
           personsCount: newOrder.persons?.length,
           extrasCount: newOrder.extras?.length,
           userId: userProfile.id,
-          paid: newOrder.paid,
-          paymentStatus: newOrder.paymentStatus,
         })
         
         const response = await fetch("/api/orders", {
@@ -1188,12 +1150,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
           deliveryFee: result.order?.deliveryFee ?? newOrder.deliveryFee ?? 0, // ✅ ДОБАВЛЕНО
           loyaltyPointsEarned: result.loyaltyPointsEarned || 0,
           loyaltyPointsUsed: newOrder.loyaltyPointsUsed || 0,
-          // ✅ КРИТИЧНО 2026-01-16: Явно очищаем поля оплаты для нового заказа
-          // Не копируем paymentMethod из API ответа, если он там есть (может быть "cash" по умолчанию)
-          paymentMethod: undefined,
-          paymentStatus: undefined,
-          paymentId: undefined,
-          paidAt: undefined,
         }
         
         console.log("💾 Saving order to state:", { 
@@ -1286,10 +1242,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             ? result.userProfile.totalSpent
             : parseFloat(String(result.userProfile.totalSpent)) || 0
           
-          // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ логируем "💰 Обновляю данные после успешной оплаты..." здесь
-          // Это обновление профиля после создания заказа, а не после оплаты
-          // Логирование "💰 Обновляю данные после успешной оплаты..." происходит только в onPaymentSuccess
-          console.log('💰 Обновлены данные из ответа POST (создание заказа):', {
+          console.log('💰 Обновлены данные из ответа POST:', {
             старые_баллы: userProfile.loyaltyPoints,
             новые_баллы: newLoyaltyPoints,
             старый_totalSpent: userProfile.totalSpent,
@@ -1319,8 +1272,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         console.log("🎯 Открываем PaymentModal для нового заказа: orderId =", savedOrder.id, "total =", savedOrder.total)
         setPaymentOrder({ 
           order: savedOrder, 
-          total: savedOrder.total,
-          isNewOrder: true // ✅ ИСПРАВЛЕНО 2026-01-16: Помечаем как новый заказ, чтобы разрешить оплату наличными
+          total: savedOrder.total 
         })
       } catch (error) {
         console.error("❌ Ошибка при создании заказа:", error)
@@ -1475,29 +1427,16 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     } else if (isAuthenticated && userProfile?.id) {
       try {
         const total = calculateOrderTotal(order)
-        // ✅ КРИТИЧНО: Очищаем все поля оплаты при создании нового заказа
-        // Это гарантирует, что новый заказ не будет создан как оплаченный
-        const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanOrder } = order
-        
         const newOrder: Order = {
-          ...cleanOrder,
+          ...order,
           subtotal: total,
           total: total,
-          // ✅ Явно устанавливаем поля оплаты для нового заказа
-          paid: false,
-          paidAt: undefined,
-          paymentMethod: undefined,
-          paymentStatus: undefined,
-          paymentId: undefined,
-          orderStatus: 'pending',
         }
         
         console.log("📤 Отправка заказа на сервер:", {
           personsCount: newOrder.persons?.length,
           extrasCount: newOrder.extras?.length,
           userId: userProfile.id,
-          paid: newOrder.paid,
-          paymentStatus: newOrder.paymentStatus,
         })
         
         const response = await fetch("/api/orders", {
@@ -1755,26 +1694,12 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
    * 6. Автоматически открывает OrderModal с заказом
    */
   const handleRepeatOrder = async (order: Order, targetDate: Date) => {
-    console.log('🔄 [Repeat Order] ФУНКЦИЯ ВЫЗВАНА:', {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      orderDate: order.startDate,
-      targetDate: targetDate.toISOString(),
-      timestamp: new Date().toISOString(),
-    })
-    
     try {
       // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату
       // ✅ ИСПРАВЛЕНО 2026-01-13: Нормализуем даты к локальному времени (как в календаре)
       const targetDateNormalized = new Date(targetDate)
       targetDateNormalized.setHours(0, 0, 0, 0)
       const targetDateTimestamp = targetDateNormalized.getTime()
-      
-      console.log('🔍 [Repeat Order] Проверка существующего заказа на дату:', {
-        targetDate: targetDate.toISOString(),
-        targetDateTimestamp,
-        totalOrders: orders.length,
-      })
       
       const existingOrderOnDate = orders.find((o) => {
         if (!o.id) return false // Черновики не учитываем
@@ -1835,24 +1760,26 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         unavailableItems,
       })
 
+      // ⚠️ Если были недоступные товары - показываем предупреждение
+      if (hasUnavailableItems) {
+        showWarning(
+          'Некоторые товары недоступны',
+          `Следующие позиции больше не в меню и будут пропущены: ${unavailableItems.join(', ')}`,
+          'warning'
+        )
+      }
+
       // ✅ Создаем новый заказ с актуальными товарами и ценами
-      // ⚠️ ПРИМЕЧАНИЕ: Предупреждение о недоступных товарах показывается в OrderModal после открытия
-      // ✅ КРИТИЧНО: Сначала очищаем все поля оплаты из validatedOrder, чтобы гарантировать чистый заказ
-      const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanValidatedOrder } = validatedOrder
-      
       const newOrder: Order = {
-        ...cleanValidatedOrder,
+        ...validatedOrder,
         // Важно: очищаем поля старого заказа
         id: undefined,
         orderNumber: undefined,
         startDate: targetDate,
-        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем все поля, связанные с оплатой
-        // Явно устанавливаем значения, чтобы гарантировать, что они не копируются из старого заказа
+        delivered: false,
         paid: false,
         paidAt: undefined,
         paymentMethod: undefined,
-        paymentStatus: undefined, // ✅ КРИТИЧНО: Очищаем статус оплаты
-        paymentId: undefined, // ✅ КРИТИЧНО: Очищаем ID платежа
         orderStatus: 'pending',
         // Цены будут пересчитаны автоматически в OrderModal
         total: undefined,
@@ -1860,73 +1787,18 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         deliveryFee: undefined,
         loyaltyPointsEarned: 0,
         loyaltyPointsUsed: 0,
-        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем промокод и скидку при повторе заказа
-        // Пользователь может применить новый промокод или не применять его вообще
-        promoCode: undefined,
-        promoDiscount: undefined,
       }
-      
-      // ✅ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Логируем, чтобы убедиться, что поля оплаты очищены
-      console.log('🔍 [Repeat Order] Проверка очистки полей оплаты:', {
-        paid: newOrder.paid,
-        paymentStatus: newOrder.paymentStatus,
-        paymentId: newOrder.paymentId,
-        paymentMethod: newOrder.paymentMethod,
-        paidAt: newOrder.paidAt,
-        orderStatus: newOrder.orderStatus,
-      })
 
       // ✅ ИСПРАВЛЕНО 2026-01-13: НЕ добавляем заказ в state сразу
       // Заказ будет добавлен только после нажатия "Сохранить" в OrderModal через handleSaveOrder
       console.log('📝 [Repeat Order] Черновик заказа создан (не сохранен в state)')
       console.log('🎯 [Repeat Order] Открываем OrderModal для даты:', targetDate.toISOString())
-      console.log('🔍 [Repeat Order] Детали черновика:', {
-        draftDate: newOrder.startDate,
-        draftId: newOrder.id,
-        draftOrderNumber: newOrder.orderNumber,
-        targetDate: targetDate.toISOString(),
-        targetDateTimestamp: getDateTimestamp(targetDate),
-        draftDateTimestamp: getDateTimestamp(newOrder.startDate),
-        existingOrdersOnDate: orders.filter((o) => {
-          if (!o.id) return false
-          const orderStatus = o.orderStatus || 'pending'
-          if (orderStatus === 'cancelled') return false
-          const oDate = new Date(o.startDate)
-          oDate.setHours(0, 0, 0, 0)
-          const targetDateNormalized = new Date(targetDate)
-          targetDateNormalized.setHours(0, 0, 0, 0)
-          return oDate.getTime() === targetDateNormalized.getTime()
-        }).map(o => ({
-          id: o.id,
-          date: o.startDate,
-          status: o.orderStatus,
-        })),
-      })
       
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлено логирование перед открытием модалки
-      console.log('🎯 [Repeat Order] Открываем OrderModal:', {
-        targetDate: targetDate.toISOString(),
-        targetDateTimestamp: getDateTimestamp(targetDate),
-        draftOrderDate: newOrder.startDate,
-        draftOrderDateTimestamp: getDateTimestamp(newOrder.startDate),
-        draftOrderId: newOrder.id,
-        draftOrderNumber: newOrder.orderNumber,
-      })
+      // Сохраняем черновик во временный state
+      setDraftOrder(newOrder)
       
-      // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
-      // useMemo в existingOrder пересчитается только после установки обоих значений
-      // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем flushSync для синхронного обновления
-      // Это гарантирует, что draftOrder установлен до того, как useMemo пересчитается
-      const { flushSync } = await import('react-dom')
-      flushSync(() => {
-        setDraftOrder(newOrder)
-        // ✅ Сохраняем недоступные товары вместе с черновиком
-        setDraftOrderUnavailableItems(hasUnavailableItems ? unavailableItems : [])
-      })
-      flushSync(() => {
-        setSelectedDate(targetDate)
-      })
+      // Открываем модалку - теперь она получит черновик через useMemo ниже
+      setSelectedDate(targetDate)
 
     } catch (error) {
       console.error('❌ [Repeat Order] Ошибка при повторе заказа:', error)
@@ -2306,10 +2178,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setShowPaymentLoading(false)
       setShowCashPaymentAnimation(false)
       
-      // ✅ ИСПРАВЛЕНО 2026-01-14: Передаем undefined вместо 0 для loyaltyPointsEarned, чтобы не показывать "0" в UI
-      // Если баллы не начисляются (для наличных или когда pointsDifference <= 0), передаем undefined
-      const earnedPoints = pointsDifference > 0 ? pointsDifference : (data.loyaltyPointsEarned || 0)
-      const earnedPointsToShow = earnedPoints > 0 ? earnedPoints : undefined
+      // ✅ ИСПРАВЛЕНО 2026-01-17: Используем actualPointsAwarded (уже правильно рассчитан выше)
+      // Проблема была: pointsDifference учитывает и начисление, и списание, поэтому показывает неправильное значение
+      // Правильно: использовать data.loyaltyPointsEarned напрямую (как в actualPointsAwarded)
+      const earnedPointsToShow = actualPointsAwarded > 0 ? actualPointsAwarded : undefined
       
       setSuccessDialog({
         open: true,
@@ -3422,80 +3294,19 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   }
 
   // ✅ ИСПРАВЛЕНО 2026-01-13: Приоритет черновику над существующим заказом
-  // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлена проверка статуса заказа и логирование для отладки
-  // ✅ ИСПРАВЛЕНО 2026-01-16: Исправлена проблема с открытием существующего заказа вместо черновика при повторе заказа
-  // ✅ ИСПРАВЛЕНО 2026-01-16: Используем useMemo для предотвращения race condition при установке draftOrder и selectedDate
-  const existingOrder = useMemo(() => {
-    if (!selectedDate) return undefined
-    
-    // ✅ КРИТИЧНО: Сначала проверяем черновик - он имеет приоритет
-    if (draftOrder) {
-      const draftTimestamp = getDateTimestamp(draftOrder.startDate)
-      const selectedTimestamp = getDateTimestamp(selectedDate)
-      
-      if (draftTimestamp === selectedTimestamp) {
-        console.log('📝 [existingOrder] Используем черновик:', {
-          draftDate: draftOrder.startDate,
-          selectedDate: selectedDate,
-          draftId: draftOrder.id,
-          draftDateTimestamp: draftTimestamp,
-          selectedDateTimestamp: selectedTimestamp,
-        })
-        return draftOrder
-      } else {
-        console.log('⚠️ [existingOrder] Черновик есть, но даты не совпадают:', {
-          draftDate: draftOrder.startDate,
-          selectedDate: selectedDate,
-          draftTimestamp,
-          selectedTimestamp,
-        })
-      }
-    }
-    
-    // ✅ Если черновика нет или даты не совпадают, ищем существующий заказ
-    const checkTimestamp = getDateTimestamp(selectedDate)
-    
-    const found = orders.find((o) => {
-      // ✅ КРИТИЧНО: Пропускаем черновики (заказы без id)
-      if (!o.id) return false
-      
-      // ✅ КРИТИЧНО: Пропускаем отмененные заказы
-      const orderStatus = o.orderStatus || 'pending'
-      if (orderStatus === 'cancelled') return false
-      
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем getDateTimestamp для консистентности
-      const orderTimestamp = getDateTimestamp(o.startDate)
-      
-      return orderTimestamp === checkTimestamp
-    })
-    
-    if (found) {
-      console.log('📋 [existingOrder] Найден существующий заказ:', {
-        orderId: found.id,
-        orderDate: found.startDate,
-        selectedDate: selectedDate,
-        orderStatus: found.orderStatus,
-        orderTimestamp: getDateTimestamp(found.startDate),
-        checkTimestamp,
-        hasDraftOrder: !!draftOrder,
-      })
-    } else {
-      console.log('🔍 [existingOrder] Заказ на дату не найден:', {
-        selectedDate: selectedDate,
-        checkTimestamp,
-        totalOrders: orders.length,
-        hasDraftOrder: !!draftOrder,
-        ordersDates: orders.filter(o => o.id).map(o => ({
-          id: o.id,
-          date: o.startDate,
-          dateTimestamp: getDateTimestamp(o.startDate),
-          status: o.orderStatus,
-        })),
-      })
-    }
-    
-    return found
-  }, [selectedDate, draftOrder, orders])
+  const existingOrder = selectedDate
+    ? (draftOrder && getDateTimestamp(draftOrder.startDate) === getDateTimestamp(selectedDate)
+        ? draftOrder // Черновик имеет приоритет
+        : orders.find((o) => {
+            const orderStartDate = new Date(o.startDate)
+            orderStartDate.setHours(0, 0, 0, 0)
+
+            const checkDate = new Date(selectedDate)
+            checkDate.setHours(0, 0, 0, 0)
+
+            return orderStartDate.getTime() === checkDate.getTime()
+          }))
+    : undefined
 
   const availableDates = getAvailableDates()
 
@@ -3644,10 +3455,24 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             <div className="mb-6">
               <DailyStatus
                 orders={orders}
-                availableDates={availableDates}
-                onOrderClick={(date: Date) => {
-                  // Component passes the pre-calculated next available date
-                  handleDateClick(date)
+                onOrderClick={() => {
+                  // Find the next available date for ordering
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
+                  const nextAvailable = availableDates.find((date) => {
+                    const checkDate = new Date(date)
+                    checkDate.setHours(0, 0, 0, 0)
+                    return checkDate.getTime() >= today.getTime()
+                  })
+                  if (nextAvailable) {
+                    handleDateClick(nextAvailable)
+                  } else {
+                    showWarning(
+                      "Нет доступных дат",
+                      "К сожалению, сейчас нет доступных дат для заказа. Попробуйте позже.",
+                      "info"
+                    )
+                  }
                 }}
                 onFoodCardClick={() => {
                   // Open today's menu/order modal
@@ -3737,16 +3562,11 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         date={selectedDate || new Date()}
         existingOrder={existingOrder}
         onClose={() => {
-          // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ очищаем draftOrder при закрытии, если это черновик от повтора заказа
-          // Черновик должен оставаться до тех пор, пока не будет сохранен или явно отменен
-          // Это предотвращает проблему, когда при повторном открытии находится существующий заказ
           setSelectedDate(null)
-          // setDraftOrder(null) - УДАЛЕНО: черновик остается для повторного открытия
+          setDraftOrder(null) // ✅ Очищаем черновик при закрытии
         }}
         onSave={handleSaveOrder}
         onCancel={handleCancelOrder}
-        onRepeatOrder={handleRepeatOrder} // ✅ НОВОЕ: Добавлен обработчик повтора заказа
-        availableDates={availableDates} // ✅ НОВОЕ: Передаем доступные даты для умного выбора
         allOrders={orders}
         open={!!selectedDate}
         isDataLoading={isUserLoading || isOrdersLoading || isPointsLoading}
@@ -3797,8 +3617,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                     orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
                     startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
                     deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
-                    // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем undefined для новых заказов
-                  paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? undefined,
+                    paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
                     paid: db.paid ?? db.Paid ?? false,
                     paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
                     paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
