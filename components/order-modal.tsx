@@ -535,9 +535,9 @@ export function OrderModal({
 
     onSave(order)
 
-    if (onPaymentSuccess) {
-      onPaymentSuccess(order)
-    }
+    // ✅ ИСПРАВЛЕНО 2026-01-17: НЕ вызываем onPaymentSuccess здесь!
+    // onPaymentSuccess должен вызываться только после реальной оплаты в PaymentModal
+    // Вызов здесь приводит к преждевременному показу окна успеха
 
     setIsProcessingPayment(false)
   }
