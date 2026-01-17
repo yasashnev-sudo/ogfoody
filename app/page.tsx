@@ -598,10 +598,198 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             console.log('✅ Загрузка данных завершена')
           })
       } else {
-        // Если нет профиля с id, снимаем лоадеры
-        setIsUserLoading(false)
-        setIsOrdersLoading(false)
-        setIsPointsLoading(false)
+        // ✅ ИСПРАВЛЕНО 2026-01-17: Загружаем профиль по телефону, если нет сохраненного профиля с id
+        // Это исправляет проблему, когда при обновлении страницы профиль не загружается
+        console.log('📡 Загрузка профиля по телефону:', user)
+        
+        // Проверяем наличие интернета
+        if (!navigator.onLine) {
+          console.error('❌ Нет подключения к интернету')
+          setIsUserLoading(false)
+          setIsOrdersLoading(false)
+          setIsPointsLoading(false)
+          setWarningDialog({
+            open: true,
+            title: "Нет подключения к интернету",
+            description: "К сожалению, интернет не работает. Пожалуйста, проверьте подключение и обновите страницу.",
+            variant: "error",
+          })
+          return
+        }
+        
+        // Загружаем профиль по телефону из БД
+        const loadProfileByPhone = async () => {
+          try {
+            const { fetchUserByPhone } = await import("@/lib/nocodb")
+            const dbUser = await fetchUserByPhone(user, true)
+            
+            if (!dbUser || !dbUser.Id) {
+              // Пользователь не найден в БД
+              console.error('❌ Пользователь не найден в БД')
+              localStorage.removeItem(oldProfileKey)
+              localStorage.removeItem(`orders_${user}`)
+              setUserProfile(null)
+              setIsAuthenticated(false)
+              setCurrentUser(null)
+              localStorage.removeItem("currentUser")
+              setIsUserLoading(false)
+              setIsOrdersLoading(false)
+              setIsPointsLoading(false)
+              setWarningDialog({
+                open: true,
+                title: "Пользователь не найден",
+                description: "Мы не нашли вас у себя в базе данных. Пожалуйста, свяжитесь с нами в чате.",
+                variant: "error",
+              })
+              return
+            }
+            
+            // Профиль найден, загружаем данные из API
+            console.log('✅ Профиль найден по телефону, userId:', dbUser.Id)
+            
+            const response = await fetch(`/api/orders?userId=${dbUser.Id}`)
+            
+            if (!response.ok) {
+              throw new Error(`API error: ${response.status}`)
+            }
+            
+            const data = await response.json()
+            
+            console.log('📦 Данные из API получены:', {
+              заказов: data.orders?.length || 0,
+              баллы: data.userProfile?.loyaltyPoints,
+              потрачено: data.userProfile?.totalSpent
+            })
+            
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, существует ли пользователь в БД
+            if (!data.userProfile) {
+              console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: Пользователь не найден в БД (возможно, был удален)')
+              localStorage.removeItem(oldProfileKey)
+              localStorage.removeItem(`orders_${user}`)
+              setUserProfile(null)
+              setIsAuthenticated(false)
+              setCurrentUser(null)
+              localStorage.removeItem("currentUser")
+              setIsUserLoading(false)
+              setIsOrdersLoading(false)
+              setIsPointsLoading(false)
+              setWarningDialog({
+                open: true,
+                title: "Пользователь не найден",
+                description: "Мы не нашли вас у себя в базе данных. Пожалуйста, свяжитесь с нами в чате.",
+                variant: "error",
+              })
+              return
+            }
+            
+            // ✅ Обновляем профиль с актуальными данными из БД
+            if (data.userProfile) {
+              const updatedProfile = {
+                id: dbUser.Id,
+                phone: user,
+                name: data.userProfile.name || dbUser.name || dbUser["Name"] || "",
+                street: data.userProfile.street || dbUser.street || dbUser["Street"] || "",
+                building: data.userProfile.building || dbUser.building || dbUser["Building"] || "",
+                buildingSection: data.userProfile.buildingSection || dbUser.buildingSection || dbUser["Building Section"] || "",
+                apartment: data.userProfile.apartment || dbUser.apartment || dbUser["Apartment"] || "",
+                entrance: data.userProfile.entrance || dbUser.entrance || dbUser["Entrance"] || "",
+                floor: data.userProfile.floor || dbUser.floor || dbUser["Floor"] || "",
+                intercom: data.userProfile.intercom || dbUser.intercom || dbUser["Intercom"] || "",
+                district: data.userProfile.district || dbUser.district || dbUser["District"] || "",
+                deliveryComment: data.userProfile.deliveryComment || dbUser.deliveryComment || dbUser["Delivery Comment"] || "",
+                additionalPhone: data.userProfile.additionalPhone || dbUser.additionalPhone || dbUser["Additional Phone"] || "",
+                loyaltyPoints: data.userProfile.loyaltyPoints ?? 0,
+                totalSpent: data.userProfile.totalSpent ?? 0,
+              }
+              setUserProfile(updatedProfile)
+              localStorage.setItem(oldProfileKey, JSON.stringify(updatedProfile))
+              console.log('✅ Профиль синхронизирован с БД:', {
+                id: updatedProfile.id,
+                name: updatedProfile.name,
+                loyaltyPoints: updatedProfile.loyaltyPoints,
+                totalSpent: updatedProfile.totalSpent,
+                district: updatedProfile.district,
+              })
+            }
+            
+            // ✅ Загружаем заказы из API
+            if (data.orders && Array.isArray(data.orders)) {
+              const mappedOrders: Order[] = data.orders
+                .filter((db: any) => {
+                  const status = db.orderStatus || db.order_status || db["Order Status"]
+                  return status !== 'cancelled'
+                })
+                .map((db: any) => ({
+                  id: db.id ?? db.Id,
+                  orderNumber: db.orderNumber ?? db.order_number ?? db["Order Number"],
+                  startDate: toDate(db.startDate ?? db.start_date ?? db["Start Date"]),
+                  deliveryTime: db.deliveryTime ?? db.delivery_time ?? db["Delivery Time"] ?? "",
+                  paymentMethod: db.paymentMethod ?? db.payment_method ?? db["Payment Method"] ?? "cash",
+                  paid: db.paid ?? db.Paid ?? false,
+                  paidAt: db.paidAt ?? db.paid_at ?? db["Paid At"],
+                  paymentStatus: db.paymentStatus ?? db.payment_status ?? db["Payment Status"] ?? "pending",
+                  orderStatus: db.orderStatus ?? db.order_status ?? db["Order Status"] ?? "pending",
+                  total: db.total ?? db.Total ?? 0,
+                  subtotal: db.subtotal ?? db.Subtotal ?? 0,
+                  deliveryFee: db.deliveryFee ?? db.delivery_fee ?? db["Delivery Fee"] ?? 0,
+                  deliveryDistrict: db.deliveryDistrict ?? db.delivery_district ?? db["Delivery District"],
+                  deliveryAddress: db.deliveryAddress ?? db.delivery_address ?? db["Delivery Address"],
+                  promoCode: db.promoCode ?? db.promo_code ?? db["Promo Code"],
+                  promoDiscount: (() => {
+                    const discount = db.promoDiscount ?? db.promo_discount ?? db["Promo Discount"]
+                    if (discount === undefined || discount === null) return 0
+                    return typeof discount === 'number' ? discount : (Number(discount) || 0)
+                  })(),
+                  loyaltyPointsUsed: db.loyaltyPointsUsed ?? db.loyalty_points_used ?? db["Loyalty Points Used"] ?? 0,
+                  loyaltyPointsEarned: db.loyaltyPointsEarned ?? db.loyalty_points_earned ?? db["Loyalty Points Earned"] ?? 0,
+                  persons: db.persons ?? [],
+                  extras: db.extras ?? [],
+                }))
+              
+              console.log('✅ Заказы установлены в state:', mappedOrders.length)
+              setOrders(mappedOrders)
+            }
+          } catch (error: any) {
+            console.error('❌ Ошибка загрузки профиля по телефону:', error)
+            
+            // Проверяем тип ошибки
+            const isNetworkError = !navigator.onLine || 
+              error.message?.includes('Failed to fetch') || 
+              error.message?.includes('NetworkError') ||
+              error.message?.includes('network')
+            
+            setIsUserLoading(false)
+            setIsOrdersLoading(false)
+            setIsPointsLoading(false)
+            
+            if (isNetworkError) {
+              // Ошибка сети
+              setWarningDialog({
+                open: true,
+                title: "Нет подключения к интернету",
+                description: "К сожалению, интернет не работает. Пожалуйста, проверьте подключение и обновите страницу.",
+                variant: "error",
+              })
+            } else {
+              // Другая ошибка (например, пользователь не найден)
+              setWarningDialog({
+                open: true,
+                title: "Ошибка загрузки данных",
+                description: "Не удалось загрузить данные. Пожалуйста, попробуйте обновить страницу.",
+                variant: "error",
+              })
+            }
+          } finally {
+            // ✅ Снимаем все лоадеры после завершения
+            setIsUserLoading(false)
+            setIsOrdersLoading(false)
+            setIsPointsLoading(false)
+            console.log('✅ Загрузка данных завершена')
+          }
+        }
+        
+        // Запускаем загрузку
+        loadProfileByPhone()
       }
       
       const savedReviews = localStorage.getItem(`reviews_${user}`)
