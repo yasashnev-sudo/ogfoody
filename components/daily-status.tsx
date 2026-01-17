@@ -1,14 +1,17 @@
 "use client"
 
-import { Truck, UtensilsCrossed, CalendarClock } from "lucide-react"
+import { Truck, UtensilsCrossed, CalendarClock, Hourglass, CalendarCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Order } from "@/lib/types"
+import { addDays, startOfDay, isSameDay, isAfter, isBefore, format } from "date-fns"
+import { ru } from "date-fns/locale"
 
 interface DailyStatusProps {
   orders: Order[]
   availableDates?: Date[] // Array of available delivery dates
   onOrderClick?: (date: Date) => void // Now accepts the selected date
   onFoodCardClick?: () => void
+  isAuthenticated?: boolean // Flag to determine if user is authenticated
 }
 
 // Helper: Format day of week in Russian (nominative case, uppercase)
@@ -42,15 +45,40 @@ const formatDateGenitive = (date: Date): string => {
   return `${date.getDate()} ${months[date.getMonth()]}`
 }
 
+// Helper: Format date with day of week for replenishment UI (e.g., "14 ЯНВАРЯ (СР)")
+const formatDateWithDayOfWeek = (date: Date): string => {
+  const months = [
+    "ЯНВАРЯ",
+    "ФЕВРАЛЯ",
+    "МАРТА",
+    "АПРЕЛЯ",
+    "МАЯ",
+    "ИЮНЯ",
+    "ИЮЛЯ",
+    "АВГУСТА",
+    "СЕНТЯБРЯ",
+    "ОКТЯБРЯ",
+    "НОЯБРЯ",
+    "ДЕКАБРЯ",
+  ]
+  const dayAbbr = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"]
+  return `${date.getDate()} ${months[date.getMonth()]} (${dayAbbr[date.getDay()]})`
+}
+
+// Helper: Format short date with day of week for button (e.g., "14 ЯНВ (СР)")
+const formatShortDateWithDayOfWeek = (date: Date): string => {
+  const months = ["ЯНВ", "ФЕВ", "МАР", "АПР", "МАЯ", "ИЮН", "ИЮЛ", "АВГ", "СЕН", "ОКТ", "НОЯ", "ДЕК"]
+  const dayAbbr = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"]
+  return `${date.getDate()} ${months[date.getMonth()]} (${dayAbbr[date.getDay()]})`
+}
+
 // Helper: Check if there's an order for a specific date
 const hasOrderForDate = (orders: Order[], date: Date): boolean => {
-  const checkDate = new Date(date)
-  checkDate.setHours(0, 0, 0, 0)
+  const checkDate = startOfDay(date)
 
   return orders.some((order) => {
-    const orderDate = new Date(order.startDate)
-    orderDate.setHours(0, 0, 0, 0)
-    return orderDate.getTime() === checkDate.getTime()
+    const orderDate = startOfDay(new Date(order.startDate))
+    return isSameDay(orderDate, checkDate)
   })
 }
 
@@ -60,59 +88,186 @@ const findNextAvailableDate = (availableDates?: Date[], orders: Order[] = []): D
     return null
   }
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = startOfDay(new Date())
 
   // If today is empty, prefer Sunday (day 0) for delivery
   // First, try to find the next Sunday that doesn't have an order yet
   const nextSunday = availableDates.find((date) => {
-    const checkDate = new Date(date)
-    checkDate.setHours(0, 0, 0, 0)
+    const checkDate = startOfDay(date)
     const isSunday = checkDate.getDay() === 0
-    const isFutureOrToday = checkDate.getTime() >= today.getTime()
+    const isFutureOrToday = isSameDay(checkDate, today) || isAfter(checkDate, today)
     const hasNoOrder = !hasOrderForDate(orders, checkDate)
     return isSunday && isFutureOrToday && hasNoOrder
   })
 
   if (nextSunday) {
-    return new Date(nextSunday)
+    return startOfDay(nextSunday)
   }
 
   // If no free Sunday found, find the first available date that is >= today and has no order
   const nextDate = availableDates.find((date) => {
-    const checkDate = new Date(date)
-    checkDate.setHours(0, 0, 0, 0)
-    const isFutureOrToday = checkDate.getTime() >= today.getTime()
+    const checkDate = startOfDay(date)
+    const isFutureOrToday = isSameDay(checkDate, today) || isAfter(checkDate, today)
     const hasNoOrder = !hasOrderForDate(orders, checkDate)
     return isFutureOrToday && hasNoOrder
   })
 
-  return nextDate ? new Date(nextDate) : null
+  return nextDate ? startOfDay(nextDate) : null
 }
 
-export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardClick }: DailyStatusProps) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+/**
+ * Calculate Replenishment Date based on food streak logic
+ * Golden Rule: Food delivered on Day X covers meals for Day X+1 and Day X+2
+ * 
+ * @param orders - Array of user orders
+ * @param availableDates - Array of available delivery dates
+ * @returns Object with targetDate and lastEatingDay (or null if no food streak)
+ */
+const calculateReplenishmentDate = (
+  orders: Order[],
+  availableDates?: Date[]
+): { targetDate: Date | null; lastEatingDay: Date | null; hasGap: boolean } => {
+  const today = startOfDay(new Date())
+
+  // Step 1: Map all orders to their "Eating Days"
+  // Order with startDate: Day X provides food for Day X+1 and Day X+2
+  const eatingDays = new Set<number>()
+
+  orders.forEach((order) => {
+    const deliveryDate = startOfDay(new Date(order.startDate))
+    const day1 = startOfDay(addDays(deliveryDate, 1))
+    const day2 = startOfDay(addDays(deliveryDate, 2))
+
+    // Only consider future or today dates
+    if (isSameDay(day1, today) || isAfter(day1, today)) {
+      eatingDays.add(day1.getTime())
+    }
+    if (isSameDay(day2, today) || isAfter(day2, today)) {
+      eatingDays.add(day2.getTime())
+    }
+  })
+
+  if (eatingDays.size === 0) {
+    // Scenario B: No food / Gap
+    const nearestDate = availableDates
+      ? availableDates
+          .map((d) => startOfDay(d))
+          .find((date) => isSameDay(date, today) || isAfter(date, today))
+      : null
+    return {
+      targetDate: nearestDate,
+      lastEatingDay: null,
+      hasGap: true,
+    }
+  }
+
+  // Step 2: Find the continuous streak starting from today
+  const sortedEatingDays = Array.from(eatingDays)
+    .map((time) => new Date(time))
+    .sort((a, b) => a.getTime() - b.getTime())
+
+  // Check if today is in the streak
+  const todayInStreak = sortedEatingDays.some((date) => isSameDay(date, today))
+  if (!todayInStreak) {
+    // Gap detected - no food today
+    const nearestDate = availableDates
+      ? availableDates
+          .map((d) => startOfDay(d))
+          .find((date) => isSameDay(date, today) || isAfter(date, today))
+      : null
+    return {
+      targetDate: nearestDate,
+      lastEatingDay: null,
+      hasGap: true,
+    }
+  }
+
+  // Step 3: Find the last consecutive eating day starting from today
+  let lastEatingDay: Date | null = null
+  let expectedNextDay = today
+
+  for (const eatingDay of sortedEatingDays) {
+    // Check if this eating day is part of the continuous streak
+    if (isSameDay(eatingDay, expectedNextDay)) {
+      lastEatingDay = eatingDay
+      expectedNextDay = addDays(eatingDay, 1) // Next day in streak should be tomorrow
+    } else if (isAfter(eatingDay, expectedNextDay)) {
+      // Gap found in streak - we expected a day but got a later one
+      break
+    }
+    // If eatingDay is before expectedNextDay, skip it (shouldn't happen with sorted array)
+  }
+
+  if (!lastEatingDay) {
+    // Should not happen, but fallback
+    const nearestDate = availableDates
+      ? availableDates
+          .map((d) => startOfDay(d))
+          .find((date) => isSameDay(date, today) || isAfter(date, today))
+      : null
+    return {
+      targetDate: nearestDate,
+      lastEatingDay: null,
+      hasGap: true,
+    }
+  }
+
+  // Step 4: Determine Target Delivery Date
+  // Scenario A: TargetDate = LastEatingDay (delivery must be on the same day as last eating day)
+  let targetDate = startOfDay(lastEatingDay)
+
+  // Validate against availableDates
+  if (availableDates && availableDates.length > 0) {
+    const normalizedAvailableDates = availableDates.map((d) => startOfDay(d))
+    const isTargetAvailable = normalizedAvailableDates.some((date) => isSameDay(date, targetDate))
+
+    if (!isTargetAvailable) {
+      // Target date is not available (holiday/Saturday), find next possible date
+      const nextAvailable = normalizedAvailableDates.find(
+        (date) => isSameDay(date, targetDate) || isAfter(date, targetDate)
+      )
+      if (nextAvailable) {
+        targetDate = nextAvailable
+      } else {
+        // No available date after target, use nearest from today
+        const nearestDate = normalizedAvailableDates.find(
+          (date) => isSameDay(date, today) || isAfter(date, today)
+        )
+        if (nearestDate) {
+          targetDate = nearestDate
+        }
+      }
+    }
+  }
+
+  return {
+    targetDate,
+    lastEatingDay,
+    hasGap: false,
+  }
+}
+
+export function DailyStatus({
+  orders,
+  availableDates,
+  onOrderClick,
+  onFoodCardClick,
+  isAuthenticated = false,
+}: DailyStatusProps) {
+  const today = startOfDay(new Date())
 
   // Check if today is a delivery day (order start date)
   const hasDeliveryToday = orders.some((order) => {
-    const deliveryDate = new Date(order.startDate)
-    deliveryDate.setHours(0, 0, 0, 0)
-    return deliveryDate.getTime() === today.getTime()
+    const deliveryDate = startOfDay(new Date(order.startDate))
+    return isSameDay(deliveryDate, today)
   })
 
   // Check if today has food (day1 or day2 after delivery)
   const hasFoodToday = orders.some((order) => {
-    const deliveryDate = new Date(order.startDate)
-    deliveryDate.setHours(0, 0, 0, 0)
-
-    const day1 = new Date(deliveryDate)
-    day1.setDate(day1.getDate() + 1)
-
-    const day2 = new Date(deliveryDate)
-    day2.setDate(day2.getDate() + 2)
-
-    return today.getTime() === day1.getTime() || today.getTime() === day2.getTime()
+    const deliveryDate = startOfDay(new Date(order.startDate))
+    const day1 = startOfDay(addDays(deliveryDate, 1))
+    const day2 = startOfDay(addDays(deliveryDate, 2))
+    return isSameDay(day1, today) || isSameDay(day2, today)
   })
 
   // Determine status
@@ -149,27 +304,94 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
     )
   }
 
-  // Empty day - Smart timeline version
-  // Check if there are any orders
+  // Empty day logic - Different for authenticated vs guest users
+  if (isAuthenticated) {
+    // AUTHENTICATED USER LOGIC: Replenishment Logic
+    const { targetDate, lastEatingDay, hasGap } = calculateReplenishmentDate(orders, availableDates)
+
+    if (lastEatingDay && !hasGap) {
+      // State: Food Streak Active
+      // User has food and it will end on lastEatingDay
+      return (
+        <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000000] p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal shrink-0">
+                <CalendarCheck className="w-5 h-5 sm:w-6 sm:h-6 text-[#9D00FF] stroke-[2.5px]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
+                  ВАШ ЗАПАС ЕДЫ ЗАКАНЧИВАЕТСЯ {formatDateWithDayOfWeek(lastEatingDay)}.
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">
+                  Оформите доставку на этот день, чтобы обеспечить питание на следующие 2 дня.
+                </p>
+              </div>
+            </div>
+            {onOrderClick && targetDate && (
+              <Button
+                onClick={() => {
+                  onOrderClick(targetDate)
+                }}
+                className="bg-[#FFEA00] text-black hover:bg-[#FFEA00]/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
+              >
+                СДЕЛАТЬ ЗАКАЗ
+              </Button>
+            )}
+          </div>
+        </div>
+      )
+    } else {
+      // State: No Food / Empty
+      const nearestDate = targetDate || findNextAvailableDate(availableDates, orders)
+      return (
+        <div className="bg-gray-100 rounded-xl border-2 border-dashed border-black shadow-brutal p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal shrink-0">
+                <CalendarClock className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5px]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
+                  ВАШ ХОЛОДИЛЬНИК ПУСТ.
+                </h3>
+                {nearestDate && (
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                    Ближайшая доставка: {formatDateWithDayOfWeek(nearestDate)}
+                  </p>
+                )}
+              </div>
+            </div>
+            {onOrderClick && nearestDate && (
+              <Button
+                onClick={() => {
+                  onOrderClick(nearestDate)
+                }}
+                className="bg-black text-white hover:bg-black/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
+              >
+                ЗАКАЗАТЬ НА {formatShortDateWithDayOfWeek(nearestDate)}
+              </Button>
+            )}
+          </div>
+        </div>
+      )
+    }
+  }
+
+  // GUEST USER LOGIC: Original logic (backward compatible)
   const hasAnyOrders = orders.length > 0
 
   // If there are orders, find the last day when food will be available (deliveryDate + 2 days)
   let lastFoodDate: Date | null = null
   if (hasAnyOrders) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
     orders.forEach((order) => {
-      const deliveryDate = new Date(order.startDate)
-      deliveryDate.setHours(0, 0, 0, 0)
-
+      const deliveryDate = startOfDay(new Date(order.startDate))
       // Food lasts for 2 days after delivery (day 0 = delivery, day 1 and day 2 = food days)
-      const foodEndDate = new Date(deliveryDate)
-      foodEndDate.setDate(foodEndDate.getDate() + 2)
+      const foodEndDate = startOfDay(addDays(deliveryDate, 2))
 
       // Only consider future dates
-      if (foodEndDate.getTime() >= today.getTime()) {
-        if (!lastFoodDate || foodEndDate.getTime() > lastFoodDate.getTime()) {
+      if (isSameDay(foodEndDate, today) || isAfter(foodEndDate, today)) {
+        if (!lastFoodDate || isAfter(foodEndDate, lastFoodDate)) {
           lastFoodDate = foodEndDate
         }
       }
@@ -178,7 +400,6 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
 
   // Find next available date for ordering
   const nextAvailableDate = findNextAvailableDate(availableDates, orders)
-  const hasNextDate = nextAvailableDate !== null
 
   // Determine what to show
   if (hasAnyOrders && lastFoodDate) {
@@ -203,15 +424,12 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
                   onOrderClick(nextAvailableDate)
                 } else {
                   // If no available date, try to find any date from availableDates
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
                   const anyDate = availableDates?.find((date) => {
-                    const checkDate = new Date(date)
-                    checkDate.setHours(0, 0, 0, 0)
-                    return checkDate.getTime() >= today.getTime()
+                    const checkDate = startOfDay(date)
+                    return isSameDay(checkDate, today) || isAfter(checkDate, today)
                   })
                   if (anyDate) {
-                    onOrderClick(anyDate)
+                    onOrderClick(startOfDay(anyDate))
                   }
                 }
               }}
@@ -246,15 +464,12 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
                 onOrderClick(nextAvailableDate)
               } else {
                 // If no available date, try to find any date from availableDates
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
                 const anyDate = availableDates?.find((date) => {
-                  const checkDate = new Date(date)
-                  checkDate.setHours(0, 0, 0, 0)
-                  return checkDate.getTime() >= today.getTime()
+                  const checkDate = startOfDay(date)
+                  return isSameDay(checkDate, today) || isAfter(checkDate, today)
                 })
                 if (anyDate) {
-                  onOrderClick(anyDate)
+                  onOrderClick(startOfDay(anyDate))
                 }
               }
             }}

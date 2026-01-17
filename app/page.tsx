@@ -3780,6 +3780,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               <DailyStatus
                 orders={orders}
                 availableDates={availableDates}
+                isAuthenticated={isAuthenticated}
                 onOrderClick={(date: Date) => {
                   // Component passes the pre-calculated next available date
                   handleDateClick(date)
@@ -3824,18 +3825,6 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
 
             {/* Calendar */}
             <div id="calendar-section" className="mb-8 relative">
-              {/* 🎯 UX УЛУЧШЕНИЕ: Анимированный указатель для гостей */}
-              {!isAuthenticated && !selectedDate && (
-                <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                  <div className="bg-[#FFEA00] border-2 border-black px-4 py-2 rounded-lg shadow-brutal animate-bounce">
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-5 w-5" />
-                      <span className="font-black text-sm whitespace-nowrap">Выберите дату здесь ↓</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
               <Calendar
                 orders={orders}
                 selectedDate={selectedDate}
