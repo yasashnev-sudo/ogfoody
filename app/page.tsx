@@ -1883,10 +1883,13 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
    * 5. Показывает Toast если были недоступные товары
    * 6. Автоматически открывает OrderModal с заказом
    */
+  /**
+   * УПРОЩЕННАЯ ЛОГИКА ПОВТОРА ЗАКАЗА (2026-01-17)
+   * Просто копируем товары по их id в новый заказ
+   */
   const handleRepeatOrder = async (order: Order, targetDate: Date) => {
     try {
-      // ✅ ИСПРАВЛЕНО 2026-01-13: Проверяем, нет ли уже заказа на эту дату
-      // ✅ ИСПРАВЛЕНО 2026-01-13: Нормализуем даты к локальному времени (как в календаре)
+      // 1. Проверяем, нет ли уже заказа на эту дату
       const targetDateNormalized = new Date(targetDate)
       targetDateNormalized.setHours(0, 0, 0, 0)
       const targetDateTimestamp = targetDateNormalized.getTime()
@@ -1894,17 +1897,14 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       const existingOrderOnDate = orders.find((o) => {
         if (!o.id) return false // Черновики не учитываем
         const orderStatus = o.orderStatus || 'pending'
-        if (orderStatus === 'cancelled') return false // Отмененные заказы не учитываем
+        if (orderStatus === 'cancelled') return false
         
-        // ✅ ИСПРАВЛЕНО 2026-01-13: Нормализуем дату заказа к локальному времени (как в календаре)
         const oDate = new Date(o.startDate)
         oDate.setHours(0, 0, 0, 0)
-        const oDateTimestamp = oDate.getTime()
-        return oDateTimestamp === targetDateTimestamp
+        return oDate.getTime() === targetDateTimestamp
       })
       
       if (existingOrderOnDate) {
-        console.warn(`⚠️ [Repeat Order] На дату ${targetDateNormalized.toISOString().split('T')[0]} уже есть заказ (ID: ${existingOrderOnDate.id})`)
         setWarningDialog({
           open: true,
           title: "Заказ уже существует",
@@ -1914,128 +1914,163 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         return
       }
       
-      // ✅ Получаем неделю для целевой даты
+      // 2. Загружаем актуальное меню
       const weekType = getWeekTypeForDate(targetDate)
-      
-      console.log('🔄 [Repeat Order] Начало повтора заказа:', {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        targetDate: targetDate.toISOString(),
-        weekType,
-      })
-
-      // ✅ Загружаем актуальное меню из API
       const response = await fetch(`/api/menu?week=${weekType}`)
       if (!response.ok) {
         throw new Error('Не удалось загрузить меню')
       }
-
       const menuData = await response.json()
-      console.log('📋 [Repeat Order] Меню загружено:', {
-        hasBreakfast: menuData.meals?.breakfast?.length > 0,
-        hasLunchSalad: menuData.meals?.lunch_salad?.length > 0,
-        hasExtras: menuData.extras ? Object.keys(menuData.extras).length : 0,
-      })
-
-      // ✅ Валидируем товары заказа по актуальному меню
-      const { validateOrderItems } = await import('@/lib/cart-utils')
-      const { validatedOrder, unavailableItems, hasUnavailableItems } = validateOrderItems(
-        order,
-        menuData.meals || {},
-        menuData.extras || {}
-      )
-
-      console.log('✅ [Repeat Order] Валидация завершена:', {
-        unavailableCount: unavailableItems.length,
-        unavailableItems,
-      })
-
-      // ✅ Сохраняем информацию о недоступных товарах для показа в модалке
-      // Предупреждение будет показано ВНУТРИ модалки после открытия, чтобы не закрывать её
-      setDraftOrderUnavailableItems(hasUnavailableItems ? unavailableItems : [])
-
-      // ✅ Создаем новый заказ с актуальными товарами и ценами
-      // ✅ КРИТИЧНО: Сначала очищаем все поля оплаты из validatedOrder, чтобы гарантировать чистый заказ
-      const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanValidatedOrder } = validatedOrder
       
+      // 3. Создаем карту всех товаров по id для быстрого поиска
+      const allMeals: Meal[] = []
+      if (menuData.meals) {
+        Object.values(menuData.meals).forEach((categoryMeals: any) => {
+          if (Array.isArray(categoryMeals)) {
+            allMeals.push(...categoryMeals)
+          }
+        })
+      }
+      
+      const allExtras: Extra[] = []
+      if (menuData.extras) {
+        Object.values(menuData.extras).forEach((categoryExtras: any) => {
+          if (Array.isArray(categoryExtras)) {
+            allExtras.push(...categoryExtras)
+          }
+        })
+      }
+      
+      const mealMap = new Map<number, Meal>(allMeals.map(m => [m.id, m]))
+      const extraMap = new Map<number, Extra>(allExtras.map(e => [e.id, e]))
+      
+      // 4. Копируем товары из старого заказа, находя их по id
+      const unavailableItems: string[] = []
+      
+      // Копируем persons (персоны с их блюдами)
+      const newPersons: Person[] = order.persons.map((person, personIndex) => {
+        const copyPerson = (day: 'day1' | 'day2') => {
+          const dayMeals = person[day]
+          
+          // Вспомогательная функция для копирования блюда с гарниром
+          const copyMeal = (meal: Meal | null) => {
+            if (!meal?.id) return null
+            const foundMeal = mealMap.get(meal.id)
+            if (!foundMeal) {
+              unavailableItems.push(`${meal.name} (${day})`)
+              return null
+            }
+            
+            // Копируем гарнир, если он есть
+            let garnish = null
+            if (meal.garnish?.id) {
+              const foundGarnish = mealMap.get(meal.garnish.id)
+              if (foundGarnish) {
+                garnish = {
+                  ...foundGarnish,
+                  portion: meal.garnish.portion || 'single',
+                }
+              }
+            }
+            
+            return {
+              ...foundMeal,
+              portion: meal.portion || 'single',
+              garnish,
+            }
+          }
+          
+          // Завтрак
+          const breakfast = copyMeal(dayMeals.breakfast?.dish)
+          
+          // Обед
+          const lunch = dayMeals.lunch
+          const lunchSalad = copyMeal(lunch?.salad)
+          const lunchSoup = copyMeal(lunch?.soup)
+          const lunchMain = copyMeal(lunch?.main)
+          
+          // Ужин
+          const dinner = dayMeals.dinner
+          const dinnerSalad = copyMeal(dinner?.salad)
+          const dinnerSoup = copyMeal(dinner?.soup)
+          const dinnerMain = copyMeal(dinner?.main)
+          
+          return {
+            breakfast: {
+              dish: breakfast,
+            },
+            lunch: {
+              salad: lunchSalad,
+              soup: lunchSoup,
+              main: lunchMain,
+            },
+            dinner: {
+              salad: dinnerSalad,
+              soup: dinnerSoup,
+              main: dinnerMain,
+            },
+          }
+        }
+        
+        return {
+          id: person.id,
+          day1: copyPerson('day1'),
+          day2: copyPerson('day2'),
+        }
+      })
+      
+      // Копируем extras
+      const newExtras: Extra[] = []
+      if (order.extras) {
+        order.extras.forEach(extra => {
+          const foundExtra = extra.id ? extraMap.get(extra.id) : null
+          if (foundExtra) {
+            newExtras.push({
+              ...foundExtra,
+              quantity: extra.quantity || 1,
+            })
+          } else {
+            unavailableItems.push(extra.name || `Extra #${extra.id}`)
+          }
+        })
+      }
+      
+      // 5. Сохраняем информацию о недоступных товарах
+      setDraftOrderUnavailableItems(unavailableItems)
+      
+      // 6. Создаем новый заказ с нуля (только товары)
       const newOrder: Order = {
-        ...cleanValidatedOrder,
-        // Важно: очищаем поля старого заказа
         id: undefined,
         orderNumber: undefined,
         startDate: targetDate,
-        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем все поля, связанные с оплатой
-        // Явно устанавливаем значения, чтобы гарантировать, что они не копируются из старого заказа
+        persons: newPersons,
+        deliveryTime: order.deliveryTime || "",
+        extras: newExtras,
+        // Все поля оплаты - пустые
         paid: false,
         paidAt: undefined,
         paymentMethod: undefined,
-        paymentStatus: undefined, // ✅ КРИТИЧНО: Очищаем статус оплаты
-        paymentId: undefined, // ✅ КРИТИЧНО: Очищаем ID платежа
+        paymentStatus: undefined,
+        paymentId: undefined,
         orderStatus: 'pending',
-        // Цены будут пересчитаны автоматически в OrderModal
+        // Цены будут пересчитаны в OrderModal
         total: undefined,
         subtotal: undefined,
         deliveryFee: undefined,
         loyaltyPointsEarned: 0,
         loyaltyPointsUsed: 0,
-        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем промокод и скидку при повторе заказа
-        // Пользователь может применить новый промокод или не применять его вообще
+        // Промокод - пустой
         promoCode: undefined,
         promoDiscount: undefined,
       }
       
-      // ✅ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Логируем, чтобы убедиться, что поля оплаты очищены
-      console.log('🔍 [Repeat Order] Проверка очистки полей оплаты:', {
-        paid: newOrder.paid,
-        paymentStatus: newOrder.paymentStatus,
-        paymentId: newOrder.paymentId,
-        paymentMethod: newOrder.paymentMethod,
-        paidAt: newOrder.paidAt,
-        orderStatus: newOrder.orderStatus,
-      })
-
-      // ✅ ИСПРАВЛЕНО 2026-01-13: НЕ добавляем заказ в state сразу
-      // Заказ будет добавлен только после нажатия "Сохранить" в OrderModal через handleSaveOrder
-      console.log('📝 [Repeat Order] Черновик заказа создан (не сохранен в state)')
-      console.log('🎯 [Repeat Order] Открываем OrderModal для даты:', targetDate.toISOString())
-      console.log('🔍 [Repeat Order] Детали черновика:', {
-        draftDate: newOrder.startDate,
-        draftId: newOrder.id,
-        draftOrderNumber: newOrder.orderNumber,
-        targetDate: targetDate.toISOString(),
-        targetDateTimestamp: getDateTimestamp(targetDate),
-        draftDateTimestamp: getDateTimestamp(newOrder.startDate),
-        existingOrdersOnDate: orders.filter((o) => {
-          if (!o.id) return false
-          const orderStatus = o.orderStatus || 'pending'
-          if (orderStatus === 'cancelled') return false
-          const oDate = new Date(o.startDate)
-          oDate.setHours(0, 0, 0, 0)
-          const targetDateNormalized = new Date(targetDate)
-          targetDateNormalized.setHours(0, 0, 0, 0)
-          return oDate.getTime() === targetDateNormalized.getTime()
-        }).map(o => ({
-          id: o.id,
-          date: o.startDate,
-          status: o.orderStatus,
-        })),
+      console.log('✅ [Repeat Order] Новый заказ создан:', {
+        personsCount: newPersons.length,
+        extrasCount: newExtras.length,
+        unavailableCount: unavailableItems.length,
       })
       
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлено логирование перед открытием модалки
-      console.log('🎯 [Repeat Order] Открываем OrderModal:', {
-        targetDate: targetDate.toISOString(),
-        targetDateTimestamp: getDateTimestamp(targetDate),
-        draftOrderDate: newOrder.startDate,
-        draftOrderDateTimestamp: getDateTimestamp(newOrder.startDate),
-        draftOrderId: newOrder.id,
-        draftOrderNumber: newOrder.orderNumber,
-      })
-      
-      // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
-      // useMemo в existingOrder пересчитается только после установки обоих значений
-      // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем flushSync для синхронного обновления
-      // Это гарантирует, что draftOrder установлен до того, как useMemo пересчитается
+      // 7. Открываем модалку с новым заказом
       const { flushSync } = await import('react-dom')
       flushSync(() => {
         setDraftOrder(newOrder)
@@ -2045,7 +2080,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       })
 
     } catch (error) {
-      console.error('❌ [Repeat Order] Ошибка при повторе заказа:', error)
+      console.error('❌ [Repeat Order] Ошибка:', error)
       showWarning(
         'Ошибка',
         'Не удалось повторить заказ. Попробуйте позже.',
