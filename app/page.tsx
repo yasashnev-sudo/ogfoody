@@ -3781,6 +3781,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                 orders={orders}
                 availableDates={availableDates}
                 isAuthenticated={isAuthenticated}
+                onRequestAuth={() => setShowAuthModal(true)}
                 onOrderClick={(date: Date) => {
                   // Component passes the pre-calculated next available date
                   handleDateClick(date)

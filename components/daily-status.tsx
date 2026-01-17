@@ -1,6 +1,6 @@
 "use client"
 
-import { Truck, UtensilsCrossed, CalendarClock, Hourglass, CalendarCheck } from "lucide-react"
+import { Truck, UtensilsCrossed, CalendarClock, Hourglass, CalendarCheck, UserPlus, LogIn, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Order } from "@/lib/types"
 import { addDays, startOfDay, isSameDay, isAfter, isBefore, format } from "date-fns"
@@ -12,6 +12,7 @@ interface DailyStatusProps {
   onOrderClick?: (date: Date) => void // Now accepts the selected date
   onFoodCardClick?: () => void
   isAuthenticated?: boolean // Flag to determine if user is authenticated
+  onRequestAuth?: () => void // Callback to open auth modal (registration/login)
 }
 
 // Helper: Format day of week in Russian (nominative case, uppercase)
@@ -253,6 +254,7 @@ export function DailyStatus({
   onOrderClick,
   onFoodCardClick,
   isAuthenticated = false,
+  onRequestAuth,
 }: DailyStatusProps) {
   const today = startOfDay(new Date())
 
@@ -378,106 +380,44 @@ export function DailyStatus({
     }
   }
 
-  // GUEST USER LOGIC: Original logic (backward compatible)
-  const hasAnyOrders = orders.length > 0
-
-  // If there are orders, find the last day when food will be available (deliveryDate + 2 days)
-  let lastFoodDate: Date | null = null
-  if (hasAnyOrders) {
-    orders.forEach((order) => {
-      const deliveryDate = startOfDay(new Date(order.startDate))
-      // Food lasts for 2 days after delivery (day 0 = delivery, day 1 and day 2 = food days)
-      const foodEndDate = startOfDay(addDays(deliveryDate, 2))
-
-      // Only consider future dates
-      if (isSameDay(foodEndDate, today) || isAfter(foodEndDate, today)) {
-        if (!lastFoodDate || isAfter(foodEndDate, lastFoodDate)) {
-          lastFoodDate = foodEndDate
-        }
-      }
-    })
-  }
-
-  // Find next available date for ordering
-  const nextAvailableDate = findNextAvailableDate(availableDates, orders)
-
-  // Determine what to show
-  if (hasAnyOrders && lastFoodDate) {
-    // Case: Has orders, show when food will end
-    return (
-      <div className="bg-gray-100 rounded-xl border-2 border-dashed border-black shadow-brutal p-4 sm:p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-          <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal shrink-0">
-              <CalendarClock className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5px]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
-                {formatDateGenitive(lastFoodDate).toUpperCase()} У ВАС ЗАКОНЧИТСЯ ЕДА!
-              </h3>
-            </div>
-          </div>
-          {onOrderClick && (
-            <Button
-              onClick={() => {
-                if (nextAvailableDate) {
-                  onOrderClick(nextAvailableDate)
-                } else {
-                  // If no available date, try to find any date from availableDates
-                  const anyDate = availableDates?.find((date) => {
-                    const checkDate = startOfDay(date)
-                    return isSameDay(checkDate, today) || isAfter(checkDate, today)
-                  })
-                  if (anyDate) {
-                    onOrderClick(startOfDay(anyDate))
-                  }
-                }
-              }}
-              className="bg-black text-white hover:bg-black/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
-            >
-              ЗАКАЗАТЬ!
-            </Button>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // Case: No orders, show "no food" message
+  // GUEST USER LOGIC: Registration/Login block
   return (
-    <div className="bg-gray-100 rounded-xl border-2 border-dashed border-black shadow-brutal p-4 sm:p-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+    <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000000] p-4 sm:p-5">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal shrink-0">
-            <CalendarClock className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5px]" />
+            <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-[#9D00FF] stroke-[2.5px]" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
-              У ВАС ПОКА ЧТО НЕТ ЕДЫ!
+            <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-2">
+              ЗАРЕГИСТРИРУЙТЕСЬ И ПОЛУЧИТЕ ПРИВЕТСТВЕННЫЙ БОНУС 500 РУБЛЕЙ!
             </h3>
+            <p className="text-xs sm:text-sm text-gray-600 font-medium">
+              Создайте аккаунт и получите бонусные баллы на первый заказ
+            </p>
           </div>
         </div>
-        {onOrderClick && (
-          <Button
-            onClick={() => {
-              if (nextAvailableDate) {
-                onOrderClick(nextAvailableDate)
-              } else {
-                // If no available date, try to find any date from availableDates
-                const anyDate = availableDates?.find((date) => {
-                  const checkDate = startOfDay(date)
-                  return isSameDay(checkDate, today) || isAfter(checkDate, today)
-                })
-                if (anyDate) {
-                  onOrderClick(startOfDay(anyDate))
-                }
-              }
-            }}
-            className="bg-black text-white hover:bg-black/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
-          >
-            ЗАКАЗАТЬ НА БЛИЖАЙШУЮ ДАТУ!
-          </Button>
-        )}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          {onRequestAuth && (
+            <>
+              <Button
+                onClick={onRequestAuth}
+                className="bg-[#FFEA00] text-black hover:bg-[#FFEA00]/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-4 sm:px-6 py-2.5 h-auto flex-1 sm:flex-none flex items-center justify-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                ЗАРЕГИСТРИРОВАТЬСЯ
+              </Button>
+              <Button
+                onClick={onRequestAuth}
+                variant="outline"
+                className="bg-white text-black hover:bg-gray-50 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-4 sm:px-6 py-2.5 h-auto flex-1 sm:flex-none flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                ВОЙТИ
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
