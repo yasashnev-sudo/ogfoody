@@ -644,8 +644,23 @@ export function OrderModal({
   const isToday = orderDate.getTime() === today.getTime()
   const isViewOnly = isPastDate || isToday
 
+  // ✅ ИСПРАВЛЕНО 2026-01-17: Черновики (без id) НИКОГДА не считаются оплаченными
   // Блокируем редактирование для ВСЕХ оплаченных заказов, независимо от способа оплаты
-  const isPaid = existingOrder?.paid === true || existingOrder?.paymentStatus === "paid"
+  // Но черновики (заказы без id) всегда считаются неоплаченными
+  const isDraft = existingOrder && !existingOrder.id
+  const isPaid = !isDraft && (existingOrder?.paid === true || existingOrder?.paymentStatus === "paid")
+  
+  // ✅ ДОБАВЛЕНО 2026-01-17: Логирование для отладки
+  if (existingOrder) {
+    console.log('🔍 [OrderModal] Проверка оплаты:', {
+      isDraft,
+      existingOrderId: existingOrder.id,
+      existingOrderPaid: existingOrder.paid,
+      existingOrderPaymentStatus: existingOrder.paymentStatus,
+      isPaid,
+      canEditContent: !isViewOnly && !isPaid,
+    })
+  }
   const isPaidWithCard = isPaid && existingOrder?.paymentMethod !== "cash"
   
   // ✅ ИСПРАВЛЕНО 2026-01-13: Разделяем право редактировать состав и право оплатить

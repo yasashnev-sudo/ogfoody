@@ -3538,18 +3538,62 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   }
 
   // ✅ ИСПРАВЛЕНО 2026-01-13: Приоритет черновику над существующим заказом
+  // ✅ ИСПРАВЛЕНО 2026-01-17: Добавлено детальное логирование для отладки проблемы с оплаченными заказами
   const existingOrder = selectedDate
-    ? (draftOrder && getDateTimestamp(draftOrder.startDate) === getDateTimestamp(selectedDate)
-        ? draftOrder // Черновик имеет приоритет
-        : orders.find((o) => {
-            const orderStartDate = new Date(o.startDate)
-            orderStartDate.setHours(0, 0, 0, 0)
+    ? (() => {
+        // ✅ КРИТИЧНО: Проверяем, есть ли черновик для этой даты
+        const draftDateTimestamp = draftOrder ? getDateTimestamp(draftOrder.startDate) : null
+        const selectedDateTimestamp = getDateTimestamp(selectedDate)
+        const hasDraftForDate = draftOrder && draftDateTimestamp === selectedDateTimestamp
+        
+        if (hasDraftForDate) {
+          console.log('✅ [existingOrder] Используем черновик:', {
+            draftId: draftOrder.id,
+            draftDate: draftOrder.startDate,
+            draftDateTimestamp,
+            selectedDateTimestamp,
+            draftPaid: draftOrder.paid,
+            draftPaymentStatus: draftOrder.paymentStatus,
+            draftOrderStatus: draftOrder.orderStatus,
+          })
+          return draftOrder // Черновик имеет приоритет
+        }
+        
+        // ✅ Ищем существующий заказ в orders
+        const foundOrder = orders.find((o) => {
+          const orderStartDate = new Date(o.startDate)
+          orderStartDate.setHours(0, 0, 0, 0)
 
-            const checkDate = new Date(selectedDate)
-            checkDate.setHours(0, 0, 0, 0)
+          const checkDate = new Date(selectedDate)
+          checkDate.setHours(0, 0, 0, 0)
 
-            return orderStartDate.getTime() === checkDate.getTime()
-          }))
+          return orderStartDate.getTime() === checkDate.getTime()
+        })
+        
+        if (foundOrder) {
+          console.log('⚠️ [existingOrder] Найден существующий заказ (не черновик):', {
+            orderId: foundOrder.id,
+            orderDate: foundOrder.startDate,
+            orderPaid: foundOrder.paid,
+            orderPaymentStatus: foundOrder.paymentStatus,
+            orderStatus: foundOrder.orderStatus,
+            draftOrderExists: !!draftOrder,
+            draftOrderDate: draftOrder?.startDate,
+            draftDateTimestamp,
+            selectedDateTimestamp,
+          })
+        } else {
+          console.log('ℹ️ [existingOrder] Заказ не найден, будет создан новый:', {
+            selectedDate: selectedDate.toISOString(),
+            selectedDateTimestamp,
+            draftOrderExists: !!draftOrder,
+            draftOrderDate: draftOrder?.startDate,
+            draftDateTimestamp,
+          })
+        }
+        
+        return foundOrder
+      })()
     : undefined
 
   const availableDates = getAvailableDates()
