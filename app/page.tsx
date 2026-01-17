@@ -1955,16 +1955,22 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       setDraftOrderUnavailableItems(hasUnavailableItems ? unavailableItems : [])
 
       // ✅ Создаем новый заказ с актуальными товарами и ценами
+      // ✅ КРИТИЧНО: Сначала очищаем все поля оплаты из validatedOrder, чтобы гарантировать чистый заказ
+      const { paid: _, paidAt: __, paymentMethod: ___, paymentStatus: ____, paymentId: _____, ...cleanValidatedOrder } = validatedOrder
+      
       const newOrder: Order = {
-        ...validatedOrder,
+        ...cleanValidatedOrder,
         // Важно: очищаем поля старого заказа
         id: undefined,
         orderNumber: undefined,
         startDate: targetDate,
-        delivered: false,
+        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем все поля, связанные с оплатой
+        // Явно устанавливаем значения, чтобы гарантировать, что они не копируются из старого заказа
         paid: false,
         paidAt: undefined,
         paymentMethod: undefined,
+        paymentStatus: undefined, // ✅ КРИТИЧНО: Очищаем статус оплаты
+        paymentId: undefined, // ✅ КРИТИЧНО: Очищаем ID платежа
         orderStatus: 'pending',
         // Цены будут пересчитаны автоматически в OrderModal
         total: undefined,
@@ -1972,18 +1978,71 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         deliveryFee: undefined,
         loyaltyPointsEarned: 0,
         loyaltyPointsUsed: 0,
+        // ✅ ИСПРАВЛЕНО 2026-01-16: Очищаем промокод и скидку при повторе заказа
+        // Пользователь может применить новый промокод или не применять его вообще
+        promoCode: undefined,
+        promoDiscount: undefined,
       }
+      
+      // ✅ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Логируем, чтобы убедиться, что поля оплаты очищены
+      console.log('🔍 [Repeat Order] Проверка очистки полей оплаты:', {
+        paid: newOrder.paid,
+        paymentStatus: newOrder.paymentStatus,
+        paymentId: newOrder.paymentId,
+        paymentMethod: newOrder.paymentMethod,
+        paidAt: newOrder.paidAt,
+        orderStatus: newOrder.orderStatus,
+      })
 
       // ✅ ИСПРАВЛЕНО 2026-01-13: НЕ добавляем заказ в state сразу
       // Заказ будет добавлен только после нажатия "Сохранить" в OrderModal через handleSaveOrder
       console.log('📝 [Repeat Order] Черновик заказа создан (не сохранен в state)')
       console.log('🎯 [Repeat Order] Открываем OrderModal для даты:', targetDate.toISOString())
+      console.log('🔍 [Repeat Order] Детали черновика:', {
+        draftDate: newOrder.startDate,
+        draftId: newOrder.id,
+        draftOrderNumber: newOrder.orderNumber,
+        targetDate: targetDate.toISOString(),
+        targetDateTimestamp: getDateTimestamp(targetDate),
+        draftDateTimestamp: getDateTimestamp(newOrder.startDate),
+        existingOrdersOnDate: orders.filter((o) => {
+          if (!o.id) return false
+          const orderStatus = o.orderStatus || 'pending'
+          if (orderStatus === 'cancelled') return false
+          const oDate = new Date(o.startDate)
+          oDate.setHours(0, 0, 0, 0)
+          const targetDateNormalized = new Date(targetDate)
+          targetDateNormalized.setHours(0, 0, 0, 0)
+          return oDate.getTime() === targetDateNormalized.getTime()
+        }).map(o => ({
+          id: o.id,
+          date: o.startDate,
+          status: o.orderStatus,
+        })),
+      })
       
-      // Сохраняем черновик во временный state
-      setDraftOrder(newOrder)
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Добавлено логирование перед открытием модалки
+      console.log('🎯 [Repeat Order] Открываем OrderModal:', {
+        targetDate: targetDate.toISOString(),
+        targetDateTimestamp: getDateTimestamp(targetDate),
+        draftOrderDate: newOrder.startDate,
+        draftOrderDateTimestamp: getDateTimestamp(newOrder.startDate),
+        draftOrderId: newOrder.id,
+        draftOrderNumber: newOrder.orderNumber,
+      })
       
-      // Открываем модалку - теперь она получит черновик через useMemo ниже
-      setSelectedDate(targetDate)
+      // ✅ КРИТИЧНО: Устанавливаем draftOrder ПЕРЕД selectedDate
+      // useMemo в existingOrder пересчитается только после установки обоих значений
+      // React батчит обновления, но useMemo гарантирует правильный порядок вычислений
+      // ✅ ИСПРАВЛЕНО 2026-01-16: Используем flushSync для синхронного обновления
+      // Это гарантирует, что draftOrder установлен до того, как useMemo пересчитается
+      const { flushSync } = await import('react-dom')
+      flushSync(() => {
+        setDraftOrder(newOrder)
+      })
+      flushSync(() => {
+        setSelectedDate(targetDate)
+      })
 
     } catch (error) {
       console.error('❌ [Repeat Order] Ошибка при повторе заказа:', error)
