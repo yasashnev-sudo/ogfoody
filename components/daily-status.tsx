@@ -162,41 +162,41 @@ const calculateReplenishmentDate = (
     }
   }
 
-  // Step 2: Find the continuous streak starting from today
+  // Step 2: Find all eating days and sort them
   const sortedEatingDays = Array.from(eatingDays)
     .map((time) => new Date(time))
     .sort((a, b) => a.getTime() - b.getTime())
 
-  // Check if today is in the streak
-  const todayInStreak = sortedEatingDays.some((date) => isSameDay(date, today))
-  if (!todayInStreak) {
-    // Gap detected - no food today
-    const nearestDate = availableDates
-      ? availableDates
-          .map((d) => startOfDay(d))
-          .find((date) => isSameDay(date, today) || isAfter(date, today))
-      : null
-    return {
-      targetDate: nearestDate,
-      lastEatingDay: null,
-      hasGap: true,
-    }
-  }
-
-  // Step 3: Find the last consecutive eating day starting from today
+  // Step 3: Find the last consecutive eating day
+  // Start from the first eating day (could be today or in the future)
   let lastEatingDay: Date | null = null
-  let expectedNextDay = today
+  let currentStreakStart: Date | null = null
+  let currentStreakEnd: Date | null = null
 
-  for (const eatingDay of sortedEatingDays) {
-    // Check if this eating day is part of the continuous streak
-    if (isSameDay(eatingDay, expectedNextDay)) {
+  for (let i = 0; i < sortedEatingDays.length; i++) {
+    const eatingDay = sortedEatingDays[i]
+    
+    if (i === 0) {
+      // Start new streak
+      currentStreakStart = eatingDay
+      currentStreakEnd = eatingDay
       lastEatingDay = eatingDay
-      expectedNextDay = addDays(eatingDay, 1) // Next day in streak should be tomorrow
-    } else if (isAfter(eatingDay, expectedNextDay)) {
-      // Gap found in streak - we expected a day but got a later one
-      break
+    } else {
+      const prevDay = sortedEatingDays[i - 1]
+      const expectedNextDay = addDays(prevDay, 1)
+      
+      // Check if this day continues the streak (is the next day after previous)
+      if (isSameDay(eatingDay, expectedNextDay)) {
+        // Continue streak
+        currentStreakEnd = eatingDay
+        lastEatingDay = eatingDay
+      } else {
+        // Gap found - start new streak
+        currentStreakStart = eatingDay
+        currentStreakEnd = eatingDay
+        lastEatingDay = eatingDay
+      }
     }
-    // If eatingDay is before expectedNextDay, skip it (shouldn't happen with sorted array)
   }
 
   if (!lastEatingDay) {
@@ -311,9 +311,12 @@ export function DailyStatus({
     // AUTHENTICATED USER LOGIC: Replenishment Logic
     const { targetDate, lastEatingDay, hasGap } = calculateReplenishmentDate(orders, availableDates)
 
-    if (lastEatingDay && !hasGap) {
+    // If user has food in the future (even if not today), show when it ends
+    if (lastEatingDay) {
       // State: Food Streak Active
       // User has food and it will end on lastEatingDay
+      // Format: "24 ЯНВАРЯ ЕДА ЗАКОНЧИТСЯ!"
+      const formattedDate = formatDateGenitive(lastEatingDay).toUpperCase()
       return (
         <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_#000000] p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -323,21 +326,19 @@ export function DailyStatus({
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
-                  ВАШ ЗАПАС ЕДЫ ЗАКАНЧИВАЕТСЯ {formatDateWithDayOfWeek(lastEatingDay)}.
+                  {formattedDate} ЕДА ЗАКОНЧИТСЯ!
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">
-                  Оформите доставку на этот день, чтобы обеспечить питание на следующие 2 дня.
-                </p>
               </div>
             </div>
-            {onOrderClick && targetDate && (
+            {onOrderClick && lastEatingDay && (
               <Button
                 onClick={() => {
-                  onOrderClick(targetDate)
+                  // Заказ на последнюю дату, когда есть еда (lastEatingDay)
+                  onOrderClick(lastEatingDay)
                 }}
                 className="bg-[#FFEA00] text-black hover:bg-[#FFEA00]/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
               >
-                СДЕЛАТЬ ЗАКАЗ
+                ЗАКАЗАТЬ ДОСТАВКУ
               </Button>
             )}
           </div>
