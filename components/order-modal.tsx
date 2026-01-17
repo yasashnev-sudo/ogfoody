@@ -1827,8 +1827,9 @@ export function OrderModal({
                         </Button>
                       ) : (
                         <>
-                          {/* Кнопка для нового заказа */}
-                          {!isExistingOrder && (
+                          {/* Кнопка для нового заказа или черновика (без id) */}
+                          {/* ✅ ИСПРАВЛЕНО 2026-01-17: Черновики (без id) показывают кнопку "Продолжить" */}
+                          {(!isExistingOrder || !existingOrder?.id) && (
                             <Button
                               onClick={handlePayAndOrder}
                               disabled={!hasContent || isProcessingPayment}
@@ -1848,8 +1849,8 @@ export function OrderModal({
                             </Button>
                           )}
 
-                          {/* Кнопка "Оплатить заказ" для существующего неоплаченного заказа */}
-                          {/* ✅ ИСПРАВЛЕНО 2026-01-13: Кнопка только для заказов с id (не для черновиков) */}
+                          {/* Кнопка "Оплатить заказ" для существующего неоплаченного заказа (с id) */}
+                          {/* ✅ ИСПРАВЛЕНО 2026-01-17: Кнопка только для заказов с id (не для черновиков) */}
                           {isExistingOrder && existingOrder?.id && !isPaid && existingOrder && (
                             <Button
                               onClick={() => onRequestPayment?.(existingOrder, finalTotal)}
