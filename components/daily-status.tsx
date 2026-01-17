@@ -23,6 +23,25 @@ const formatShortDate = (date: Date): string => {
   return `${date.getDate()} ${months[date.getMonth()]}`
 }
 
+// Helper: Format date in Russian with full month name in genitive case (e.g., "8 января")
+const formatDateGenitive = (date: Date): string => {
+  const months = [
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+  ]
+  return `${date.getDate()} ${months[date.getMonth()]}`
+}
+
 // Helper: Check if there's an order for a specific date
 const hasOrderForDate = (orders: Order[], date: Date): boolean => {
   const checkDate = new Date(date)
@@ -131,9 +150,68 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
   }
 
   // Empty day - Smart timeline version
+  // Check if there are any orders
+  const hasAnyOrders = orders.length > 0
+
+  // If there are orders, find the last day when food will be available (deliveryDate + 2 days)
+  let lastFoodDate: Date | null = null
+  if (hasAnyOrders) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    orders.forEach((order) => {
+      const deliveryDate = new Date(order.startDate)
+      deliveryDate.setHours(0, 0, 0, 0)
+
+      // Food lasts for 2 days after delivery (day 0 = delivery, day 1 and day 2 = food days)
+      const foodEndDate = new Date(deliveryDate)
+      foodEndDate.setDate(foodEndDate.getDate() + 2)
+
+      // Only consider future dates
+      if (foodEndDate.getTime() >= today.getTime()) {
+        if (!lastFoodDate || foodEndDate.getTime() > lastFoodDate.getTime()) {
+          lastFoodDate = foodEndDate
+        }
+      }
+    })
+  }
+
+  // Find next available date for ordering
   const nextAvailableDate = findNextAvailableDate(availableDates, orders)
   const hasNextDate = nextAvailableDate !== null
 
+  // Determine what to show
+  if (hasAnyOrders && lastFoodDate) {
+    // Case: Has orders, show when food will end
+    return (
+      <div className="bg-gray-100 rounded-xl border-2 border-dashed border-black shadow-brutal p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border-2 border-black rounded-lg flex items-center justify-center shadow-brutal shrink-0">
+              <CalendarClock className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5px]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
+                {formatDateGenitive(lastFoodDate).toUpperCase()} У ВАС ЗАКОНЧИТСЯ ЕДА!
+              </h3>
+            </div>
+          </div>
+          {onOrderClick && hasNextDate && (
+            <Button
+              onClick={() => {
+                onOrderClick(nextAvailableDate)
+              }}
+              className="bg-black text-white hover:bg-black/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
+            >
+              ЗАКАЗАТЬ!
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Case: No orders, show "no food" message
   return (
     <div className="bg-gray-100 rounded-xl border-2 border-dashed border-black shadow-brutal p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -142,36 +220,19 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
             <CalendarClock className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5px]" />
           </div>
           <div className="flex-1 min-w-0">
-            {hasNextDate ? (
-              <>
-                <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
-                  СЕГОДНЯ ПУСТО? ЗАПЛАНИРУЙТЕ ДОСТАВКУ НА {getDayOfWeek(nextAvailableDate)}.
-                </h3>
-                <p className="text-xs sm:text-sm text-black/80 font-bold">
-                  Привезем {formatShortDate(nextAvailableDate)} вечером. Еды хватит на 2 дня.
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
-                  СЕГОДНЯ У ВАС В ХОЛОДИЛЬНИКЕ ПУСТО
-                </h3>
-                <p className="text-xs sm:text-sm text-black/80 font-bold">
-                  Нет доступных дат для заказа
-                </p>
-              </>
-            )}
+            <h3 className="text-sm sm:text-base md:text-lg font-black text-black leading-tight mb-1">
+              У ВАС ПОКА ЧТО НЕТ ЕДЫ!
+            </h3>
           </div>
         </div>
         {onOrderClick && hasNextDate && (
           <Button
             onClick={() => {
-              // Pass the Date object directly to the callback
               onOrderClick(nextAvailableDate)
             }}
             className="bg-black text-white hover:bg-black/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
           >
-            ЗАКАЗАТЬ НА {getDayOfWeek(nextAvailableDate)}
+            ЗАКАЗАТЬ НА БЛИЖАЙШУЮ ДАТУ!
           </Button>
         )}
       </div>
