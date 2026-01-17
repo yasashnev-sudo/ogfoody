@@ -267,6 +267,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [draftOrder, setDraftOrder] = useState<Order | null>(null) // ✅ Черновик для повторения заказа
+  const [draftOrderUnavailableItems, setDraftOrderUnavailableItems] = useState<string[]>([]) // ✅ Недоступные товары для черновика
   const [view, setView] = useState<"calendar" | "history">("calendar")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
@@ -1021,6 +1022,7 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         return [...prevOrders, order]
       })
       setDraftOrder(null) // Очищаем черновик
+      setDraftOrderUnavailableItems([]) // ✅ Очищаем недоступные товары
     }
     
     const existingOrder = orders.find((o) => getDateTimestamp(o.startDate) === orderTimestamp)
@@ -1948,14 +1950,9 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         unavailableItems,
       })
 
-      // ⚠️ Если были недоступные товары - показываем предупреждение
-      if (hasUnavailableItems) {
-        showWarning(
-          'Некоторые товары недоступны',
-          `Следующие позиции больше не в меню и будут пропущены: ${unavailableItems.join(', ')}`,
-          'warning'
-        )
-      }
+      // ✅ Сохраняем информацию о недоступных товарах для показа в модалке
+      // Предупреждение будет показано ВНУТРИ модалки после открытия, чтобы не закрывать её
+      setDraftOrderUnavailableItems(hasUnavailableItems ? unavailableItems : [])
 
       // ✅ Создаем новый заказ с актуальными товарами и ценами
       const newOrder: Order = {
@@ -3738,9 +3735,13 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
         onClose={() => {
           setSelectedDate(null)
           setDraftOrder(null) // ✅ Очищаем черновик при закрытии
+          setDraftOrderUnavailableItems([]) // ✅ Очищаем недоступные товары при закрытии
         }}
         onSave={handleSaveOrder}
         onCancel={handleCancelOrder}
+        onRepeatOrder={handleRepeatOrder} // ✅ НОВОЕ: Добавлен обработчик повтора заказа
+        availableDates={availableDates} // ✅ НОВОЕ: Передаем доступные даты для умного выбора
+        unavailableItems={draftOrderUnavailableItems} // ✅ НОВОЕ: Передаем недоступные товары для показа предупреждения
         allOrders={orders}
         open={!!selectedDate}
         isDataLoading={isUserLoading || isOrdersLoading || isPointsLoading}

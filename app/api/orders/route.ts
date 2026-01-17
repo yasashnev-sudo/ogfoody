@@ -230,12 +230,7 @@ export async function POST(request: Request) {
       // Новые статусы оплаты
       // Определяем статус оплаты: если явно указан paymentStatus, используем его, иначе на основе paid
       payment_status: order.paymentStatus || (order.paid === true || String(order.paid).toLowerCase() === 'true' ? "paid" : "pending"),
-      // ✅ КРИТИЧНО 2026-01-16: НЕ устанавливаем "cash" по умолчанию - оставляем null для новых заказов
-      // Проблема: В схеме БД есть дефолтное значение "cash" для payment_method
-      // Если передать undefined, БД установит "cash" автоматически
-      // Решение: Передаем null явно, чтобы БД не устанавливала дефолтное значение
-      // paymentMethod должен быть установлен только при оплате, а не при создании заказа
-      payment_method: order.paymentMethod || (order.paid ? undefined : null),
+      payment_method: order.paymentMethod || "cash",
       paid: order.paid === true || String(order.paid).toLowerCase() === 'true' || order.paymentStatus === 'paid' || String(order.paymentStatus).toLowerCase() === 'paid',
       paid_at: order.paidAt || (order.paid ? now : undefined),
       payment_id: order.paymentId || undefined,
@@ -957,13 +952,7 @@ export async function POST(request: Request) {
         orderNumber: orderNumberToReturn,
         startDate: order.startDate,
         deliveryTime: order.deliveryTime,
-        // ✅ КРИТИЧНО 2026-01-16: НЕ используем paymentMethod из перезагруженного заказа (nocoOrder)
-        // Проблема: В схеме БД есть дефолтное значение "cash" для payment_method
-        // Когда мы создаем заказ с payment_method: undefined, БД автоматически устанавливает "cash"
-        // Поэтому fetchOrderById возвращает "cash" из БД, хотя мы не отправляли это значение
-        // Решение: Для новых заказов (paid=false) ВСЕГДА возвращаем undefined, даже если в БД есть "cash"
-        // Только если заказ уже оплачен (paid=true), используем paymentMethod из БД
-        paymentMethod: order.paid ? (order.paymentMethod || (nocoOrder as any).payment_method || (nocoOrder as any)["Payment Method"]) : undefined,
+        paymentMethod: order.paymentMethod || "cash",
         paid: order.paid || false,
         paymentStatus: order.paymentStatus || "pending",
         orderStatus: "pending",
@@ -979,8 +968,7 @@ export async function POST(request: Request) {
       },
       loyaltyPointsEarned: actualPointsEarned || 0, // Количество начисленных баллов (всегда число, даже если 0)
       loyaltyPointsUsed: order.loyaltyPointsUsed || 0, // Количество использованных баллов
-      // ✅ ИСПРАВЛЕНО 2026-01-16: Если paymentMethod не указан (undefined), считаем как 'earned' (будет установлен при оплате)
-      loyaltyPointsStatus: order.paymentMethod === 'cash' ? 'pending' : (order.paymentMethod ? 'earned' : undefined),
+      loyaltyPointsStatus: order.paymentMethod === 'cash' ? 'pending' : 'earned',
       loyaltyPointsMessage: order.paymentMethod === 'cash' && actualPointsEarned > 0
         ? `При оплате наличными баллы (${actualPointsEarned}) будут начислены на следующий день после доставки`
         : actualPointsEarned > 0 

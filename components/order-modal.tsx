@@ -190,16 +190,6 @@ export function OrderModal({
         existingOrderId: existingOrder?.id,
         existingOrderDate: existingOrder?.startDate,
       })
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] OrderModal OPEN useEffect', {
-        location: 'components/order-modal.tsx:177',
-        hypothesisId: 'E',
-        date: date.toISOString(),
-        existingOrderId: existingOrder?.id,
-        existingOrderDate: existingOrder?.startDate,
-        existingOrderIsDraft: !existingOrder?.id,
-      })
-      // #endregion
     }
   }, [open, date, existingOrder])
   
@@ -237,8 +227,6 @@ export function OrderModal({
   const [promoCode, setPromoCode] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [isRepeatingOrder, setIsRepeatingOrder] = useState(false) // ✅ НОВОЕ: Loading для повтора заказа
-  const [showRepeatDateMenu, setShowRepeatDateMenu] = useState(false) // ✅ НОВОЕ: Меню выбора даты для повтора
   
   // ✅ Инициализируем промокод из existingOrder при загрузке
   useEffect(() => {
@@ -317,19 +305,6 @@ export function OrderModal({
 
   useEffect(() => {
     if (open) {
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] OrderModal RESET useEffect ENTRY', {
-        location: 'components/order-modal.tsx:297',
-        hypothesisId: 'E',
-        existingOrderId: existingOrder?.id,
-        existingOrderDate: existingOrder?.startDate,
-        existingOrderIsDraft: !existingOrder?.id,
-        existingOrderOrderNumber: existingOrder?.orderNumber,
-        existingOrderPersonsCount: existingOrder?.persons?.length,
-        existingOrderTotal: existingOrder?.total,
-        date: date.toISOString(),
-      })
-      // #endregion
       // Reset to initial values when modal opens with new date/order
       const newPersons = existingOrder?.persons?.map((p) => ({
         id: p.id,
@@ -349,14 +324,6 @@ export function OrderModal({
       // Initial active section: null to avoid auto-scroll on open
       setActiveSectionId(null)
       setShowFloatingButton(false)
-      // #region agent log
-      console.log('[DEBUG REPEAT ORDER] OrderModal RESET useEffect EXIT', {
-        location: 'components/order-modal.tsx:318',
-        hypothesisId: 'E',
-        personsCount: newPersons.length,
-        hasExtras: !!existingOrder?.extras?.length,
-      })
-      // #endregion
     }
   }, [open, date.getTime(), existingOrder?.id, deliveryTimes.length, deliveryTimes.join(",")])
 
@@ -565,10 +532,10 @@ export function OrderModal({
     }
 
     onSave(order)
-    
-    // ✅ ИСПРАВЛЕНО 2026-01-16: НЕ вызываем onPaymentSuccess здесь
-    // onPaymentSuccess должен вызываться только после фактической оплаты в handlePaymentComplete
-    // Заказ еще не оплачен, поэтому не нужно вызывать onPaymentSuccess
+
+    if (onPaymentSuccess) {
+      onPaymentSuccess(order)
+    }
 
     setIsProcessingPayment(false)
   }
@@ -616,7 +583,6 @@ export function OrderModal({
     }
   }
 
-
   // ✅ НОВОЕ: Получаем свободные даты (без заказов) - точно как в истории заказов
   const getFreeDates = (): Date[] => {
     // Фильтруем активные заказы (как в order-history.tsx)
@@ -628,7 +594,6 @@ export function OrderModal({
     // Возвращаем только даты без заказов
     return availableDates.filter((d) => !orderDates.has(formatDateKey(d)))
   }
-
 
   const handleContactSupport = () => {
     const orderNumber = existingOrder?.orderNumber
@@ -689,10 +654,7 @@ export function OrderModal({
   const canPay = !isPaid && !isPastDate           // Можно оплатить сегодня, но не прошлые
   const canUsePromo = !isPaid && !isPastDate      // Можно использовать промокод сегодня, но не для прошлых заказов
   const canEdit = canEditContent                  // Для обратной совместимости
-  // ✅ КРИТИЧНО: Черновик (без id) не считается существующим заказом
-  // Это исправляет проблему, когда при повторе заказа открывался черновик,
-  // но кнопки оплаты не показывались, потому что черновик считался существующим заказом
-  const isExistingOrder = !!existingOrder?.id
+  const isExistingOrder = !!existingOrder
 
   const fillRandomMeals = (personId: number) => {
     const getRandom = <T,>(arr: T[]): T | null => {
@@ -1181,81 +1143,81 @@ export function OrderModal({
                                 </div>
                               ) : (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                                {freeDates.map((date) => {
-                                  const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
-                                  const dayName = dayNames[date.getDay()]
-                                  const today = new Date()
-                                  today.setHours(0, 0, 0, 0)
-                                  const dateTime = new Date(date)
-                                  dateTime.setHours(0, 0, 0, 0)
-                                  const daysFromNow = Math.floor((dateTime.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                                  
-                                  const isToday = daysFromNow === 0
-                                  const isTomorrow = daysFromNow === 1
-                                  const isThisWeek = daysFromNow >= 2 && daysFromNow <= 7
-                                  
-                                  return (
-                                    <button
-                                      key={formatDateKey(date)}
-                                      className={`flex-shrink-0 flex flex-col items-center justify-center w-[70px] h-[80px] rounded-lg border-2 transition-all font-bold relative ${
-                                        isToday 
-                                          ? 'border-[#FFEA00] bg-[#FFEA00]/20 hover:bg-[#FFEA00]/40' 
-                                          : isTomorrow
-                                          ? 'border-[#9D00FF] bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20'
-                                          : isThisWeek
-                                          ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-100'
-                                          : 'border-gray-300 bg-white hover:bg-gray-50'
-                                      } ${isRepeatingOrder ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                      onClick={async () => {
-                                        if (isRepeatingOrder) return
-                                        // ✅ КРИТИЧНО: Устанавливаем loading перед вызовом (как в order-history.tsx)
-                                        setIsRepeatingOrder(true)
-                                        setShowRepeatDateMenu(false) // Закрываем меню выбора даты сразу
-                                        try {
-                                          if (existingOrder && onRepeatOrder) {
-                                            await onRepeatOrder(existingOrder, date)
-                                            // ✅ НЕ закрываем модалку здесь - handleRepeatOrder сам управляет открытием/закрытием через setSelectedDate
-                                            // Модалка закроется автоматически, когда handleRepeatOrder установит новую дату
-                                          }
-                                        } finally {
-                                          // ✅ Всегда снимаем loading даже при ошибке
-                                          setIsRepeatingOrder(false)
-                                        }
-                                      }}
-                                      disabled={isRepeatingOrder}
-                                    >
-                                      {/* День недели */}
-                                      <span className="text-[10px] font-black uppercase text-gray-600 mb-1">
-                                        {dayName}
-                                      </span>
-                                      
-                                      {/* Число и месяц */}
-                                      <span className={`text-base font-black mb-1 ${
-                                        isToday || isTomorrow ? 'text-black' : 'text-gray-800'
-                                      }`}>
-                                        {date.getDate()}
-                                      </span>
-                                      
-                                      {/* Месяц */}
-                                      <span className="text-[9px] font-bold text-gray-500">
-                                        {formatDisplayDate(date).split(' ')[1]}
-                                      </span>
-                                      
-                                      {/* Бейдж */}
-                                      {(isToday || isTomorrow || isThisWeek) && (
-                                        <div className={`absolute top-1 right-1 text-[7px] px-1 py-0.5 rounded font-black ${
+                                  {freeDates.map((date) => {
+                                    const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+                                    const dayName = dayNames[date.getDay()]
+                                    const today = new Date()
+                                    today.setHours(0, 0, 0, 0)
+                                    const dateTime = new Date(date)
+                                    dateTime.setHours(0, 0, 0, 0)
+                                    const daysFromNow = Math.floor((dateTime.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                                    
+                                    const isToday = daysFromNow === 0
+                                    const isTomorrow = daysFromNow === 1
+                                    const isThisWeek = daysFromNow >= 2 && daysFromNow <= 7
+                                    
+                                    return (
+                                      <button
+                                        key={formatDateKey(date)}
+                                        className={`flex-shrink-0 flex flex-col items-center justify-center w-[70px] h-[80px] rounded-lg border-2 transition-all font-bold relative ${
                                           isToday 
-                                            ? 'bg-[#FFEA00] text-black' 
-                                            : isTomorrow 
-                                            ? 'bg-[#9D00FF] text-white'
-                                            : 'bg-blue-500 text-white'
+                                            ? 'border-[#FFEA00] bg-[#FFEA00]/20 hover:bg-[#FFEA00]/40' 
+                                            : isTomorrow
+                                            ? 'border-[#9D00FF] bg-[#9D00FF]/10 hover:bg-[#9D00FF]/20'
+                                            : isThisWeek
+                                            ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-100'
+                                            : 'border-gray-300 bg-white hover:bg-gray-50'
+                                        } ${isRepeatingOrder ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                        onClick={async () => {
+                                          if (isRepeatingOrder) return
+                                          // ✅ КРИТИЧНО: Устанавливаем loading перед вызовом (как в order-history.tsx)
+                                          setIsRepeatingOrder(true)
+                                          setShowRepeatDateMenu(false) // Закрываем меню выбора даты сразу
+                                          try {
+                                            if (existingOrder && onRepeatOrder) {
+                                              await onRepeatOrder(existingOrder, date)
+                                              // ✅ НЕ закрываем модалку здесь - handleRepeatOrder сам управляет открытием/закрытием через setSelectedDate
+                                              // Модалка закроется автоматически, когда handleRepeatOrder установит новую дату
+                                            }
+                                          } finally {
+                                            // ✅ Всегда снимаем loading даже при ошибке
+                                            setIsRepeatingOrder(false)
+                                          }
+                                        }}
+                                        disabled={isRepeatingOrder}
+                                      >
+                                        {/* День недели */}
+                                        <span className="text-[10px] font-black uppercase text-gray-600 mb-1">
+                                          {dayName}
+                                        </span>
+                                        
+                                        {/* Число и месяц */}
+                                        <span className={`text-base font-black mb-1 ${
+                                          isToday || isTomorrow ? 'text-black' : 'text-gray-800'
                                         }`}>
-                                          {isToday ? 'СЕГОДНЯ' : isTomorrow ? 'ЗАВТРА' : `+${daysFromNow}д`}
-                                        </div>
-                                      )}
-                                    </button>
-                                  )
-                                })}
+                                          {date.getDate()}
+                                        </span>
+                                        
+                                        {/* Месяц */}
+                                        <span className="text-[9px] font-bold text-gray-500">
+                                          {formatDisplayDate(date).split(' ')[1]}
+                                        </span>
+                                        
+                                        {/* Бейдж */}
+                                        {(isToday || isTomorrow || isThisWeek) && (
+                                          <div className={`absolute top-1 right-1 text-[7px] px-1 py-0.5 rounded font-black ${
+                                            isToday 
+                                              ? 'bg-[#FFEA00] text-black' 
+                                              : isTomorrow 
+                                              ? 'bg-[#9D00FF] text-white'
+                                              : 'bg-blue-500 text-white'
+                                          }`}>
+                                            {isToday ? 'СЕГОДНЯ' : isTomorrow ? 'ЗАВТРА' : `+${daysFromNow}д`}
+                                          </div>
+                                        )}
+                                      </button>
+                                    )
+                                  })}
                                 </div>
                               )}
                             </div>
@@ -1275,21 +1237,6 @@ export function OrderModal({
               style={{ scrollBehavior: 'auto' }}
             >
               <div className="px-1.5 py-1.5 sm:p-4 pb-20">
-                {/* ✅ НОВОЕ: Предупреждение о недоступных товарах при повторе заказа */}
-                {unavailableItems.length > 0 && (
-                  <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-orange-700 dark:text-orange-400">Внимание!</p>
-                        <p className="text-xs text-orange-600 dark:text-orange-400/80 mt-1">
-                          Следующие позиции больше не в меню и будут пропущены: {unavailableItems.join(', ')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {!isInDeliveryZone && userCity && (
                   <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <div className="flex items-start gap-3">
@@ -1890,7 +1837,6 @@ export function OrderModal({
                         </>
                       )}
 
-                      {/* Кнопка отмены заказа */}
                       {canCancel && existingOrder && (
                         <Button
                           variant="outline"
