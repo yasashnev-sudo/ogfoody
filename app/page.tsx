@@ -3455,24 +3455,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             <div className="mb-6">
               <DailyStatus
                 orders={orders}
-                onOrderClick={() => {
-                  // Find the next available date for ordering
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
-                  const nextAvailable = availableDates.find((date) => {
-                    const checkDate = new Date(date)
-                    checkDate.setHours(0, 0, 0, 0)
-                    return checkDate.getTime() >= today.getTime()
-                  })
-                  if (nextAvailable) {
-                    handleDateClick(nextAvailable)
-                  } else {
-                    showWarning(
-                      "Нет доступных дат",
-                      "К сожалению, сейчас нет доступных дат для заказа. Попробуйте позже.",
-                      "info"
-                    )
-                  }
+                availableDates={availableDates}
+                onOrderClick={(date: Date) => {
+                  // Component passes the pre-calculated next available date
+                  handleDateClick(date)
                 }}
                 onFoodCardClick={() => {
                   // Open today's menu/order modal

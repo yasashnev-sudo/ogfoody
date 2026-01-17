@@ -196,10 +196,24 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
               </h3>
             </div>
           </div>
-          {onOrderClick && hasNextDate && (
+          {onOrderClick && (
             <Button
               onClick={() => {
-                onOrderClick(nextAvailableDate)
+                if (nextAvailableDate) {
+                  onOrderClick(nextAvailableDate)
+                } else {
+                  // If no available date, try to find any date from availableDates
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
+                  const anyDate = availableDates?.find((date) => {
+                    const checkDate = new Date(date)
+                    checkDate.setHours(0, 0, 0, 0)
+                    return checkDate.getTime() >= today.getTime()
+                  })
+                  if (anyDate) {
+                    onOrderClick(anyDate)
+                  }
+                }
               }}
               className="bg-black text-white hover:bg-black/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
             >
@@ -225,10 +239,24 @@ export function DailyStatus({ orders, availableDates, onOrderClick, onFoodCardCl
             </h3>
           </div>
         </div>
-        {onOrderClick && hasNextDate && (
+        {onOrderClick && (
           <Button
             onClick={() => {
-              onOrderClick(nextAvailableDate)
+              if (nextAvailableDate) {
+                onOrderClick(nextAvailableDate)
+              } else {
+                // If no available date, try to find any date from availableDates
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                const anyDate = availableDates?.find((date) => {
+                  const checkDate = new Date(date)
+                  checkDate.setHours(0, 0, 0, 0)
+                  return checkDate.getTime() >= today.getTime()
+                })
+                if (anyDate) {
+                  onOrderClick(anyDate)
+                }
+              }
             }}
             className="bg-black text-white hover:bg-black/90 border-2 border-black shadow-brutal font-black text-xs sm:text-sm px-3 sm:px-4 py-2 h-auto w-full sm:w-auto shrink-0"
           >
