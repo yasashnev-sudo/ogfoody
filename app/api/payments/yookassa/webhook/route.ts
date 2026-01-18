@@ -1,41 +1,146 @@
 import { NextResponse } from 'next/server'
 import { yookassaClient } from '@/lib/yookassa/client'
 import { updateOrder, fetchOrderById } from '@/lib/nocodb'
-import { awardLoyaltyPoints, fetchUserById } from '@/lib/nocodb'
+import { awardLoyaltyPoints, fetchUserById, refundLoyaltyPoints } from '@/lib/nocodb'
+import { isValidYookassaIp, getClientIp } from '@/lib/yookassa/ip-validator'
+
+/**
+ * GET /api/payments/yookassa/webhook
+ * Диагностический endpoint для проверки конфигурации
+ */
+export async function GET() {
+  const isTestMode = process.env.YOOKASSA_TEST_MODE === 'true' || 
+                     process.env.YOOKASSA_SECRET_KEY?.startsWith('test_')
+  
+  return NextResponse.json({
+    status: 'webhook_endpoint_active',
+    message: 'This is the YooKassa webhook endpoint',
+    configuration: {
+      shopId: process.env.YOOKASSA_SHOP_ID || 'not configured',
+      testMode: isTestMode,
+      webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://ogfoody.ru'}/api/payments/yookassa/webhook`,
+    },
+    instructions: {
+      setup: 'Configure this URL in YooKassa dashboard: Integration → HTTP Notifications',
+      events: ['payment.succeeded', 'payment.canceled', 'payment.waiting_for_capture'],
+      test: 'Make a test payment to verify webhook is working',
+    },
+    checkLogs: 'Run: pm2 logs ogfoody --lines 100 | grep -i webhook',
+  })
+}
 
 export async function POST(request: Request) {
+  // ✅ КРИТИЧНО: ЮKassa требует HTTP 200 в ответе, даже при ошибках
+  // Поэтому всегда возвращаем 200, но логируем ошибки
+
   try {
+    // Логируем все заголовки для отладки
+    const headers: Record<string, string> = {}
+    request.headers.forEach((value, key) => {
+      headers[key] = value
+    })
+    
+    // Проверка IP-адреса для безопасности
+    const clientIp = getClientIp(request)
+    const isTestMode = process.env.YOOKASSA_TEST_MODE === 'true' || 
+                       process.env.YOOKASSA_SECRET_KEY?.startsWith('test_')
+    
+    console.log('🔍 Webhook request details:', {
+      clientIp,
+      headers: {
+        'x-forwarded-for': headers['x-forwarded-for'],
+        'x-real-ip': headers['x-real-ip'],
+        'cf-connecting-ip': headers['cf-connecting-ip'],
+        'user-agent': headers['user-agent'],
+      },
+      isTestMode,
+    })
+    
+    // В тестовом режиме проверка IP менее строгая (может быть прокси/CDN)
+    if (!isTestMode && !isValidYookassaIp(clientIp)) {
+      console.error('❌ Invalid IP address for webhook:', clientIp)
+      console.error('   All headers:', headers)
+      // Возвращаем 200, но не обрабатываем запрос
+      return NextResponse.json({ received: false, error: 'Invalid IP' }, { status: 200 })
+    } else if (isTestMode && !isValidYookassaIp(clientIp)) {
+      // В тестовом режиме логируем, но не блокируем
+      console.warn('⚠️ Test mode: IP validation failed, but allowing request:', clientIp)
+      console.warn('   This is OK in test mode, but check webhook configuration in YooKassa dashboard')
+    }
+
     const event = await request.json()
+    
+    // В ЮKassa тип события в поле 'event', а не 'type'
+    // 'type' всегда 'notification'
+    const eventType = event.event || event.type
+    const { object } = event
+    
     console.log('📥 YooKassa webhook received:', {
       type: event.type,
-      paymentId: event.object?.id,
+      event: event.event,
+      eventType, // Вычисленный тип события
+      paymentId: object?.id,
+      ip: clientIp,
+      hasObject: !!object,
+      objectKeys: object ? Object.keys(object) : [],
+      fullEvent: JSON.stringify(event).substring(0, 1000), // Первые 1000 символов для отладки
     })
-
-    const { type, object } = event
 
     if (!object?.id) {
       console.error('❌ Invalid webhook: missing payment id')
-      return NextResponse.json({ error: 'Invalid webhook' }, { status: 400 })
+      console.error('   Full event:', JSON.stringify(event))
+      return NextResponse.json({ received: false, error: 'Invalid webhook' }, { status: 200 })
     }
 
-    const orderId = object.metadata?.orderId
-    if (!orderId) {
-      console.error('❌ Webhook missing orderId in metadata')
-      return NextResponse.json({ error: 'Missing orderId' }, { status: 400 })
+    // Для refund.succeeded object содержит refund, а не payment
+    // Нужно получить orderId из payment_id через metadata платежа
+    let actualOrderId: string | null = null
+
+    console.log('🔍 Processing webhook event:', {
+      eventType,
+      hasObject: !!object,
+      objectId: object?.id,
+      objectMetadata: object?.metadata,
+    })
+
+    if (eventType === 'refund.succeeded') {
+      // Для возврата получаем orderId из payment_id
+      if (object.payment_id) {
+        try {
+          const paymentResponse = await yookassaClient.payments.paymentsPaymentIdGet(object.payment_id)
+          actualOrderId = paymentResponse.data.metadata?.orderId
+        } catch (error) {
+          console.error('❌ Failed to fetch payment for refund:', error)
+        }
+      }
+    } else {
+      // Для других событий orderId в metadata объекта
+      actualOrderId = object.metadata?.orderId
     }
+
+    if (!actualOrderId) {
+      console.error('❌ Webhook missing orderId in metadata')
+      console.error('   Event type:', eventType)
+      console.error('   Object metadata:', object?.metadata)
+      console.error('   Full object keys:', object ? Object.keys(object) : [])
+      console.error('   Full event structure:', JSON.stringify(event).substring(0, 2000))
+      return NextResponse.json({ received: false, error: 'Missing orderId' }, { status: 200 })
+    }
+    
+    console.log('✅ Found orderId:', actualOrderId)
 
     // Получаем заказ из БД
-    const order = await fetchOrderById(Number(orderId))
+    const order = await fetchOrderById(Number(actualOrderId))
     if (!order) {
-      console.error(`❌ Order ${orderId} not found`)
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+      console.error(`❌ Order ${actualOrderId} not found`)
+      return NextResponse.json({ received: false, error: 'Order not found' }, { status: 200 })
     }
 
-    if (type === 'payment.succeeded') {
-      console.log(`✅ Payment succeeded for order ${orderId}`)
+    if (eventType === 'payment.succeeded') {
+      console.log(`✅ Payment succeeded for order ${actualOrderId}`)
 
       // Обновляем статус заказа
-      await updateOrder(Number(orderId), {
+      await updateOrder(Number(actualOrderId), {
         paid: true,
         payment_status: 'paid',
         paid_at: new Date().toISOString(),
@@ -63,13 +168,13 @@ export async function POST(request: Request) {
               : parseFloat(String(order.loyalty_points_earned)) || 0
 
             if (pointsEarned === 0 && orderTotal > 0) {
-              console.log(`💎 Awarding loyalty points for order ${orderId}`)
+              console.log(`💎 Awarding loyalty points for order ${actualOrderId}`)
               await awardLoyaltyPoints(
                 Number(userId),
                 orderTotal,
                 loyaltyPointsUsed,
                 0, // actualPointsEarned будет рассчитан внутри
-                Number(orderId)
+                Number(actualOrderId)
               )
             }
           }
@@ -82,10 +187,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, status: 'processed' })
     }
 
-    if (type === 'payment.canceled') {
-      console.log(`❌ Payment canceled for order ${orderId}`)
+    if (eventType === 'payment.canceled') {
+      console.log(`❌ Payment canceled for order ${actualOrderId}`)
 
-      await updateOrder(Number(orderId), {
+      await updateOrder(Number(actualOrderId), {
         payment_status: 'canceled',
         payment_id: object.id,
       })
@@ -93,19 +198,74 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, status: 'canceled' })
     }
 
-    if (type === 'payment.waiting_for_capture') {
-      console.log(`⏳ Payment waiting for capture for order ${orderId}`)
+    if (eventType === 'payment.waiting_for_capture') {
+      console.log(`⏳ Payment waiting for capture for order ${actualOrderId}`)
       // Можно обновить статус на "ожидает подтверждения"
+      await updateOrder(Number(actualOrderId), {
+        payment_status: 'waiting_for_capture',
+        payment_id: object.id,
+      })
       return NextResponse.json({ received: true, status: 'waiting' })
     }
 
+    if (eventType === 'refund.succeeded') {
+      console.log(`💰 Refund succeeded for order ${actualOrderId}`)
+
+      const userId = order.user_id || (order as any)['User ID']
+      if (userId) {
+        try {
+          const user = await fetchUserById(Number(userId))
+          if (user) {
+            const orderTotal = typeof order.total === 'number' 
+              ? order.total 
+              : parseFloat(String(order.total)) || 0
+
+            const loyaltyPointsUsed = typeof order.loyalty_points_used === 'number'
+              ? order.loyalty_points_used
+              : parseFloat(String(order.loyalty_points_used)) || 0
+
+            const pointsEarned = typeof order.loyalty_points_earned === 'number'
+              ? order.loyalty_points_earned
+              : parseFloat(String(order.loyalty_points_earned)) || 0
+
+            // Возвращаем баллы при возврате платежа
+            if (pointsEarned > 0 || loyaltyPointsUsed > 0) {
+              console.log(`💎 Refunding loyalty points for order ${actualOrderId}`)
+              await refundLoyaltyPoints(
+                Number(userId),
+                pointsEarned,
+                loyaltyPointsUsed,
+                orderTotal,
+                Number(actualOrderId)
+              )
+            }
+          }
+        } catch (error) {
+          console.error('❌ Failed to refund loyalty points:', error)
+        }
+      }
+
+      // Обновляем статус заказа
+      await updateOrder(Number(actualOrderId), {
+        payment_status: 'refunded',
+        paid: false, // Возврат означает, что заказ больше не оплачен
+      })
+
+      return NextResponse.json({ received: true, status: 'refunded' })
+    }
+
     // Другие типы событий просто подтверждаем
-    return NextResponse.json({ received: true })
+    console.log(`ℹ️ Unhandled webhook event type: ${eventType} (type: ${event.type})`)
+    console.log('   Available event types in code: payment.succeeded, payment.canceled, payment.waiting_for_capture, refund.succeeded')
+    console.log('   Full event structure:', JSON.stringify(event).substring(0, 2000))
+    return NextResponse.json({ received: true, status: 'acknowledged' })
   } catch (error: any) {
     console.error('❌ Webhook processing failed:', error)
+    // ✅ КРИТИЧНО: Всегда возвращаем 200, даже при ошибках
+    // ЮKassa будет повторять отправку, если не получит 200
     return NextResponse.json(
-      { error: 'Webhook processing failed', details: error.message },
-      { status: 500 }
+      { received: false, error: 'Webhook processing failed', details: error.message },
+      { status: 200 }
     )
   }
 }

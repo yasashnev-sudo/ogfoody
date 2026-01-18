@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { yookassaClient } from '@/lib/yookassa/client'
+import { yookassaClient, isTestMode } from '@/lib/yookassa/client'
 import { updateOrder } from '@/lib/nocodb'
 
 export async function POST(request: Request) {
@@ -43,7 +43,18 @@ export async function POST(request: Request) {
       orderId,
       amount,
       confirmationUrl: payment.confirmation?.confirmation_url,
+      testMode: isTestMode,
+      test: payment.test, // Параметр test из ответа ЮKassa
+      metadata: payment.metadata,
     })
+
+    if (isTestMode) {
+      console.log('🧪 TEST MODE: Payment created with test credentials')
+      console.log('   Use test cards from: YOOKASSA_TEST_CARDS.md')
+      console.log('   ⚠️ IMPORTANT: Configure webhook URL in YooKassa dashboard!')
+      console.log('   Webhook URL: https://ogfoody.ru/api/payments/yookassa/webhook')
+      console.log('   See: YOOKASSA_WEBHOOK_SETUP.md for instructions')
+    }
 
     // Сохраняем payment_id в заказ
     if (orderId) {

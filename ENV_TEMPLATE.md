@@ -33,10 +33,16 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 # Получите shop_id в личном кабинете ЮKassa: https://yookassa.ru/my
 # Создайте магазин и скопируйте shop_id
 YOOKASSA_SHOP_ID=your_shop_id_here
+# Секретный ключ: для тестового режима начинается с "test_"
+# Для продакшена получите реальный ключ в личном кабинете
 YOOKASSA_SECRET_KEY=test_sDZCHKIUGwEiXpsq0REALRWgsdPY9wCGBdYCRvCH4QE
+# Тестовый режим: true для тестирования, false для продакшена
+# Автоматически определяется по ключу (если начинается с "test_")
 YOOKASSA_TEST_MODE=true
 # Webhook URL для настройки в личном кабинете ЮKassa:
-# https://ogfoody.ru/api/payments/yookassa/webhook
+# Тестовый магазин: настройте отдельный webhook URL в настройках тестового магазина
+# Продакшн: https://ogfoody.ru/api/payments/yookassa/webhook
+# См. документацию: YOOKASSA_TEST_CARDS.md
 ```
 
 ## Для продакшена на сервере (`.env.production`)
@@ -70,10 +76,15 @@ NEXT_PUBLIC_APP_URL=https://ogfoody.ru
 # Получите shop_id в личном кабинете ЮKassa: https://yookassa.ru/my
 # Создайте магазин и скопируйте shop_id
 YOOKASSA_SHOP_ID=your_shop_id_here
-YOOKASSA_SECRET_KEY=test_sDZCHKIUGwEiXpsq0REALRWgsdPY9wCGBdYCRvCH4QE
-YOOKASSA_TEST_MODE=true
+# Секретный ключ: для тестового режима начинается с "test_"
+# Для продакшена получите реальный ключ в личном кабинете
+YOOKASSA_SECRET_KEY=your_production_secret_key_here
+# Тестовый режим: true для тестирования, false для продакшена
+# Автоматически определяется по ключу (если начинается с "test_")
+YOOKASSA_TEST_MODE=false
 # Webhook URL для настройки в личном кабинете ЮKassa:
 # https://ogfoody.ru/api/payments/yookassa/webhook
+# См. документацию: YOOKASSA_TEST_CARDS.md
 ```
 
 ## 🔐 Где взять значения:
