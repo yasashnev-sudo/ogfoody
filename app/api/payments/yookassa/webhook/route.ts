@@ -165,7 +165,7 @@ export async function POST(request: Request) {
 
             // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Для расчета баллов используем Subtotal + Delivery Fee БЕЗ промокода
             // Согласно LOYALTY_POINTS_LOGIC.md: баллы начисляются на сумму БЕЗ промокода
-            const subtotal = typeof order.subtotal === 'number'
+            let subtotal = typeof order.subtotal === 'number'
               ? order.subtotal
               : typeof (order as any).Subtotal === 'number'
               ? (order as any).Subtotal
@@ -176,6 +176,13 @@ export async function POST(request: Request) {
               : typeof (order as any)['Delivery Fee'] === 'number'
               ? (order as any)['Delivery Fee']
               : parseFloat(String(order.delivery_fee || (order as any)['Delivery Fee'] || 0)) || 0
+            
+            // ✅ ИСПРАВЛЕНИЕ: Если subtotal = 0, но total > 0, используем total как fallback
+            // Это может произойти, если subtotal не был сохранен при создании заказа
+            if (subtotal === 0 && orderTotal > 0) {
+              console.warn(`⚠️ [Webhook] subtotal = 0, но orderTotal = ${orderTotal}. Используем orderTotal как fallback для расчета баллов.`)
+              subtotal = orderTotal
+            }
             
             // ✅ Сумма БЕЗ промокода для расчета баллов
             const orderTotalForPoints = subtotal + deliveryFee
