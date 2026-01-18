@@ -238,6 +238,22 @@ export async function POST(request: Request) {
                 Number(actualOrderId),
                 orderTotalForPoints // БЕЗ промокода (для расчета баллов и описания транзакции)
               )
+              
+              // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем поле loyalty_points_earned в заказе после начисления баллов
+              // Это нужно для отображения баллов в истории заказов и OrderModal
+              const { calculateEarnedPoints } = await import("@/lib/nocodb")
+              const user = await fetchUserById(Number(userId))
+              const currentTotalSpent = typeof user?.total_spent === 'number' ? user.total_spent : parseFloat(String(user?.total_spent)) || 0
+              const calculatedPointsEarned = calculateEarnedPoints(orderTotalForPoints, loyaltyPointsUsed, currentTotalSpent)
+              
+              if (calculatedPointsEarned > 0) {
+                console.log(`📝 Обновляем заказ ${actualOrderId} с loyalty_points_earned: ${calculatedPointsEarned}`)
+                await updateOrder(Number(actualOrderId), {
+                  loyalty_points_earned: calculatedPointsEarned,
+                  "Loyalty Points Earned": calculatedPointsEarned,
+                } as any)
+                console.log(`✅ Заказ ${actualOrderId} обновлен с loyalty_points_earned: ${calculatedPointsEarned}`)
+              }
             } else if (pointsEarned > 0) {
               console.log(`ℹ️ Баллы уже начислены для заказа ${actualOrderId}: ${pointsEarned} баллов`)
             } else if (orderTotalForPoints <= 0) {
