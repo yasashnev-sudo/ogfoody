@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { X, CreditCard, Coins, Wallet } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { X, CreditCard, Coins, Wallet, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Order, UserProfile } from "@/lib/types"
+import Script from "next/script"
 
 interface PaymentModalProps {
   order: Order
@@ -21,6 +22,13 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
   // ✅ УПРОЩЕНО: Только два варианта - онлайн или наличные
   const isChangingFromCash = order.paymentMethod === 'cash' && !order.paid
   const [paymentType, setPaymentType] = useState<"online" | "cash">("online")
+  
+  // ✅ НОВОЕ: Состояния для виджета YooKassa
+  const [showWidget, setShowWidget] = useState(false)
+  const [confirmationToken, setConfirmationToken] = useState<string | null>(null)
+  const [isLoadingPayment, setIsLoadingPayment] = useState(false)
+  const widgetContainerRef = useRef<HTMLDivElement>(null)
+  const checkoutWidgetRef = useRef<any>(null)
 
   const availablePoints = userProfile?.loyaltyPoints || 0
   const maxPointsToUse = Math.min(availablePoints, Math.floor(total * 0.5))
@@ -31,10 +39,75 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
     setPointsToUse(clamped)
   }
 
+  // ✅ НОВОЕ: Инициализация виджета YooKassa
+  useEffect(() => {
+    if (showWidget && confirmationToken && widgetContainerRef.current && (window as any).YooMoneyCheckoutWidget) {
+      // Уничтожаем предыдущий виджет, если он существует
+      if (checkoutWidgetRef.current) {
+        try {
+          checkoutWidgetRef.current.destroy()
+        } catch (e) {
+          console.warn('Ошибка при уничтожении предыдущего виджета:', e)
+        }
+      }
+
+      try {
+        const checkout = new (window as any).YooMoneyCheckoutWidget({
+          confirmation_token: confirmationToken,
+          return_url: `${window.location.origin}/payment/success?orderId=${order.id}`,
+          customization: {
+            // ✅ Настройки виджета
+            modal: false, // Встроенный виджет (не модальное окно)
+            payment_methods: ['bank_card', 'yoo_money', 'sbp'], // Доступные способы оплаты
+          },
+          error_callback: (error: any) => {
+            console.error('❌ YooKassa widget error:', error)
+            setIsLoadingPayment(false)
+            setShowWidget(false)
+            setConfirmationToken(null)
+            alert('Ошибка при оплате. Попробуйте еще раз.')
+          },
+          close_callback: () => {
+            console.log('ℹ️ YooKassa widget closed by user')
+            setIsLoadingPayment(false)
+            setShowWidget(false)
+            setConfirmationToken(null)
+          },
+          // ✅ Обработка успешной оплаты - редирект на return_url
+          // После успешной оплаты виджет автоматически редиректит на return_url,
+          // где payment/success/page.tsx обработает результат и начислит баллы через webhook
+        })
+
+        checkout.render('yookassa-widget-container')
+        checkoutWidgetRef.current = checkout
+        setIsLoadingPayment(false) // Виджет загружен, убираем индикатор загрузки
+        console.log('✅ YooKassa widget initialized with token:', confirmationToken.substring(0, 20) + '...')
+      } catch (error) {
+        console.error('❌ Failed to initialize YooKassa widget:', error)
+        setIsLoadingPayment(false)
+        setShowWidget(false)
+        alert('Ошибка инициализации виджета оплаты. Попробуйте еще раз.')
+      }
+    }
+
+    // Cleanup при размонтировании
+    return () => {
+      if (checkoutWidgetRef.current) {
+        try {
+          checkoutWidgetRef.current.destroy()
+        } catch (e) {
+          console.warn('Ошибка при уничтожении виджета:', e)
+        }
+      }
+    }
+  }, [showWidget, confirmationToken, order.id])
+
   const handlePayment = async () => {
     if (paymentType === "online") {
-      // ✅ Создаем платеж через ЮKassa и редиректим
+      // ✅ Создаем платеж через ЮKassa и показываем виджет
       try {
+        setIsLoadingPayment(true)
+        
         // Сохраняем использованные баллы в localStorage (для возврата после оплаты)
         if (pointsToUse > 0 && order.id) {
           localStorage.setItem(`points_used_${order.id}`, String(pointsToUse))
@@ -55,16 +128,27 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
           const error = await response.json()
           console.error('❌ Payment creation failed:', error)
           alert('Ошибка создания платежа. Попробуйте еще раз.')
+          setIsLoadingPayment(false)
           return
         }
 
-        const { confirmationUrl } = await response.json()
+        const data = await response.json()
         
-        // Редирект на страницу оплаты ЮKassa
-        window.location.href = confirmationUrl
+        // ✅ НОВОЕ: Используем виджет, если есть confirmationToken, иначе fallback на redirect
+        if (data.confirmationToken) {
+          setConfirmationToken(data.confirmationToken)
+          setShowWidget(true)
+        } else if (data.confirmationUrl) {
+          // Fallback на redirect, если виджет недоступен
+          console.warn('⚠️ confirmationToken не получен, используем redirect')
+          window.location.href = data.confirmationUrl
+        } else {
+          throw new Error('Не получен ни confirmationToken, ни confirmationUrl')
+        }
       } catch (error) {
         console.error('❌ Payment error:', error)
         alert('Ошибка при создании платежа. Попробуйте еще раз.')
+        setIsLoadingPayment(false)
       }
     } else {
       // ✅ Наличные - вызываем callback как раньше
@@ -73,17 +157,62 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 animate-fade-in">
-      <div className="bg-background w-full md:max-w-md md:rounded-xl rounded-t-xl overflow-hidden animate-slide-up-fade">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-bold">Оплата заказа</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
+    <>
+      {/* ✅ НОВОЕ: Подключаем скрипт виджета YooKassa */}
+      <Script
+        src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"
+        strategy="lazyOnload"
+        onLoad={() => {
+          console.log('✅ YooKassa widget script loaded')
+        }}
+        onError={(e) => {
+          console.error('❌ Failed to load YooKassa widget script:', e)
+        }}
+      />
+      
+      <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 animate-fade-in">
+        <div className="bg-background w-full md:max-w-md md:rounded-xl rounded-t-xl overflow-hidden animate-slide-up-fade max-h-[90vh] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h2 className="text-xl font-bold">Оплата заказа</h2>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => {
+                if (checkoutWidgetRef.current) {
+                  try {
+                    checkoutWidgetRef.current.destroy()
+                  } catch (e) {
+                    console.warn('Ошибка при уничтожении виджета:', e)
+                  }
+                }
+                setShowWidget(false)
+                setConfirmationToken(null)
+                setIsLoadingPayment(false)
+                onClose()
+              }}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
 
-        <div className="p-4 space-y-4">
-          <div className="p-4 bg-muted/30 rounded-lg">
+        {/* ✅ НОВОЕ: Контейнер для виджета YooKassa */}
+        {showWidget && confirmationToken ? (
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2">Оплата заказа #{order.id}</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Выберите способ оплаты и завершите платеж
+              </p>
+            </div>
+            <div 
+              id="yookassa-widget-container" 
+              ref={widgetContainerRef}
+              className="min-h-[400px]"
+            />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="p-4 bg-muted/30 rounded-lg">
             <div className="flex justify-between mb-2">
               <span className="text-muted-foreground">Сумма заказа</span>
               <span className="font-medium">{total} ₽</span>
@@ -210,34 +339,44 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
             </div>
           </div>
 
-          <div className="text-xs text-muted-foreground text-center">
-            {paymentType === "cash" 
-              ? "Нажимая кнопку, вы подтверждаете заказ и соглашаетесь с условиями оферты"
-              : 'Нажимая "Оплатить", вы соглашаетесь с условиями оферты'
-            }
+            <div className="text-xs text-muted-foreground text-center">
+              {paymentType === "cash" 
+                ? "Нажимая кнопку, вы подтверждаете заказ и соглашаетесь с условиями оферты"
+                : 'Нажимая "Оплатить", вы соглашаетесь с условиями оферты'
+              }
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="p-4 border-t border-border">
-          <Button 
-            onClick={handlePayment} 
-            data-testid="payment-submit-btn"
-            className="w-full btn-press transition-all duration-200"
-          >
-            {paymentType === "online" ? (
-              <>
-                <CreditCard className="w-4 h-4 mr-2" />
-                Оплатить — {finalTotal} ₽
-              </>
-            ) : (
-              <>
-                <Wallet className="w-4 h-4 mr-2" />
-                Подтвердить заказ — {finalTotal} ₽
-              </>
-            )}
-          </Button>
-        </div>
+        {!showWidget && (
+          <div className="p-4 border-t border-border">
+            <Button 
+              onClick={handlePayment} 
+              data-testid="payment-submit-btn"
+              className="w-full btn-press transition-all duration-200"
+              disabled={isLoadingPayment}
+            >
+              {isLoadingPayment ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Создание платежа...
+                </>
+              ) : paymentType === "online" ? (
+                <>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Оплатить — {finalTotal} ₽
+                </>
+              ) : (
+                <>
+                  <Wallet className="w-4 h-4 mr-2" />
+                  Подтвердить заказ — {finalTotal} ₽
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
+    </>
   )
 }

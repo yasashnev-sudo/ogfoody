@@ -24,7 +24,7 @@ export async function POST(request: Request) {
           currency: 'RUB',
         },
         confirmation: {
-          type: 'redirect',
+          type: 'embedded', // ✅ ИЗМЕНЕНО: Используем embedded для виджета вместо redirect
           return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://ogfoody.ru'}/payment/success?orderId=${orderId}`,
         },
         description: description || `Заказ #${orderId}`,
@@ -71,7 +71,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       paymentId: payment.id,
-      confirmationUrl: payment.confirmation?.confirmation_url,
+      confirmationUrl: payment.confirmation?.confirmation_url, // Для обратной совместимости
+      confirmationToken: payment.confirmation?.confirmation_token, // ✅ НОВОЕ: Токен для виджета
       status: payment.status,
     })
   } catch (error: any) {
