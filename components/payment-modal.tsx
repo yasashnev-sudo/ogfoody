@@ -37,9 +37,8 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
   const [platform, setPlatform] = useState<'telegram' | 'vk' | 'browser' | 'pwa'>('browser')
   const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false)
   const [widgetScriptError, setWidgetScriptError] = useState(false)
-  // ✅ ВРЕМЕННО: Отключаем виджет из-за ошибки invalid_combination_of_payment_methods
-  // Используем redirect везде, пока не выясним причину ошибки
-  const shouldUseRedirect = true // platform === 'telegram' || platform === 'vk' // ✅ Временно: redirect везде
+  // ✅ ВКЛЮЧЕНО: Виджет работает на сайте и мобильных, redirect только в ВК/ТГ
+  const shouldUseRedirect = platform === 'telegram' || platform === 'vk'
 
   // ✅ НОВОЕ: Определение платформы при монтировании
   useEffect(() => {
