@@ -18,6 +18,9 @@ function PaymentSuccessContent() {
       return
     }
 
+    let checkCount = 0
+    const maxChecks = 15 // Проверяем до 30 секунд (15 раз по 2 секунды)
+
     // Проверяем статус заказа
     const checkOrderStatus = async () => {
       try {
@@ -29,52 +32,91 @@ function PaymentSuccessContent() {
           // Если заказ оплачен - успех
           if (data.order?.paid || data.order?.paymentStatus === 'paid') {
             setStatus('success')
-          } else {
-            // Проверяем еще раз через 2 секунды (на случай если webhook еще не пришел)
-            setTimeout(() => {
-              if (data.order?.paid || data.order?.paymentStatus === 'paid') {
-                setStatus('success')
-              } else {
-                setStatus('loading') // Продолжаем ждать
-              }
-            }, 2000)
+            return true // Успешно проверено
           }
+          
+          checkCount++
+          
+          // Если прошло много проверок, но статус не изменился - показываем предупреждение
+          if (checkCount >= maxChecks) {
+            // Проверяем, есть ли payment_id - значит платеж создан
+            if (data.order?.paymentId || data.order?.payment_id) {
+              // Платеж создан, но webhook еще не пришел - показываем успех с предупреждением
+              setStatus('success')
+              return true
+            } else {
+              setStatus('error')
+              return false
+            }
+          }
+          
+          return false // Продолжаем проверку
         } else {
-          setStatus('error')
+          checkCount++
+          if (checkCount >= maxChecks) {
+            setStatus('error')
+            return false
+          }
+          return false
         }
       } catch (error) {
         console.error('Error checking order status:', error)
-        setStatus('error')
+        checkCount++
+        if (checkCount >= maxChecks) {
+          setStatus('error')
+          return false
+        }
+        return false
       }
     }
 
+    // Первая проверка сразу
     checkOrderStatus()
     
-    // Проверяем статус каждые 2 секунды (максимум 10 секунд)
-    const interval = setInterval(() => {
-      checkOrderStatus()
+    // Проверяем статус каждые 2 секунды
+    const interval = setInterval(async () => {
+      const success = await checkOrderStatus()
+      if (success) {
+        clearInterval(interval)
+      }
     }, 2000)
 
+    // Таймаут через 30 секунд
     const timeout = setTimeout(() => {
       clearInterval(interval)
       if (status === 'loading') {
-        setStatus('error')
+        // Если есть payment_id, считаем что платеж создан и показываем успех
+        if (order?.paymentId || order?.payment_id) {
+          setStatus('success')
+        } else {
+          setStatus('error')
+        }
       }
-    }, 10000)
+    }, 30000)
 
     return () => {
       clearInterval(interval)
       clearTimeout(timeout)
     }
-  }, [orderId, status])
+  }, [orderId])
 
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-md px-4">
           <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
           <h1 className="text-2xl font-bold">Проверяем оплату...</h1>
-          <p className="text-muted-foreground">Пожалуйста, подождите</p>
+          <p className="text-muted-foreground">
+            Ожидаем подтверждение от платежной системы. Это может занять несколько секунд.
+          </p>
+          <div className="mt-4">
+            <Button 
+              onClick={() => router.push('/')} 
+              variant="outline"
+            >
+              Вернуться на главную
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -87,13 +129,39 @@ function PaymentSuccessContent() {
           <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
             <span className="text-2xl">⚠️</span>
           </div>
-          <h1 className="text-2xl font-bold">Ошибка проверки оплаты</h1>
+          <h1 className="text-2xl font-bold">Проверка оплаты</h1>
           <p className="text-muted-foreground">
-            Не удалось проверить статус оплаты. Если оплата прошла успешно, заказ будет обработан автоматически.
+            Не удалось автоматически проверить статус оплаты. Если оплата прошла успешно, заказ будет обработан автоматически в течение нескольких минут.
           </p>
-          <Button onClick={() => router.push('/')} className="mt-4">
-            Вернуться на главную
-          </Button>
+          <div className="space-y-2 mt-4">
+            <Button 
+              onClick={async () => {
+                if (orderId) {
+                  setStatus('loading')
+                  const response = await fetch(`/api/orders/${orderId}`)
+                  if (response.ok) {
+                    const data = await response.json()
+                    if (data.order?.paid || data.order?.paymentStatus === 'paid') {
+                      setStatus('success')
+                      setOrder(data.order)
+                    } else {
+                      setStatus('error')
+                    }
+                  }
+                }
+              }} 
+              className="w-full"
+            >
+              Проверить еще раз
+            </Button>
+            <Button 
+              onClick={() => router.push('/')} 
+              variant="outline"
+              className="w-full"
+            >
+              Вернуться на главную
+            </Button>
+          </div>
         </div>
       </div>
     )
