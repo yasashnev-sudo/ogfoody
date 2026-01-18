@@ -1,7 +1,7 @@
-import { YooKassa } from '@yookassa/sdk'
+import { YookassaSdk } from '@yookassa/sdk'
 
 // Инициализация клиента ЮKassa
-export const yookassaClient = new YooKassa({
+export const yookassaClient = new YookassaSdk({
   shopId: process.env.YOOKASSA_SHOP_ID!,
   secretKey: process.env.YOOKASSA_SECRET_KEY!,
 })

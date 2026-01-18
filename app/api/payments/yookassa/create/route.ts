@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     // Создаем платеж через ЮKassa
-    const payment = await yookassaClient.createPayment({
+    const payment = await yookassaClient.payments.create({
       amount: {
         value: amount.toFixed(2),
         currency: 'RUB',
@@ -29,6 +29,8 @@ export async function POST(request: Request) {
         orderId: String(orderId),
       },
       capture: true, // Автоматическое подтверждение платежа
+    }, {
+      idempotenceKey: `order_${orderId}_${Date.now()}`, // Уникальный ключ для идемпотентности
     })
 
     console.log('✅ YooKassa payment created:', {
