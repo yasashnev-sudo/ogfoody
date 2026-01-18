@@ -711,7 +711,7 @@ export async function POST(request: Request) {
                 console.log(`🔍 [POST] ❌ Условие НЕ выполнено: Способ оплаты не указан - баллы будут начислены при оплате`)
                 console.log(`ℹ️ Способ оплаты не указан - баллы будут начислены при оплате`)
                 actualPointsEarned = 0 // Сбрасываем, чтобы не записать в БД
-              } else if ((order.paymentMethod === 'card' || order.paymentMethod === 'sbp')) {
+              } else if ((order.paymentMethod === 'card' || order.paymentMethod === 'sbp' || order.paymentMethod === 'online')) {
                 // Проверяем условие оплаты более тщательно
                 // Используем значения из БД (nocoOrder), так как они могут отличаться от order
                 const isPaidBool = order.paid === true || String(order.paid).toLowerCase() === 'true' || dbPaid

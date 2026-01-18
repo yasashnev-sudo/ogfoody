@@ -1165,10 +1165,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         : parseInt(String(currentOrder.loyalty_points_earned)) || 0
       
       // ✅ ИСПРАВЛЕНО: Проверяем также, оплачен ли заказ онлайн, но баллы не начислены
-      const isPaidOnline = willBePaid && (updateData.payment_method === 'card' || updateData.payment_method === 'sbp' || 
-                                          (body.order && (body.order.paymentMethod === 'card' || body.order.paymentMethod === 'sbp')) ||
-                                          currentOrder.payment_method === 'card' || currentOrder.payment_method === 'sbp' ||
-                                          (currentOrder as any)['Payment Method'] === 'card' || (currentOrder as any)['Payment Method'] === 'sbp')
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавлена проверка на 'online' (YooKassa)
+      const isPaidOnline = willBePaid && (updateData.payment_method === 'card' || updateData.payment_method === 'sbp' || updateData.payment_method === 'online' || 
+                                          (body.order && (body.order.paymentMethod === 'card' || body.order.paymentMethod === 'sbp' || body.order.paymentMethod === 'online')) ||
+                                          currentOrder.payment_method === 'card' || currentOrder.payment_method === 'sbp' || currentOrder.payment_method === 'online' ||
+                                          (currentOrder as any)['Payment Method'] === 'card' || (currentOrder as any)['Payment Method'] === 'sbp' || (currentOrder as any)['Payment Method'] === 'online')
       
       console.log(`\n🔍 ========== НАЧАЛО ПРОВЕРКИ НАЧИСЛЕНИЯ БАЛЛОВ (PATCH partial ${id}) ==========`)
       
