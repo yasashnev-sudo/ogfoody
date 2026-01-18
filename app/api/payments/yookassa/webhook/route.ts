@@ -129,12 +129,22 @@ export async function POST(request: Request) {
     
     console.log('✅ Found orderId:', actualOrderId)
 
-    // Получаем заказ из БД
-    const order = await fetchOrderById(Number(actualOrderId))
+    // Получаем заказ из БД (БЕЗ кэша для свежих данных)
+    const order = await fetchOrderById(Number(actualOrderId), true)
     if (!order) {
       console.error(`❌ Order ${actualOrderId} not found`)
       return NextResponse.json({ received: false, error: 'Order not found' }, { status: 200 })
     }
+    
+    console.log(`🔍 [Webhook] Заказ ${actualOrderId} из БД:`, {
+      total: order.total || order.Total,
+      subtotal: order.subtotal || order.Subtotal,
+      deliveryFee: order.delivery_fee || order['Delivery Fee'],
+      promoDiscount: order.promo_discount || order['Promo Discount'],
+      loyaltyPointsEarned: order.loyalty_points_earned || order['Loyalty Points Earned'],
+      paymentMethod: order.payment_method || order['Payment Method'],
+      paid: order.paid || order.Paid,
+    })
 
     if (eventType === 'payment.succeeded') {
       console.log(`✅ Payment succeeded for order ${actualOrderId}`)
@@ -165,6 +175,7 @@ export async function POST(request: Request) {
 
             // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Для расчета баллов используем Subtotal + Delivery Fee БЕЗ промокода
             // Согласно LOYALTY_POINTS_LOGIC.md: баллы начисляются на сумму БЕЗ промокода
+            // ✅ АДАПТАЦИЯ ПОД YOOKASSA: Используем ту же логику, что и в POST /api/orders
             let subtotal = typeof order.subtotal === 'number'
               ? order.subtotal
               : typeof (order as any).Subtotal === 'number'
@@ -177,15 +188,25 @@ export async function POST(request: Request) {
               ? (order as any)['Delivery Fee']
               : parseFloat(String(order.delivery_fee || (order as any)['Delivery Fee'] || 0)) || 0
             
-            // ✅ ИСПРАВЛЕНИЕ: Если subtotal = 0, но total > 0, используем total как fallback
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если subtotal = 0, но total > 0, используем total как fallback
             // Это может произойти, если subtotal не был сохранен при создании заказа
+            // Это адаптация под YooKassa - раньше при создании заказа с card/sbp баллы начислялись сразу,
+            // но теперь с YooKassa заказ создается без paymentMethod, и баллы начисляются через webhook
             if (subtotal === 0 && orderTotal > 0) {
               console.warn(`⚠️ [Webhook] subtotal = 0, но orderTotal = ${orderTotal}. Используем orderTotal как fallback для расчета баллов.`)
               subtotal = orderTotal
             }
             
-            // ✅ Сумма БЕЗ промокода для расчета баллов
+            // ✅ Сумма БЕЗ промокода для расчета баллов (как в POST /api/orders)
             const orderTotalForPoints = subtotal + deliveryFee
+            
+            console.log(`🔍 [Webhook] Расчет orderTotalForPoints:`, {
+              subtotal,
+              deliveryFee,
+              orderTotalForPoints,
+              orderTotal,
+              promoDiscount: order.promo_discount || order['Promo Discount'] || 0,
+            })
 
             // Начисляем баллы только если заказ оплачен онлайн и баллы еще не начислены
             const pointsEarned = typeof order.loyalty_points_earned === 'number'
