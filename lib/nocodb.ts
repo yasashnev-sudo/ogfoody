@@ -1242,6 +1242,16 @@ export async function awardLoyaltyPoints(
     ? orderTotalForPoints
     : orderTotal
 
+  console.log(`🔍 [awardLoyaltyPoints] Параметры для расчета баллов:`, {
+    orderTotalForPoints,
+    orderTotal,
+    amountForPointsCalculation,
+    pointsUsed,
+    currentTotalSpent,
+    pointsEarned,
+    willCalculate: pointsEarned === undefined,
+  })
+
   // Рассчитываем баллы, если не указаны
   const earnedPoints = pointsEarned !== undefined 
     ? pointsEarned 
