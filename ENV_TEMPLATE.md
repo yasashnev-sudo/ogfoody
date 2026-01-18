@@ -28,6 +28,15 @@ NOCODB_TABLE_FRAUD_ALERTS=mr9txejs65nk1yi
 # === Application Settings ===
 NODE_ENV=development
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# === YooKassa Payment Configuration ===
+# Получите shop_id в личном кабинете ЮKassa: https://yookassa.ru/my
+# Создайте магазин и скопируйте shop_id
+YOOKASSA_SHOP_ID=your_shop_id_here
+YOOKASSA_SECRET_KEY=test_sDZCHKIUGwEiXpsq0REALRWgsdPY9wCGBdYCRvCH4QE
+YOOKASSA_TEST_MODE=true
+# Webhook URL для настройки в личном кабинете ЮKassa:
+# https://ogfoody.ru/api/payments/yookassa/webhook
 ```
 
 ## Для продакшена на сервере (`.env.production`)
@@ -56,6 +65,15 @@ NOCODB_TABLE_FRAUD_ALERTS=mr9txejs65nk1yi
 # === Application Settings ===
 NODE_ENV=production
 NEXT_PUBLIC_APP_URL=https://ogfoody.ru
+
+# === YooKassa Payment Configuration ===
+# Получите shop_id в личном кабинете ЮKassa: https://yookassa.ru/my
+# Создайте магазин и скопируйте shop_id
+YOOKASSA_SHOP_ID=your_shop_id_here
+YOOKASSA_SECRET_KEY=test_sDZCHKIUGwEiXpsq0REALRWgsdPY9wCGBdYCRvCH4QE
+YOOKASSA_TEST_MODE=true
+# Webhook URL для настройки в личном кабинете ЮKassa:
+# https://ogfoody.ru/api/payments/yookassa/webhook
 ```
 
 ## 🔐 Где взять значения:

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, CreditCard, Coins } from "lucide-react"
+import { X, CreditCard, Coins, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Order, UserProfile } from "@/lib/types"
 
@@ -18,10 +18,9 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
   const [usePoints, setUsePoints] = useState(false)
   const [pointsToUse, setPointsToUse] = useState(0)
   
-  // ✅ ИСПРАВЛЕНО 10.01.2026: Если заказ уже с выбором "наличные", не показываем этот вариант повторно
-  // Это означает что пользователь хочет изменить способ оплаты на онлайн
+  // ✅ УПРОЩЕНО: Только два варианта - онлайн или наличные
   const isChangingFromCash = order.paymentMethod === 'cash' && !order.paid
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "sbp" | "cash">("card")
+  const [paymentType, setPaymentType] = useState<"online" | "cash">("online")
 
   const availablePoints = userProfile?.loyaltyPoints || 0
   const maxPointsToUse = Math.min(availablePoints, Math.floor(total * 0.5))
@@ -32,10 +31,45 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
     setPointsToUse(clamped)
   }
 
-  const handlePayment = () => {
-    // Вызываем callback, который покажет loading и закроет модал
-    // Loading и success будут показаны в родительском компоненте
-    onPaymentComplete(order, pointsToUse, paymentMethod)
+  const handlePayment = async () => {
+    if (paymentType === "online") {
+      // ✅ Создаем платеж через ЮKassa и редиректим
+      try {
+        // Сохраняем использованные баллы в localStorage (для возврата после оплаты)
+        if (pointsToUse > 0 && order.id) {
+          localStorage.setItem(`points_used_${order.id}`, String(pointsToUse))
+        }
+
+        const response = await fetch('/api/payments/yookassa/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: order.id,
+            amount: finalTotal,
+            description: `Заказ #${order.id}`,
+            returnUrl: `${window.location.origin}/payment/success?orderId=${order.id}`
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          console.error('❌ Payment creation failed:', error)
+          alert('Ошибка создания платежа. Попробуйте еще раз.')
+          return
+        }
+
+        const { confirmationUrl } = await response.json()
+        
+        // Редирект на страницу оплаты ЮKassa
+        window.location.href = confirmationUrl
+      } catch (error) {
+        console.error('❌ Payment error:', error)
+        alert('Ошибка при создании платежа. Попробуйте еще раз.')
+      }
+    } else {
+      // ✅ Наличные - вызываем callback как раньше
+      onPaymentComplete(order, pointsToUse, "cash")
+    }
   }
 
   return (
@@ -122,7 +156,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
               <span className="font-medium">Способ оплаты</span>
             </div>
             
-            {/* ✅ ДОБАВЛЕНО 10.01.2026: Пояснение при изменении способа оплаты */}
+            {/* ✅ ДОБАВЛЕНО: Пояснение при изменении способа оплаты */}
             {isChangingFromCash && (
               <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -132,54 +166,52 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
             )}
             
             <div className="space-y-2">
+              {/* ✅ ОПЦИЯ 1: Оплатить сейчас (онлайн) */}
               <label 
-                className={`flex items-center gap-3 p-3 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
-                  paymentMethod === "card" ? "border-primary" : "border-border hover:border-primary/50"
+                className={`flex items-center gap-3 p-4 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
+                  paymentType === "online" ? "border-primary" : "border-border hover:border-primary/50"
                 }`}
-                onClick={() => setPaymentMethod("card")}
+                onClick={() => setPaymentType("online")}
               >
-                <div className={`w-4 h-4 rounded-full border-2 ${
-                  paymentMethod === "card" ? "border-primary bg-primary" : "border-muted-foreground"
+                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                  paymentType === "online" ? "border-primary bg-primary" : "border-muted-foreground"
                 }`}>
-                  {paymentMethod === "card" && <div className="w-full h-full rounded-full bg-primary" />}
+                  {paymentType === "online" && <div className="w-full h-full rounded-full bg-primary" />}
                 </div>
-                <span>Банковская карта</span>
-              </label>
-              <label 
-                className={`flex items-center gap-3 p-3 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
-                  paymentMethod === "sbp" ? "border-primary" : "border-border hover:border-primary/50"
-                }`}
-                onClick={() => setPaymentMethod("sbp")}
-              >
-                <div className={`w-4 h-4 rounded-full border-2 ${
-                  paymentMethod === "sbp" ? "border-primary bg-primary" : "border-muted-foreground"
-                }`}>
-                  {paymentMethod === "sbp" && <div className="w-full h-full rounded-full bg-primary" />}
+                <div className="flex-1 text-left">
+                  <div className="font-medium">Оплатить сейчас</div>
+                  <div className="text-sm text-muted-foreground">
+                    Банковская карта, СБП, электронные кошельки
+                  </div>
                 </div>
-                <span>СБП (Система быстрых платежей)</span>
               </label>
               
-              {/* ✅ ИСПРАВЛЕНО 2026-01-11: Показываем "наличные" только если allowCash === true */}
+              {/* ✅ ОПЦИЯ 2: Наличные (если разрешено) */}
               {allowCash && (
                 <label 
-                  className={`flex items-center gap-3 p-3 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
-                    paymentMethod === "cash" ? "border-primary" : "border-border hover:border-primary/50"
+                  className={`flex items-center gap-3 p-4 bg-background rounded-lg border-2 cursor-pointer transition-colors ${
+                    paymentType === "cash" ? "border-primary" : "border-border hover:border-primary/50"
                   }`}
-                  onClick={() => setPaymentMethod("cash")}
+                  onClick={() => setPaymentType("cash")}
                 >
-                  <div className={`w-4 h-4 rounded-full border-2 ${
-                    paymentMethod === "cash" ? "border-primary bg-primary" : "border-muted-foreground"
+                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                    paymentType === "cash" ? "border-primary bg-primary" : "border-muted-foreground"
                   }`}>
-                    {paymentMethod === "cash" && <div className="w-full h-full rounded-full bg-primary" />}
+                    {paymentType === "cash" && <div className="w-full h-full rounded-full bg-primary" />}
                   </div>
-                  <span>Наличные при получении</span>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium">Оплатить наличными курьеру</div>
+                    <div className="text-sm text-muted-foreground">
+                      Баллы начислятся через 24 часа после доставки
+                    </div>
+                  </div>
                 </label>
               )}
             </div>
           </div>
 
           <div className="text-xs text-muted-foreground text-center">
-            {paymentMethod === "cash" 
+            {paymentType === "cash" 
               ? "Нажимая кнопку, вы подтверждаете заказ и соглашаетесь с условиями оферты"
               : 'Нажимая "Оплатить", вы соглашаетесь с условиями оферты'
             }
@@ -192,8 +224,17 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
             data-testid="payment-submit-btn"
             className="w-full btn-press transition-all duration-200"
           >
-            <CreditCard className="w-4 h-4 mr-2" />
-            {paymentMethod === "cash" ? `Подтвердить заказ — ${finalTotal} ₽` : `Оплатить — ${finalTotal} ₽`}
+            {paymentType === "online" ? (
+              <>
+                <CreditCard className="w-4 h-4 mr-2" />
+                Оплатить — {finalTotal} ₽
+              </>
+            ) : (
+              <>
+                <Wallet className="w-4 h-4 mr-2" />
+                Подтвердить заказ — {finalTotal} ₽
+              </>
+            )}
           </Button>
         </div>
       </div>
