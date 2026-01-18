@@ -1733,6 +1733,58 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         // ✅ ИСПРАВЛЕНО: Возвращаем баллы для оплаченных заказов, даже если pointsEarned = 0
         // (могут быть транзакции, которые нужно вернуть)
         if (wasPaid) {
+          // ✅ НОВОЕ: Создаем возврат средств через YooKassa, если заказ был оплачен онлайн
+          const paymentId = currentOrder.payment_id || (currentOrder as any)['Payment ID'] || (currentOrder as any)['payment_id']
+          if (paymentId && paymentMethod === 'online') {
+            console.log(`💳 Заказ ${id} был оплачен онлайн - создаем возврат средств через YooKassa`, {
+              paymentId,
+              orderId: id,
+              orderTotal,
+            })
+
+            try {
+              // Вызываем refund API напрямую через внутренний fetch
+              const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+              const refundResponse = await fetch(`${baseUrl}/api/payments/yookassa/refund`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: id,
+                  paymentId: paymentId,
+                  amount: orderTotal,
+                  reason: `Отмена заказа #${id}`,
+                }),
+              })
+
+              if (refundResponse.ok) {
+                const refundData = await refundResponse.json()
+                console.log(`✅ Возврат средств создан для заказа ${id}:`, {
+                  refundId: refundData.refundId,
+                  status: refundData.status,
+                  action: refundData.action,
+                })
+
+                if (refundData.action === 'cancelled') {
+                  console.log(`ℹ️ Платеж был отменен (waiting_for_capture), деньги не списывались`)
+                } else {
+                  console.log(`💰 Возврат средств инициирован: ${refundData.status === 'succeeded' ? 'завершен' : 'в обработке'}`)
+                }
+              } else {
+                const errorData = await refundResponse.json().catch(() => ({ error: 'Unknown error' }))
+                console.error(`❌ Ошибка создания возврата средств для заказа ${id}:`, errorData)
+                // Не прерываем процесс - продолжаем с возвратом баллов
+                // Администратор может создать возврат вручную через личный кабинет YooKassa
+              }
+            } catch (error: any) {
+              console.error(`❌ Ошибка при вызове refund API для заказа ${id}:`, error)
+              // Не прерываем процесс - продолжаем с возвратом баллов
+            }
+          } else if (wasPaid && paymentMethod !== 'online') {
+            console.log(`ℹ️ Заказ ${id} был оплачен наличными - возврат средств не требуется`)
+          } else if (wasPaid && !paymentId) {
+            console.warn(`⚠️ Заказ ${id} помечен как оплаченный, но payment_id отсутствует - пропускаем возврат через YooKassa`)
+          }
+
           console.log(`💰 Заказ ${id} был ОПЛАЧЕН - проверяем транзакции для возврата баллов`, {
             pointsEarned,
             pointsUsed,

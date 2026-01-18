@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle2, Loader2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 function PaymentSuccessContent() {
@@ -207,12 +207,40 @@ function PaymentSuccessContent() {
           </p>
         </div>
 
-        {order?.loyalty_points_earned && order.loyalty_points_earned > 0 && (
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-            <p className="text-sm text-muted-foreground mb-1">Начислено баллов</p>
-            <p className="text-2xl font-bold text-primary">
-              +{order.loyalty_points_earned}
-            </p>
+        {/* ✅ ИСПРАВЛЕНО: Показываем и списанные, и начисленные баллы */}
+        {((order?.loyalty_points_used && order.loyalty_points_used > 0) || 
+          (order?.loyalty_points_earned && order.loyalty_points_earned > 0)) && (
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Coins className="w-5 h-5 text-primary" />
+              <p className="text-sm font-medium text-muted-foreground">Баллы лояльности</p>
+            </div>
+            
+            {/* Списанные баллы */}
+            {order?.loyalty_points_used && order.loyalty_points_used > 0 && (
+              <div className="bg-red-50 dark:bg-red-950/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-3">
+                <div className="text-center">
+                  <p className="text-xs text-red-700 dark:text-red-300 mb-1 font-semibold">Списано</p>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    -{order.loyalty_points_used}
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">баллов</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Начисленные баллы */}
+            {order?.loyalty_points_earned && order.loyalty_points_earned > 0 && (
+              <div className="bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-3">
+                <div className="text-center">
+                  <p className="text-xs text-green-700 dark:text-green-300 mb-1 font-semibold">Начислено</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    +{order.loyalty_points_earned}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">баллов</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -225,7 +253,31 @@ function PaymentSuccessContent() {
             Вернуться на главную
           </Button>
           <Button 
-            onClick={() => router.push(`/?orderId=${orderId}`)} 
+            onClick={async () => {
+              // ✅ ИСПРАВЛЕНО: Загружаем заказ и открываем его на главной странице
+              try {
+                const response = await fetch(`/api/orders/${orderId}`)
+                if (response.ok) {
+                  const data = await response.json()
+                  const order = data.order
+                  if (order?.startDate) {
+                    // Редиректим на главную с параметрами для открытия заказа
+                    const orderDate = new Date(order.startDate)
+                    const dateStr = orderDate.toISOString().split('T')[0]
+                    router.push(`/?orderId=${orderId}&date=${dateStr}`)
+                  } else {
+                    // Если нет даты, просто редиректим на главную
+                    router.push(`/?orderId=${orderId}`)
+                  }
+                } else {
+                  // Если заказ не найден, просто редиректим на главную
+                  router.push('/')
+                }
+              } catch (error) {
+                console.error('Error loading order:', error)
+                router.push('/')
+              }
+            }}
             variant="outline"
             className="w-full"
           >

@@ -461,6 +461,83 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       return
     }
     
+    // ✅ НОВОЕ: Обработка orderId в query параметрах для открытия заказа
+    const orderIdParam = urlParams.get('orderId')
+    const dateParam = urlParams.get('date')
+    
+    if (orderIdParam) {
+      console.log('🔍 Найден orderId в URL:', orderIdParam)
+      
+      // Загружаем заказ по ID
+      fetch(`/api/orders/${orderIdParam}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.order) {
+            const order = data.order
+            console.log('✅ Заказ загружен:', order)
+            
+            // Определяем дату заказа
+            let orderDate: Date
+            if (dateParam) {
+              orderDate = new Date(dateParam)
+            } else if (order.startDate) {
+              orderDate = new Date(order.startDate)
+            } else {
+              console.warn('⚠️ Не удалось определить дату заказа')
+              return
+            }
+            
+            // Преобразуем заказ в формат Order
+            const formattedOrder: Order = {
+              id: order.id,
+              orderNumber: order.orderNumber,
+              startDate: orderDate,
+              deliveryTime: order.deliveryTime,
+              paymentMethod: order.paymentMethod || 'cash',
+              paid: order.paid || false,
+              paidAt: order.paidAt,
+              paymentStatus: order.paymentStatus || 'pending',
+              orderStatus: order.orderStatus || 'pending',
+              total: order.total || 0,
+              subtotal: order.subtotal || 0,
+              deliveryFee: order.deliveryFee || 0,
+              deliveryDistrict: order.deliveryDistrict,
+              deliveryAddress: order.deliveryAddress,
+              promoCode: order.promoCode,
+              promoDiscount: order.promoDiscount || 0,
+              loyaltyPointsUsed: order.loyaltyPointsUsed || 0,
+              loyaltyPointsEarned: order.loyaltyPointsEarned || 0,
+              persons: order.persons || [],
+              extras: order.extras || [],
+            }
+            
+            // Добавляем заказ в список orders, если его там еще нет
+            setOrders(prev => {
+              const exists = prev.some(o => o.id === formattedOrder.id)
+              if (!exists) {
+                console.log('📦 Добавляем заказ в список orders')
+                return [...prev, formattedOrder]
+              }
+              return prev
+            })
+            
+            // Устанавливаем дату и открываем модальное окно
+            setSelectedDate(orderDate)
+            
+            // Убираем параметры из URL
+            const newUrl = new URL(window.location.href)
+            newUrl.searchParams.delete('orderId')
+            newUrl.searchParams.delete('date')
+            window.history.replaceState({}, '', newUrl.toString())
+          } else {
+            console.warn('⚠️ Заказ не найден:', orderIdParam)
+          }
+        })
+        .catch(error => {
+          console.error('❌ Ошибка загрузки заказа:', error)
+        })
+    }
+    
     const user = localStorage.getItem("currentUser")
     console.log('🚀 useEffect mount: currentUser =', user)
     
