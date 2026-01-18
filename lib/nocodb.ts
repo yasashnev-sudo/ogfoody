@@ -1235,10 +1235,26 @@ export async function awardLoyaltyPoints(
 
   const currentTotalSpent = typeof user.total_spent === 'number' ? user.total_spent : parseFloat(String(user.total_spent)) || 0
 
+  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Для расчета баллов используем orderTotalForPoints (БЕЗ промокода), если он передан
+  // Согласно LOYALTY_POINTS_LOGIC.md: баллы начисляются на сумму БЕЗ промокода (subtotal + deliveryFee)
+  // Если orderTotalForPoints не передан, используем orderTotal (для обратной совместимости)
+  const amountForPointsCalculation = orderTotalForPoints !== undefined && orderTotalForPoints > 0
+    ? orderTotalForPoints
+    : orderTotal
+
   // Рассчитываем баллы, если не указаны
   const earnedPoints = pointsEarned !== undefined 
     ? pointsEarned 
-    : calculateEarnedPoints(orderTotal, pointsUsed, currentTotalSpent)
+    : calculateEarnedPoints(amountForPointsCalculation, pointsUsed, currentTotalSpent)
+  
+  console.log(`🔢 [awardLoyaltyPoints] Расчет баллов:`, {
+    orderTotal, // С промокодом (для total_spent)
+    orderTotalForPoints, // БЕЗ промокода (для расчета баллов)
+    amountForPointsCalculation, // Используется для расчета
+    pointsUsed,
+    currentTotalSpent,
+    earnedPoints,
+  })
 
   // Создаем транзакции для истории
   const now = new Date().toISOString()

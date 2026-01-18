@@ -154,6 +154,7 @@ export async function POST(request: Request) {
         try {
           const user = await fetchUserById(Number(userId))
           if (user) {
+            // ✅ ИСПРАВЛЕНО: Получаем все необходимые данные из заказа
             const orderTotal = typeof order.total === 'number' 
               ? order.total 
               : parseFloat(String(order.total)) || 0
@@ -162,20 +163,55 @@ export async function POST(request: Request) {
               ? order.loyalty_points_used
               : parseFloat(String(order.loyalty_points_used)) || 0
 
+            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Для расчета баллов используем Subtotal + Delivery Fee БЕЗ промокода
+            // Согласно LOYALTY_POINTS_LOGIC.md: баллы начисляются на сумму БЕЗ промокода
+            const subtotal = typeof order.subtotal === 'number'
+              ? order.subtotal
+              : typeof (order as any).Subtotal === 'number'
+              ? (order as any).Subtotal
+              : parseFloat(String(order.subtotal || (order as any).Subtotal || 0)) || 0
+            
+            const deliveryFee = typeof order.delivery_fee === 'number'
+              ? order.delivery_fee
+              : typeof (order as any)['Delivery Fee'] === 'number'
+              ? (order as any)['Delivery Fee']
+              : parseFloat(String(order.delivery_fee || (order as any)['Delivery Fee'] || 0)) || 0
+            
+            // ✅ Сумма БЕЗ промокода для расчета баллов
+            const orderTotalForPoints = subtotal + deliveryFee
+
             // Начисляем баллы только если заказ оплачен онлайн и баллы еще не начислены
             const pointsEarned = typeof order.loyalty_points_earned === 'number'
               ? order.loyalty_points_earned
               : parseFloat(String(order.loyalty_points_earned)) || 0
 
-            if (pointsEarned === 0 && orderTotal > 0) {
+            console.log(`🔍 [Webhook] Данные для начисления баллов:`, {
+              orderId: actualOrderId,
+              orderTotal, // С промокодом (для total_spent)
+              orderTotalForPoints, // БЕЗ промокода (для расчета баллов)
+              subtotal,
+              deliveryFee,
+              loyaltyPointsUsed,
+              pointsEarned,
+              userId,
+            })
+
+            if (pointsEarned === 0 && orderTotalForPoints > 0) {
               console.log(`💎 Awarding loyalty points for order ${actualOrderId}`)
+              // ✅ ИСПРАВЛЕНО: Передаем orderTotal (с промокодом) для total_spent
+              // и orderTotalForPoints (БЕЗ промокода) для расчета баллов и описания транзакции
               await awardLoyaltyPoints(
                 Number(userId),
-                orderTotal,
+                orderTotal, // С промокодом (для обновления total_spent)
                 loyaltyPointsUsed,
-                0, // actualPointsEarned будет рассчитан внутри
-                Number(actualOrderId)
+                0, // actualPointsEarned будет рассчитан внутри на основе orderTotalForPoints
+                Number(actualOrderId),
+                orderTotalForPoints // БЕЗ промокода (для расчета баллов и описания транзакции)
               )
+            } else if (pointsEarned > 0) {
+              console.log(`ℹ️ Баллы уже начислены для заказа ${actualOrderId}: ${pointsEarned} баллов`)
+            } else if (orderTotalForPoints <= 0) {
+              console.warn(`⚠️ Нельзя начислить баллы: orderTotalForPoints = ${orderTotalForPoints} (subtotal=${subtotal}, deliveryFee=${deliveryFee})`)
             }
           }
         } catch (error) {
