@@ -301,8 +301,32 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
       try {
         setIsLoadingPayment(true)
         
-        // Сохраняем использованные баллы в localStorage (для возврата после оплаты)
+        // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем заказ с loyaltyPointsUsed ПЕРЕД созданием платежа
+        // Это нужно для того, чтобы webhook мог правильно обработать списанные баллы
         if (pointsToUse > 0 && order.id) {
+          try {
+            console.log(`📝 Обновляем заказ ${order.id} с loyaltyPointsUsed: ${pointsToUse}`)
+            const updateResponse = await fetch(`/api/orders/${order.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order: {
+                  loyaltyPointsUsed: pointsToUse,
+                },
+              }),
+            })
+            
+            if (updateResponse.ok) {
+              console.log(`✅ Заказ ${order.id} обновлен с loyaltyPointsUsed: ${pointsToUse}`)
+            } else {
+              console.warn(`⚠️ Не удалось обновить заказ с loyaltyPointsUsed, продолжаем оплату`)
+            }
+          } catch (error) {
+            console.error('❌ Ошибка обновления заказа с loyaltyPointsUsed:', error)
+            // Не прерываем процесс оплаты
+          }
+          
+          // Сохраняем использованные баллы в localStorage (для возврата после оплаты)
           localStorage.setItem(`points_used_${order.id}`, String(pointsToUse))
         }
 
@@ -314,7 +338,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
             orderId: order.id,
             amount: finalTotal,
             description: `Заказ #${order.id}`,
-            returnUrl: `${window.location.origin}/payment/success?orderId=${order.id}`,
+            returnUrl: `${window.location.origin}/?paymentSuccess=true&orderId=${order.id}`,
             useWidget: !shouldUseRedirect, // ✅ НОВОЕ: Используем виджет везде кроме ВК/ТГ
           })
         })
