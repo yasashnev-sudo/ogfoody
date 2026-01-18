@@ -2992,6 +2992,38 @@ export async function fetchPendingTransactionsByOrder(orderId: number): Promise<
   return transactions
 }
 
+/**
+ * Получает ВСЕ транзакции для конкретного заказа (pending и completed)
+ * Используется для возврата баллов при отмене оплаченных заказов
+ */
+export async function fetchAllTransactionsByOrder(orderId: number): Promise<NocoDBLoyaltyPointsTransaction[]> {
+  // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Получаем ВСЕ транзакции для заказа (не только pending)
+  // Это нужно для оплаченных заказов, где транзакции имеют статус 'completed'
+  const response = await nocoFetch<NocoDBResponse<any>>("Loyalty_Points_Transactions", {
+    where: `(Order ID,eq,${orderId})`,
+    limit: "1000",
+  })
+  
+  // Нормализуем данные - NocoDB может возвращать title поля
+  const transactions = (response.list || []).map((t: any) => ({
+    Id: t.Id || t.id,
+    user_id: t.user_id || t["User ID"] || t["user_id"],
+    order_id: t.order_id || t["Order ID"] || t["order_id"],
+    transaction_type: t.transaction_type || t["Transaction Type"] || t["transaction_type"],
+    transaction_status: t.transaction_status || t["Transaction Status"] || t["transaction_status"],
+    points: t.points || t["Points"] || t["points"] || 0,
+    description: t.description || t["Description"] || t["description"],
+    created_at: t.created_at || t["Created At"] || t["created_at"],
+    updated_at: t.updated_at || t["Updated At"] || t["updated_at"],
+    processed_at: t.processed_at || t["Processed At"] || t["processed_at"],
+  }))
+  
+  console.log(`🔍 fetchAllTransactionsByOrder(${orderId}): найдено ${transactions.length} транзакций`, 
+    transactions.map(t => ({ Id: t.Id, points: t.points, type: t.transaction_type, status: t.transaction_status })))
+  
+  return transactions
+}
+
 export async function updateLoyaltyTransaction(
   transactionId: number,
   updates: Partial<NocoDBLoyaltyPointsTransaction>

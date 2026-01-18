@@ -21,6 +21,7 @@ import {
   createFraudAlert,
   processPendingTransactionsForOrder,
   fetchPendingTransactionsByOrder,
+  fetchAllTransactionsByOrder,
   updateLoyaltyTransaction,
 } from "@/lib/nocodb"
 import type { Order, Meal, PortionSize } from "@/lib/types"
@@ -1791,10 +1792,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             pointsUsed,
             orderTotal,
           })
-          // ✅ ИСПРАВЛЕНО: Получаем ВСЕ completed транзакции для этого заказа
-          // Вместо использования pointsEarned из заказа, подсчитываем реальную сумму из транзакций
+          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Получаем ВСЕ транзакции для этого заказа (pending и completed)
+          // Для оплаченных заказов (особенно через YooKassa) транзакции имеют статус 'completed', а не 'pending'
+          // Согласно LOYALTY_POINTS_LOGIC.md: нужно найти earned и used транзакции со статусом 'completed'
           try {
-            const allTransactions = await fetchPendingTransactionsByOrder(Number(id))
+            const allTransactions = await fetchAllTransactionsByOrder(Number(id))
             
             let actualPointsEarned = 0
             let actualPointsUsed = 0
