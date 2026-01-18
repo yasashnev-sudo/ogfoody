@@ -473,13 +473,32 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
       // Закрываем модалку оплаты
       setPaymentOrder(null)
       
-      // Загружаем заказ и показываем SuccessOrderDialog
-      fetch(`/api/orders/${orderIdParam}`)
-        .then(response => response.json())
-        .then(data => {
+      // ✅ ИСПРАВЛЕНО: Ждем обновления заказа webhook'ом и повторно проверяем баллы
+      const loadOrderWithRetry = async (retryCount = 0) => {
+        const maxRetries = 5 // Максимум 5 попыток (10 секунд)
+        
+        try {
+          const response = await fetch(`/api/orders/${orderIdParam}`)
+          const data = await response.json()
+          
           if (data.order) {
             const order = data.order
-            console.log('✅ Заказ загружен после оплаты:', order)
+            const earnedPoints = order.loyalty_points_earned || order.loyaltyPointsEarned || 0
+            const usedPoints = order.loyalty_points_used || order.loyaltyPointsUsed || 0
+            
+            console.log('✅ Заказ загружен после оплаты:', {
+              orderId: order.id,
+              earnedPoints,
+              usedPoints,
+              retryCount,
+            })
+            
+            // ✅ ИСПРАВЛЕНО: Если баллы еще не обновлены (оба 0) и это не последняя попытка - ждем и повторяем
+            if (earnedPoints === 0 && usedPoints === 0 && retryCount < maxRetries) {
+              console.log(`⏳ Баллы еще не обновлены, ждем 2 секунды и повторяем (попытка ${retryCount + 1}/${maxRetries})`)
+              await new Promise(resolve => setTimeout(resolve, 2000))
+              return loadOrderWithRetry(retryCount + 1)
+            }
             
             // Обновляем заказ в state
             setOrders((prev) => {
@@ -490,18 +509,17 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
                     paid: order.paid || false,
                     paidAt: order.paidAt,
                     paymentStatus: order.paymentStatus || 'paid',
-                    loyaltyPointsEarned: order.loyalty_points_earned || order.loyaltyPointsEarned || 0,
-                    loyaltyPointsUsed: order.loyalty_points_used || order.loyaltyPointsUsed || 0,
+                    loyaltyPointsEarned: earnedPoints,
+                    loyaltyPointsUsed: usedPoints,
                   }
                 }
                 return o
               })
             })
             
-            // Показываем SuccessOrderDialog с баллами
-            const earnedPoints = order.loyalty_points_earned || order.loyaltyPointsEarned || 0
-            const usedPoints = order.loyalty_points_used || order.loyaltyPointsUsed || 0
-            
+            // ✅ ИСПРАВЛЕНО: Показываем SuccessOrderDialog даже если баллы еще не обновлены
+            // (webhook может обработаться позже, но диалог должен показаться)
+            // Но если есть хотя бы один балл (начисленный или списанный) - показываем
             setSuccessDialog({
               open: true,
               loyaltyPointsEarned: earnedPoints > 0 ? earnedPoints : undefined,
@@ -515,10 +533,20 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
             newUrl.searchParams.delete('orderId')
             window.history.replaceState({}, '', newUrl.toString())
           }
-        })
-        .catch(error => {
+        } catch (error) {
           console.error('❌ Ошибка загрузки заказа после оплаты:', error)
-        })
+          // Показываем диалог даже при ошибке (без баллов)
+          setSuccessDialog({
+            open: true,
+            loyaltyPointsEarned: undefined,
+            loyaltyPointsUsed: undefined,
+            loyaltyPointsStatus: 'earned',
+          })
+        }
+      }
+      
+      // Запускаем загрузку с повторными попытками
+      loadOrderWithRetry()
     } else if (orderIdParam) {
       console.log('🔍 Найден orderId в URL:', orderIdParam)
       
