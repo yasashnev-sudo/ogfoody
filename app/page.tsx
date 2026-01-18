@@ -464,8 +464,62 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
     // ✅ НОВОЕ: Обработка orderId в query параметрах для открытия заказа
     const orderIdParam = urlParams.get('orderId')
     const dateParam = urlParams.get('date')
+    const paymentSuccess = urlParams.get('paymentSuccess') === 'true'
     
-    if (orderIdParam) {
+    // ✅ НОВОЕ: Обработка успешной оплаты через виджет
+    if (paymentSuccess && orderIdParam) {
+      console.log('✅ Успешная оплата через виджет, заказ:', orderIdParam)
+      
+      // Закрываем модалку оплаты
+      setPaymentOrder(null)
+      
+      // Загружаем заказ и показываем SuccessOrderDialog
+      fetch(`/api/orders/${orderIdParam}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.order) {
+            const order = data.order
+            console.log('✅ Заказ загружен после оплаты:', order)
+            
+            // Обновляем заказ в state
+            setOrders((prev) => {
+              return prev.map((o) => {
+                if (o.id === Number(orderIdParam)) {
+                  return {
+                    ...o,
+                    paid: order.paid || false,
+                    paidAt: order.paidAt,
+                    paymentStatus: order.paymentStatus || 'paid',
+                    loyaltyPointsEarned: order.loyalty_points_earned || order.loyaltyPointsEarned || 0,
+                    loyaltyPointsUsed: order.loyalty_points_used || order.loyaltyPointsUsed || 0,
+                  }
+                }
+                return o
+              })
+            })
+            
+            // Показываем SuccessOrderDialog с баллами
+            const earnedPoints = order.loyalty_points_earned || order.loyaltyPointsEarned || 0
+            const usedPoints = order.loyalty_points_used || order.loyaltyPointsUsed || 0
+            
+            setSuccessDialog({
+              open: true,
+              loyaltyPointsEarned: earnedPoints > 0 ? earnedPoints : undefined,
+              loyaltyPointsUsed: usedPoints > 0 ? usedPoints : undefined,
+              loyaltyPointsStatus: 'earned',
+            })
+            
+            // Убираем параметры из URL
+            const newUrl = new URL(window.location.href)
+            newUrl.searchParams.delete('paymentSuccess')
+            newUrl.searchParams.delete('orderId')
+            window.history.replaceState({}, '', newUrl.toString())
+          }
+        })
+        .catch(error => {
+          console.error('❌ Ошибка загрузки заказа после оплаты:', error)
+        })
+    } else if (orderIdParam) {
       console.log('🔍 Найден orderId в URL:', orderIdParam)
       
       // Загружаем заказ по ID
@@ -505,8 +559,8 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               deliveryAddress: order.deliveryAddress,
               promoCode: order.promoCode,
               promoDiscount: order.promoDiscount || 0,
-              loyaltyPointsUsed: order.loyaltyPointsUsed || 0,
-              loyaltyPointsEarned: order.loyaltyPointsEarned || 0,
+              loyaltyPointsUsed: order.loyaltyPointsUsed || order.loyalty_points_used || 0,
+              loyaltyPointsEarned: order.loyaltyPointsEarned || order.loyalty_points_earned || 0,
               persons: order.persons || [],
               extras: order.extras || [],
             }
@@ -517,8 +571,10 @@ function HomeWithDebug({ userProfile: initialUserProfile, setUserProfile: setPar
               if (!exists) {
                 console.log('📦 Добавляем заказ в список orders')
                 return [...prev, formattedOrder]
+              } else {
+                // Обновляем существующий заказ с актуальными данными о баллах
+                return prev.map(o => o.id === formattedOrder.id ? formattedOrder : o)
               }
-              return prev
             })
             
             // Устанавливаем дату и открываем модальное окно

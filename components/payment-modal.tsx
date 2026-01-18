@@ -125,7 +125,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
         try {
           const checkout = new (window as any).YooMoneyCheckoutWidget({
             confirmation_token: confirmationToken,
-            return_url: `${window.location.origin}/payment/success?orderId=${order.id}`,
+            return_url: `${window.location.origin}/?paymentSuccess=true&orderId=${order.id}`,
             // ✅ ИСПРАВЛЕНО: Полностью убрали customization - используем настройки по умолчанию
             // Это должно избежать ошибки invalid_combination_of_payment_methods
             error_callback: (error: any) => {
