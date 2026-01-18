@@ -15,23 +15,28 @@ export async function POST(request: Request) {
     }
 
     // Создаем платеж через ЮKassa
-    const payment = await yookassaClient.payments.create({
-      amount: {
-        value: amount.toFixed(2),
-        currency: 'RUB',
-      },
-      confirmation: {
-        type: 'redirect',
-        return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://ogfoody.ru'}/payment/success?orderId=${orderId}`,
-      },
-      description: description || `Заказ #${orderId}`,
-      metadata: {
-        orderId: String(orderId),
-      },
-      capture: true, // Автоматическое подтверждение платежа
-    }, {
-      idempotenceKey: `order_${orderId}_${Date.now()}`, // Уникальный ключ для идемпотентности
-    })
+    const idempotenceKey = `order_${orderId}_${Date.now()}`
+    const paymentResponse = await yookassaClient.payments.paymentsPost(
+      idempotenceKey,
+      {
+        amount: {
+          value: amount.toFixed(2),
+          currency: 'RUB',
+        },
+        confirmation: {
+          type: 'redirect',
+          return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://ogfoody.ru'}/payment/success?orderId=${orderId}`,
+        },
+        description: description || `Заказ #${orderId}`,
+        metadata: {
+          orderId: String(orderId),
+        },
+        capture: true, // Автоматическое подтверждение платежа
+      }
+    )
+    
+    // paymentsPost возвращает AxiosResponse, нужно извлечь data
+    const payment = paymentResponse.data
 
     console.log('✅ YooKassa payment created:', {
       paymentId: payment.id,
