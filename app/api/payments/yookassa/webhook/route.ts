@@ -226,13 +226,15 @@ export async function POST(request: Request) {
 
             if (pointsEarned === 0 && orderTotalForPoints > 0) {
               console.log(`💎 Awarding loyalty points for order ${actualOrderId}`)
-              // ✅ ИСПРАВЛЕНО: Передаем orderTotal (с промокодом) для total_spent
+              // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Передаем undefined вместо 0 для pointsEarned,
+              // чтобы awardLoyaltyPoints рассчитал баллы через calculateEarnedPoints
+              // ✅ Передаем orderTotal (с промокодом) для total_spent
               // и orderTotalForPoints (БЕЗ промокода) для расчета баллов и описания транзакции
               await awardLoyaltyPoints(
                 Number(userId),
                 orderTotal, // С промокодом (для обновления total_spent)
                 loyaltyPointsUsed,
-                0, // actualPointsEarned будет рассчитан внутри на основе orderTotalForPoints
+                undefined, // ✅ ИСПРАВЛЕНО: undefined вместо 0, чтобы баллы рассчитывались через calculateEarnedPoints
                 Number(actualOrderId),
                 orderTotalForPoints // БЕЗ промокода (для расчета баллов и описания транзакции)
               )
