@@ -72,26 +72,26 @@ expect {
         send "cd /root/my-project 2>/dev/null || cd /var/www/ogfoody\r"
         expect "root@"
         
-        send "echo '=== [1/7] Pulling latest code ==='\r"
+        send "echo '=== Step 1/7: Pulling latest code ==='\r"
         expect "root@"
         send "git fetch origin\r"
         expect "root@"
         send "git reset --hard origin/main 2>/dev/null || git reset --hard origin/master\r"
         expect "root@"
         
-        send "echo '=== [2/7] Installing dependencies ==='\r"
+        send "echo '=== Step 2/7: Installing dependencies ==='\r"
         expect "root@"
         send "npm install --production=false\r"
         expect "root@"
         
-        send "echo '=== [3/7] Stopping application ==='\r"
+        send "echo '=== Step 3/7: Stopping application ==='\r"
         expect "root@"
         send "pm2 stop all 2>/dev/null || true\r"
         expect "root@"
         send "sleep 2\r"
         expect "root@"
         
-        send "echo '=== [4/7] Building project ==='\r"
+        send "echo '=== Step 4/7: Building project ==='\r"
         expect "root@"
         send "npm run build\r"
         expect {
@@ -109,17 +109,17 @@ expect {
             }
         }
         
-        send "echo '=== [5/7] Waiting for build to complete ==='\r"
+        send "echo '=== Step 5/7: Waiting for build to complete ==='\r"
         expect "root@"
         send "sleep 3\r"
         expect "root@"
         
-        send "echo '=== [6/7] Checking build ==='\r"
+        send "echo '=== Step 6/7: Checking build ==='\r"
         expect "root@"
-        send "test -f .next/BUILD_ID && echo '✅ Build successful' || echo '❌ Build failed'\r"
+        send "test -f .next/BUILD_ID && echo 'Build successful' || echo 'Build failed'\r"
         expect "root@"
         
-        send "echo '=== [7/7] Restarting application ==='\r"
+        send "echo '=== Step 7/7: Restarting application ==='\r"
         expect "root@"
         send "pm2 delete all 2>/dev/null || true\r"
         expect "root@"
