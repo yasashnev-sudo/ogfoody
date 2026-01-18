@@ -35,6 +35,32 @@ function PaymentSuccessContent() {
             return true // Успешно проверено
           }
           
+          // Если есть payment_id, проверяем статус напрямую через ЮKassa
+          const paymentId = data.order?.paymentId || data.order?.payment_id
+          if (paymentId && checkCount >= 3) {
+            // После 3 проверок (6 секунд) проверяем статус через ЮKassa
+            try {
+              const paymentStatusResponse = await fetch(`/api/payments/yookassa/status/${paymentId}`)
+              if (paymentStatusResponse.ok) {
+                const paymentData = await paymentStatusResponse.json()
+                if (paymentData.paid || paymentData.status === 'succeeded') {
+                  // Обновляем заказ и показываем успех
+                  setStatus('success')
+                  // Перезагружаем данные заказа
+                  const orderResponse = await fetch(`/api/orders/${orderId}`)
+                  if (orderResponse.ok) {
+                    const orderData = await orderResponse.json()
+                    setOrder(orderData.order)
+                  }
+                  return true
+                }
+              }
+            } catch (paymentError) {
+              console.error('Error checking payment status:', paymentError)
+              // Продолжаем обычную проверку
+            }
+          }
+          
           checkCount++
           
           // Если прошло много проверок, но статус не изменился - показываем предупреждение
