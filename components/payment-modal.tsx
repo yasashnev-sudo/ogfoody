@@ -5,6 +5,7 @@ import { X, CreditCard, Coins, Wallet, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Order, UserProfile } from "@/lib/types"
 import Script from "next/script"
+import { detectPlatform } from "@/lib/yookassa/platform-detector" // ✅ НОВОЕ: Импорт функции определения платформы
 
 interface PaymentModalProps {
   order: Order
@@ -29,6 +30,58 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
   const [isLoadingPayment, setIsLoadingPayment] = useState(false)
   const widgetContainerRef = useRef<HTMLDivElement>(null)
   const checkoutWidgetRef = useRef<any>(null)
+  
+  // ✅ НОВОЕ: Определяем платформу и нужно ли использовать redirect
+  const [platform, setPlatform] = useState<'telegram' | 'vk' | 'browser' | 'pwa'>('browser')
+  const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false)
+  const [widgetScriptError, setWidgetScriptError] = useState(false)
+  const shouldUseRedirect = platform === 'telegram' || platform === 'vk' // ✅ Redirect только для ВК и ТГ
+
+  // ✅ НОВОЕ: Определение платформы при монтировании
+  useEffect(() => {
+    const detectedPlatform = detectPlatform()
+    setPlatform(detectedPlatform)
+    console.log('🔍 Payment platform detected:', detectedPlatform, {
+      useWidget: !shouldUseRedirect,
+      useRedirect: shouldUseRedirect,
+    })
+  }, [shouldUseRedirect])
+
+  // ✅ НОВОЕ: Ожидание загрузки скрипта виджета (только если не используем redirect)
+  useEffect(() => {
+    if (shouldUseRedirect) {
+      // Не ждем загрузку скрипта, если используем redirect
+      return
+    }
+
+    if ((window as any).YooMoneyCheckoutWidget) {
+      setWidgetScriptLoaded(true)
+      console.log('✅ YooKassa widget script is ready')
+    } else {
+      // Проверяем периодически, если скрипт еще не загружен
+      const checkInterval = setInterval(() => {
+        if ((window as any).YooMoneyCheckoutWidget) {
+          setWidgetScriptLoaded(true)
+          clearInterval(checkInterval)
+          console.log('✅ YooKassa widget script loaded (delayed)')
+        }
+      }, 100)
+      
+      // Таймаут: если скрипт не загрузился за 5 секунд, считаем ошибкой
+      const timeout = setTimeout(() => {
+        if (!(window as any).YooMoneyCheckoutWidget) {
+          console.warn('⚠️ YooKassa widget script not loaded after 5s')
+          setWidgetScriptError(true)
+          clearInterval(checkInterval)
+        }
+      }, 5000)
+      
+      return () => {
+        clearInterval(checkInterval)
+        clearTimeout(timeout)
+      }
+    }
+  }, [shouldUseRedirect])
 
   const availablePoints = userProfile?.loyaltyPoints || 0
   const maxPointsToUse = Math.min(availablePoints, Math.floor(total * 0.5))
@@ -39,8 +92,13 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
     setPointsToUse(clamped)
   }
 
-  // ✅ НОВОЕ: Инициализация виджета YooKassa
+  // ✅ ИЗМЕНЕНО: Инициализация виджета с улучшенной обработкой ошибок
   useEffect(() => {
+    // Не инициализируем виджет если используем redirect или скрипт не загружен
+    if (shouldUseRedirect || !widgetScriptLoaded || widgetScriptError) {
+      return
+    }
+
     if (showWidget && confirmationToken && widgetContainerRef.current && (window as any).YooMoneyCheckoutWidget) {
       // Уничтожаем предыдущий виджет, если он существует
       if (checkoutWidgetRef.current) {
@@ -65,7 +123,27 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
             setIsLoadingPayment(false)
             setShowWidget(false)
             setConfirmationToken(null)
-            alert('Ошибка при оплате. Попробуйте еще раз.')
+            
+            // ✅ ИЗМЕНЕНО: Fallback на redirect при ошибке виджета
+            console.warn('⚠️ Widget error, falling back to redirect')
+            // Попробуем получить confirmationUrl из заказа или использовать redirect
+            if (order.paymentId) {
+              // Если есть paymentId, можем попробовать получить статус и redirect URL
+              fetch(`/api/payments/yookassa/status/${order.paymentId}`)
+                .then(res => res.json())
+                .then(data => {
+                  if (data.confirmationUrl) {
+                    window.location.href = data.confirmationUrl
+                  } else {
+                    alert('Ошибка при оплате. Попробуйте еще раз.')
+                  }
+                })
+                .catch(() => {
+                  alert('Ошибка при оплате. Попробуйте еще раз.')
+                })
+            } else {
+              alert('Ошибка при оплате. Попробуйте еще раз.')
+            }
           },
           close_callback: () => {
             console.log('ℹ️ YooKassa widget closed by user')
@@ -86,7 +164,25 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
         console.error('❌ Failed to initialize YooKassa widget:', error)
         setIsLoadingPayment(false)
         setShowWidget(false)
-        alert('Ошибка инициализации виджета оплаты. Попробуйте еще раз.')
+        setConfirmationToken(null)
+        
+        // ✅ НОВОЕ: Fallback на redirect при ошибке инициализации
+        if (order.paymentId) {
+          fetch(`/api/payments/yookassa/status/${order.paymentId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.confirmationUrl) {
+                window.location.href = data.confirmationUrl
+              } else {
+                alert('Ошибка инициализации виджета. Попробуйте еще раз.')
+              }
+            })
+            .catch(() => {
+              alert('Ошибка инициализации виджета. Попробуйте еще раз.')
+            })
+        } else {
+          alert('Ошибка инициализации виджета. Попробуйте еще раз.')
+        }
       }
     }
 
@@ -100,7 +196,8 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
         }
       }
     }
-  }, [showWidget, confirmationToken, order.id])
+  }, [showWidget, confirmationToken, order.id, widgetScriptLoaded, widgetScriptError, shouldUseRedirect, order.paymentId])
+
 
   const handlePayment = async () => {
     if (paymentType === "online") {
@@ -113,6 +210,7 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
           localStorage.setItem(`points_used_${order.id}`, String(pointsToUse))
         }
 
+        // ✅ ИЗМЕНЕНО: Передаем useWidget в зависимости от платформы
         const response = await fetch('/api/payments/yookassa/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -120,7 +218,8 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
             orderId: order.id,
             amount: finalTotal,
             description: `Заказ #${order.id}`,
-            returnUrl: `${window.location.origin}/payment/success?orderId=${order.id}`
+            returnUrl: `${window.location.origin}/payment/success?orderId=${order.id}`,
+            useWidget: !shouldUseRedirect, // ✅ НОВОЕ: Используем виджет везде кроме ВК/ТГ
           })
         })
 
@@ -134,13 +233,29 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
 
         const data = await response.json()
         
-        // ✅ НОВОЕ: Используем виджет, если есть confirmationToken, иначе fallback на redirect
-        if (data.confirmationToken) {
+        console.log('📦 Payment creation response:', {
+          hasToken: !!data.confirmationToken,
+          hasUrl: !!data.confirmationUrl,
+          confirmationType: data.confirmationType,
+          platform,
+          shouldUseRedirect,
+        })
+        
+        // ✅ ИЗМЕНЕНО: Логика выбора виджета или redirect
+        if (shouldUseRedirect) {
+          // Для ВК и ТГ всегда используем redirect
+          if (data.confirmationUrl) {
+            window.location.href = data.confirmationUrl
+          } else {
+            throw new Error('confirmationUrl не получен для redirect')
+          }
+        } else if (data.confirmationToken) {
+          // Для обычных браузеров используем виджет
           setConfirmationToken(data.confirmationToken)
           setShowWidget(true)
         } else if (data.confirmationUrl) {
-          // Fallback на redirect, если виджет недоступен
-          console.warn('⚠️ confirmationToken не получен, используем redirect')
+          // Fallback на redirect, если токен не получен
+          console.warn('⚠️ confirmationToken не получен, используем redirect как fallback')
           window.location.href = data.confirmationUrl
         } else {
           throw new Error('Не получен ни confirmationToken, ни confirmationUrl')
@@ -158,17 +273,21 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
 
   return (
     <>
-      {/* ✅ НОВОЕ: Подключаем скрипт виджета YooKassa */}
-      <Script
-        src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"
-        strategy="lazyOnload"
-        onLoad={() => {
-          console.log('✅ YooKassa widget script loaded')
-        }}
-        onError={(e) => {
-          console.error('❌ Failed to load YooKassa widget script:', e)
-        }}
-      />
+      {/* ✅ ИЗМЕНЕНО: Загружаем скрипт только если не используем redirect */}
+      {!shouldUseRedirect && (
+        <Script
+          src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"
+          strategy="lazyOnload"
+          onLoad={() => {
+            console.log('✅ YooKassa widget script loaded')
+            setWidgetScriptLoaded(true)
+          }}
+          onError={(e) => {
+            console.error('❌ Failed to load YooKassa widget script:', e)
+            setWidgetScriptError(true)
+          }}
+        />
+      )}
       
       <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 animate-fade-in">
         <div className="bg-background w-full md:max-w-md md:rounded-xl rounded-t-xl overflow-hidden animate-slide-up-fade max-h-[90vh] flex flex-col">

@@ -5,7 +5,7 @@ import { updateOrder } from '@/lib/nocodb'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { orderId, amount, description, returnUrl } = body
+    const { orderId, amount, description, returnUrl, useWidget = true } = body
 
     if (!orderId || !amount) {
       return NextResponse.json(
@@ -13,6 +13,18 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // ✅ ИЗМЕНЕНО: Выбираем тип подтверждения в зависимости от useWidget
+    // useWidget = false для ВК/ТГ (используем redirect/умный платеж)
+    const confirmationType = useWidget ? 'embedded' : 'redirect'
+
+    console.log('📦 Creating YooKassa payment:', {
+      orderId,
+      amount,
+      confirmationType,
+      useWidget,
+      returnUrl: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://ogfoody.ru'}/payment/success?orderId=${orderId}`,
+    })
 
     // Создаем платеж через ЮKassa
     const idempotenceKey = `order_${orderId}_${Date.now()}`
@@ -24,7 +36,7 @@ export async function POST(request: Request) {
           currency: 'RUB',
         },
         confirmation: {
-          type: 'embedded', // ✅ ИЗМЕНЕНО: Используем embedded для виджета вместо redirect
+          type: confirmationType,
           return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://ogfoody.ru'}/payment/success?orderId=${orderId}`,
         },
         description: description || `Заказ #${orderId}`,
@@ -38,15 +50,35 @@ export async function POST(request: Request) {
     // paymentsPost возвращает AxiosResponse, нужно извлечь data
     const payment = paymentResponse.data
 
+    // ✅ ИСПРАВЛЕНО: Правильная обработка типов confirmation (embedded/external)
+    const confirmationUrl = (payment.confirmation as any)?.confirmation_url
+    const confirmationToken = (payment.confirmation as any)?.confirmation_token
+
+    // ✅ УЛУЧШЕНО: Подробное логирование для отладки
     console.log('✅ YooKassa payment created:', {
       paymentId: payment.id,
       orderId,
       amount,
-      confirmationUrl: payment.confirmation?.confirmation_url,
+      confirmationType,
+      confirmationUrl,
+      confirmationToken,
+      hasToken: !!confirmationToken,
+      hasUrl: !!confirmationUrl,
       testMode: isTestMode,
-      test: payment.test, // Параметр test из ответа ЮKassa
+      test: payment.test,
       metadata: payment.metadata,
+      // ✅ ДОБАВЛЕНО: Полный объект confirmation для отладки
+      confirmation: payment.confirmation,
     })
+
+    // ✅ ДОБАВЛЕНО: Предупреждение если токен отсутствует при embedded
+    if (confirmationType === 'embedded' && !confirmationToken) {
+      console.warn('⚠️ WARNING: confirmation_token отсутствует для embedded платежа!', {
+        paymentId: payment.id,
+        confirmation: payment.confirmation,
+        fullPayment: JSON.stringify(payment, null, 2),
+      })
+    }
 
     if (isTestMode) {
       console.log('🧪 TEST MODE: Payment created with test credentials')
@@ -71,9 +103,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       paymentId: payment.id,
-      confirmationUrl: payment.confirmation?.confirmation_url, // Для обратной совместимости
-      confirmationToken: payment.confirmation?.confirmation_token, // ✅ НОВОЕ: Токен для виджета
+      confirmationUrl, // Для redirect/умного платежа
+      confirmationToken, // Для виджета
       status: payment.status,
+      confirmationType, // ✅ НОВОЕ: Для отладки
     })
   } catch (error: any) {
     console.error('❌ YooKassa payment creation failed:', error)
