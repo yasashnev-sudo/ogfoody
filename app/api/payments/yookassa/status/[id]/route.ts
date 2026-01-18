@@ -45,12 +45,16 @@ export async function GET(
       }
     }
 
+    // ✅ НОВОЕ: Извлекаем confirmationUrl для fallback
+    const confirmationUrl = (payment.confirmation as any)?.confirmation_url
+
     return NextResponse.json({
       paymentId: payment.id,
       status: payment.status,
       paid: payment.status === 'succeeded',
       amount: payment.amount,
       metadata: payment.metadata,
+      confirmationUrl, // ✅ НОВОЕ: Для fallback при ошибке виджета
     })
   } catch (error: any) {
     console.error('❌ YooKassa payment status check failed:', error)

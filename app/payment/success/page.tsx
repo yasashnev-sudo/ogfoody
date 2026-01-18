@@ -230,13 +230,13 @@ function PaymentSuccessContent() {
             )}
             
             {/* Начисленные баллы */}
-            {order?.loyalty_points_earned && order.loyalty_points_earned > 0 && (
+        {order?.loyalty_points_earned && order.loyalty_points_earned > 0 && (
               <div className="bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-3">
                 <div className="text-center">
                   <p className="text-xs text-green-700 dark:text-green-300 mb-1 font-semibold">Начислено</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    +{order.loyalty_points_earned}
-                  </p>
+              +{order.loyalty_points_earned}
+            </p>
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">баллов</p>
                 </div>
               </div>

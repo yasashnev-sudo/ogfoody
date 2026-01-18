@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@5.129.194.168
+
+expect {
+    "password:" {
+        send "pULRoAvF@P-@4Y\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "root@" {
+        send "cd /var/www/ogfoody 2>/dev/null || cd /root/my-project\r"
+        expect "root@"
+        
+        send "echo '=== Git Status ==='\r"
+        expect "root@"
+        send "git log --oneline -3\r"
+        expect "root@"
+        
+        send "echo '=== PM2 Status ==='\r"
+        expect "root@"
+        send "pm2 status\r"
+        expect "root@"
+        
+        send "echo '=== Build Status ==='\r"
+        expect "root@"
+        send "test -f .next/BUILD_ID && echo '✅ Build exists' || echo '❌ Build missing'\r"
+        expect "root@"
+        
+        send "echo '=== Recent Logs ==='\r"
+        expect "root@"
+        send "pm2 logs ogfoody --lines 10 --nostream 2>/dev/null | tail -10\r"
+        expect "root@"
+        
+        send "exit\r"
+    }
+}
+
+expect eof

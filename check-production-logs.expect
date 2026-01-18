@@ -1,0 +1,66 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+
+spawn ssh root@5.129.194.168
+
+expect {
+    "password:" {
+        send "pULRoAvF@P-@4Y\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "root@" {
+        send "cd /var/www/ogfoody 2>/dev/null || cd /root/my-project\r"
+        expect "root@"
+        
+        send "echo '=== Git Status - Last Commit ==='\r"
+        expect "root@"
+        send "git log --oneline -3\r"
+        expect "root@"
+        
+        send "echo '=== Git Status - Current Branch ==='\r"
+        expect "root@"
+        send "git branch && git status --short\r"
+        expect "root@"
+        
+        send "echo '=== PM2 Status ==='\r"
+        expect "root@"
+        send "pm2 status\r"
+        expect "root@"
+        
+        send "echo '=== Recent Payment Logs (Last 50 lines) ==='\r"
+        expect "root@"
+        send "pm2 logs ogfoody --lines 100 --nostream 2>/dev/null | grep -i -E '(payment|yookassa|yoo|widget|confirmation|error|Error|ERROR)' | tail -50\r"
+        expect "root@"
+        
+        send "echo '=== All Recent Errors ==='\r"
+        expect "root@"
+        send "pm2 logs ogfoody --err --lines 50 --nostream 2>/dev/null | tail -50\r"
+        expect "root@"
+        
+        send "echo '=== Recent Logs (Last 30 lines) ==='\r"
+        expect "root@"
+        send "pm2 logs ogfoody --lines 30 --nostream 2>/dev/null | tail -30\r"
+        expect "root@"
+        
+        send "echo '=== Build Status ==='\r"
+        expect "root@"
+        send "test -f .next/BUILD_ID && echo '✅ Build exists' || echo '❌ Build missing'\r"
+        expect "root@"
+        
+        send "echo '=== Check Payment API Files ==='\r"
+        expect "root@"
+        send "ls -la app/api/payments/yookassa/create/route.ts 2>/dev/null && echo '✅ File exists' || echo '❌ File missing'\r"
+        expect "root@"
+        send "grep -n 'useWidget' app/api/payments/yookassa/create/route.ts 2>/dev/null | head -3 || echo '❌ useWidget not found'\r"
+        expect "root@"
+        
+        send "exit\r"
+    }
+}
+
+expect eof

@@ -1,0 +1,94 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server "root@5.129.194.168"
+
+spawn ssh -o StrictHostKeyChecking=no $server
+
+expect {
+    "password:" {
+        send_user "\nВведите пароль от сервера: "
+        stty raw -echo
+        expect_user -timeout 3600 -re "(.*)\r"
+        stty -raw echo
+        set password $expect_out(1,string)
+        send "$password\r"
+        exp_continue
+    }
+    "Permission denied" {
+        send_user "\n❌ Ошибка аутентификации. Проверьте пароль.\n"
+        exit 1
+    }
+    "$ " {
+        # Успешное подключение
+    }
+    "# " {
+        # Успешное подключение (root)
+    }
+    timeout {
+        send_user "\n❌ Таймаут подключения\n"
+        exit 1
+    }
+}
+
+send_user "\n✅ Подключено к серверу\n"
+send_user "📥 Обновление кода из GitHub...\n"
+
+send "cd /var/www/ogfoody 2>/dev/null || cd /root/my-project\r"
+expect {
+    "$ " {}
+    "# " {}
+    timeout {}
+}
+
+send "git fetch origin\r"
+expect {
+    "$ " {}
+    "# " {}
+    timeout {}
+}
+
+send "git reset --hard origin/main 2>/dev/null || git reset --hard origin/master\r"
+expect {
+    "$ " {}
+    "# " {}
+    timeout {}
+}
+
+send_user "📦 Установка зависимостей...\n"
+send "npm ci --production=false\r"
+expect {
+    "$ " {}
+    "# " {}
+    timeout {}
+}
+
+send_user "🏗️ Сборка проекта...\n"
+send "npm run build\r"
+expect {
+    "$ " {}
+    "# " {}
+    timeout {}
+}
+
+send_user "🔄 Перезапуск приложения...\n"
+send "pm2 restart ogfoody || pm2 start ecosystem.config.js\r"
+expect {
+    "$ " {}
+    "# " {}
+    timeout {}
+}
+
+send_user "✅ Проверка статуса...\n"
+send "pm2 status\r"
+expect {
+    "$ " {}
+    "# " {}
+    timeout {}
+}
+
+send "exit\r"
+expect eof
+
+send_user "\n🎉 Деплой завершен!\n"
+send_user "Проверьте сайт: https://ogfoody.ru\n"

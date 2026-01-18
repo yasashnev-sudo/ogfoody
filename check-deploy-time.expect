@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@5.129.194.168
+
+expect {
+    "password:" {
+        send "pULRoAvF@P-@4Y\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "root@" {
+        send "cd /var/www/ogfoody 2>/dev/null || cd /root/my-project\r"
+        expect "root@"
+        
+        send "echo '=== Git Commit Info ==='\r"
+        expect "root@"
+        send "git log -1 --format='Commit: %H%nAuthor: %an%nDate: %ai%nMessage: %s'\r"
+        expect "root@"
+        
+        send "echo '=== Build Time ==='\r"
+        expect "root@"
+        send "stat -c 'Build ID file modified: %y' .next/BUILD_ID 2>/dev/null || echo 'Build ID not found'\r"
+        expect "root@"
+        
+        send "echo '=== PM2 Process Info ==='\r"
+        expect "root@"
+        send "pm2 describe ogfoody 2>/dev/null | grep -E 'restart time|uptime|created at|status' || pm2 show ogfoody 2>/dev/null | grep -E 'restart time|uptime|created at|status'\r"
+        expect "root@"
+        
+        send "echo '=== Current Server Time ==='\r"
+        expect "root@"
+        send "date\r"
+        expect "root@"
+        
+        send "exit\r"
+    }
+}
+
+expect eof

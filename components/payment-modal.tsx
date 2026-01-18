@@ -27,7 +27,9 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
   // ✅ НОВОЕ: Состояния для виджета YooKassa
   const [showWidget, setShowWidget] = useState(false)
   const [confirmationToken, setConfirmationToken] = useState<string | null>(null)
+  const [confirmationUrl, setConfirmationUrl] = useState<string | null>(null) // ✅ НОВОЕ: Сохраняем URL для fallback
   const [isLoadingPayment, setIsLoadingPayment] = useState(false)
+  const [isFallbackActive, setIsFallbackActive] = useState(false) // ✅ НОВОЕ: Флаг для предотвращения закрытия модального окна во время fallback
   const widgetContainerRef = useRef<HTMLDivElement>(null)
   const checkoutWidgetRef = useRef<any>(null)
   
@@ -35,7 +37,9 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
   const [platform, setPlatform] = useState<'telegram' | 'vk' | 'browser' | 'pwa'>('browser')
   const [widgetScriptLoaded, setWidgetScriptLoaded] = useState(false)
   const [widgetScriptError, setWidgetScriptError] = useState(false)
-  const shouldUseRedirect = platform === 'telegram' || platform === 'vk' // ✅ Redirect только для ВК и ТГ
+  // ✅ ВРЕМЕННО: Отключаем виджет из-за ошибки invalid_combination_of_payment_methods
+  // Используем redirect везде, пока не выясним причину ошибки
+  const shouldUseRedirect = true // platform === 'telegram' || platform === 'vk' // ✅ Временно: redirect везде
 
   // ✅ НОВОЕ: Определение платформы при монтировании
   useEffect(() => {
@@ -99,89 +103,181 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
       return
     }
 
-    if (showWidget && confirmationToken && widgetContainerRef.current && (window as any).YooMoneyCheckoutWidget) {
-      // Уничтожаем предыдущий виджет, если он существует
-      if (checkoutWidgetRef.current) {
+    if (showWidget && confirmationToken && (window as any).YooMoneyCheckoutWidget) {
+      // ✅ ИСПРАВЛЕНО: Ждем, пока контейнер точно будет в DOM
+      const initWidget = () => {
+        const container = document.getElementById('yookassa-widget-container')
+        if (!container) {
+          console.warn('⚠️ Widget container not found, retrying...')
+          setTimeout(initWidget, 100)
+          return
+        }
+
+        // Уничтожаем предыдущий виджет, если он существует
+        if (checkoutWidgetRef.current) {
+          try {
+            checkoutWidgetRef.current.destroy()
+            checkoutWidgetRef.current = null
+          } catch (e) {
+            console.warn('Ошибка при уничтожении предыдущего виджета:', e)
+          }
+        }
+
         try {
-          checkoutWidgetRef.current.destroy()
-        } catch (e) {
-          console.warn('Ошибка при уничтожении предыдущего виджета:', e)
+          const checkout = new (window as any).YooMoneyCheckoutWidget({
+            confirmation_token: confirmationToken,
+            return_url: `${window.location.origin}/payment/success?orderId=${order.id}`,
+            // ✅ ИСПРАВЛЕНО: Полностью убрали customization - используем настройки по умолчанию
+            // Это должно избежать ошибки invalid_combination_of_payment_methods
+            error_callback: (error: any) => {
+              console.error('❌ YooKassa widget error:', error)
+              console.error('❌ Error details:', JSON.stringify(error, null, 2))
+              
+              // ✅ ИСПРАВЛЕНО: Fallback на redirect при ошибке виджета
+              console.warn('⚠️ Widget error, falling back to redirect')
+              
+              // ✅ НОВОЕ: Устанавливаем флаг fallback, чтобы предотвратить закрытие модального окна
+              setIsFallbackActive(true)
+              
+              // Уничтожаем виджет перед redirect
+              if (checkoutWidgetRef.current) {
+                try {
+                  checkoutWidgetRef.current.destroy()
+                  checkoutWidgetRef.current = null
+                } catch (e) {
+                  console.warn('Ошибка при уничтожении виджета:', e)
+                }
+              }
+              
+              setIsLoadingPayment(false)
+              
+              // ✅ ИСПРАВЛЕНО: Пересоздаем платеж с типом redirect при ошибке виджета
+              console.log('🔄 Пересоздаем платеж с типом redirect для fallback')
+              fetch('/api/payments/yookassa/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: order.id,
+                  amount: finalTotal,
+                  description: `Заказ #${order.id}`,
+                  returnUrl: `${window.location.origin}/payment/success?orderId=${order.id}`,
+                  useWidget: false, // ✅ Используем redirect вместо виджета
+                })
+              })
+                .then(res => res.json())
+                .then(data => {
+                  console.log('📦 Payment recreated with redirect:', data)
+                  if (data.confirmationUrl) {
+                    console.log('✅ Redirect на confirmationUrl')
+                    // ✅ НОВОЕ: Не закрываем модальное окно, сразу делаем redirect
+                    window.location.href = data.confirmationUrl
+                    // Не вызываем setIsFallbackActive(false) - redirect произойдет
+                  } else {
+                    console.error('❌ confirmationUrl не получен при пересоздании платежа')
+                    setIsFallbackActive(false) // ✅ Разрешаем закрытие модального окна
+                    alert('Ошибка при оплате. Попробуйте еще раз.')
+                    setShowWidget(false)
+                    setConfirmationToken(null)
+                    setConfirmationUrl(null)
+                  }
+                })
+                .catch((err) => {
+                  console.error('❌ Ошибка при пересоздании платежа:', err)
+                  // Пробуем использовать сохраненный confirmationUrl или получить из API
+                  if (confirmationUrl) {
+                    console.log('✅ Используем сохраненный confirmationUrl для redirect')
+                    window.location.href = confirmationUrl
+                  } else if (order.paymentId) {
+                    console.log('📡 Получаем confirmationUrl из API для заказа:', order.paymentId)
+                    fetch(`/api/payments/yookassa/status/${order.paymentId}`)
+                      .then(res => res.json())
+                      .then(data => {
+                        if (data.confirmationUrl) {
+                          window.location.href = data.confirmationUrl
+                          // Не вызываем setIsFallbackActive(false) - redirect произойдет
+                        } else {
+                          setIsFallbackActive(false) // ✅ Разрешаем закрытие модального окна
+                          alert('Ошибка при оплате. Попробуйте еще раз.')
+                          setShowWidget(false)
+                          setConfirmationToken(null)
+                          setConfirmationUrl(null)
+                        }
+                      })
+                      .catch(() => {
+                        setIsFallbackActive(false) // ✅ Разрешаем закрытие модального окна
+                        alert('Ошибка при оплате. Попробуйте еще раз.')
+                        setShowWidget(false)
+                        setConfirmationToken(null)
+                        setConfirmationUrl(null)
+                      })
+                  } else {
+                    setIsFallbackActive(false) // ✅ Разрешаем закрытие модального окна
+                    alert('Ошибка при оплате. Попробуйте еще раз.')
+                    setShowWidget(false)
+                    setConfirmationToken(null)
+                    setConfirmationUrl(null)
+                  }
+                })
+            },
+            close_callback: () => {
+              console.log('ℹ️ YooKassa widget closed by user')
+              setIsLoadingPayment(false)
+              setShowWidget(false)
+              setConfirmationToken(null)
+            },
+            // ✅ Обработка успешной оплаты - редирект на return_url
+            // После успешной оплаты виджет автоматически редиректит на return_url,
+            // где payment/success/page.tsx обработает результат и начислит баллы через webhook
+          })
+
+          checkout.render('yookassa-widget-container')
+          checkoutWidgetRef.current = checkout
+          setIsLoadingPayment(false) // Виджет загружен, убираем индикатор загрузки
+          console.log('✅ YooKassa widget initialized with token:', confirmationToken.substring(0, 20) + '...')
+        } catch (error) {
+          console.error('❌ Failed to initialize YooKassa widget:', error)
+          setIsLoadingPayment(false)
+          
+          // ✅ ИСПРАВЛЕНО: Fallback на redirect при ошибке инициализации
+          if (confirmationUrl) {
+            window.location.href = confirmationUrl
+          } else if (order.paymentId) {
+            fetch(`/api/payments/yookassa/status/${order.paymentId}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data.confirmationUrl) {
+                  window.location.href = data.confirmationUrl
+                } else {
+                  alert('Ошибка инициализации виджета. Попробуйте еще раз.')
+                  setShowWidget(false)
+                  setConfirmationToken(null)
+                }
+              })
+              .catch(() => {
+                alert('Ошибка инициализации виджета. Попробуйте еще раз.')
+                setShowWidget(false)
+                setConfirmationToken(null)
+              })
+          } else {
+            alert('Ошибка инициализации виджета. Попробуйте еще раз.')
+            setShowWidget(false)
+            setConfirmationToken(null)
+          }
         }
       }
 
-      try {
-        const checkout = new (window as any).YooMoneyCheckoutWidget({
-          confirmation_token: confirmationToken,
-          return_url: `${window.location.origin}/payment/success?orderId=${order.id}`,
-          customization: {
-            // ✅ Настройки виджета
-            modal: false, // Встроенный виджет (не модальное окно)
-            payment_methods: ['bank_card', 'yoo_money', 'sbp'], // Доступные способы оплаты
-          },
-          error_callback: (error: any) => {
-            console.error('❌ YooKassa widget error:', error)
-            setIsLoadingPayment(false)
-            setShowWidget(false)
-            setConfirmationToken(null)
-            
-            // ✅ ИЗМЕНЕНО: Fallback на redirect при ошибке виджета
-            console.warn('⚠️ Widget error, falling back to redirect')
-            // Попробуем получить confirmationUrl из заказа или использовать redirect
-            if (order.paymentId) {
-              // Если есть paymentId, можем попробовать получить статус и redirect URL
-              fetch(`/api/payments/yookassa/status/${order.paymentId}`)
-                .then(res => res.json())
-                .then(data => {
-                  if (data.confirmationUrl) {
-                    window.location.href = data.confirmationUrl
-                  } else {
-                    alert('Ошибка при оплате. Попробуйте еще раз.')
-                  }
-                })
-                .catch(() => {
-                  alert('Ошибка при оплате. Попробуйте еще раз.')
-                })
-            } else {
-              alert('Ошибка при оплате. Попробуйте еще раз.')
-            }
-          },
-          close_callback: () => {
-            console.log('ℹ️ YooKassa widget closed by user')
-            setIsLoadingPayment(false)
-            setShowWidget(false)
-            setConfirmationToken(null)
-          },
-          // ✅ Обработка успешной оплаты - редирект на return_url
-          // После успешной оплаты виджет автоматически редиректит на return_url,
-          // где payment/success/page.tsx обработает результат и начислит баллы через webhook
-        })
-
-        checkout.render('yookassa-widget-container')
-        checkoutWidgetRef.current = checkout
-        setIsLoadingPayment(false) // Виджет загружен, убираем индикатор загрузки
-        console.log('✅ YooKassa widget initialized with token:', confirmationToken.substring(0, 20) + '...')
-      } catch (error) {
-        console.error('❌ Failed to initialize YooKassa widget:', error)
-        setIsLoadingPayment(false)
-        setShowWidget(false)
-        setConfirmationToken(null)
-        
-        // ✅ НОВОЕ: Fallback на redirect при ошибке инициализации
-        if (order.paymentId) {
-          fetch(`/api/payments/yookassa/status/${order.paymentId}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.confirmationUrl) {
-                window.location.href = data.confirmationUrl
-              } else {
-                alert('Ошибка инициализации виджета. Попробуйте еще раз.')
-              }
-            })
-            .catch(() => {
-              alert('Ошибка инициализации виджета. Попробуйте еще раз.')
-            })
-        } else {
-          alert('Ошибка инициализации виджета. Попробуйте еще раз.')
+      // ✅ ИСПРАВЛЕНО: Небольшая задержка, чтобы контейнер точно был в DOM
+      const timeoutId = setTimeout(initWidget, 100)
+      
+      return () => {
+        clearTimeout(timeoutId)
+        if (checkoutWidgetRef.current) {
+          try {
+            checkoutWidgetRef.current.destroy()
+            checkoutWidgetRef.current = null
+          } catch (e) {
+            console.warn('Ошибка при уничтожении виджета:', e)
+          }
         }
       }
     }
@@ -191,12 +287,13 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
       if (checkoutWidgetRef.current) {
         try {
           checkoutWidgetRef.current.destroy()
+          checkoutWidgetRef.current = null
         } catch (e) {
           console.warn('Ошибка при уничтожении виджета:', e)
         }
       }
     }
-  }, [showWidget, confirmationToken, order.id, widgetScriptLoaded, widgetScriptError, shouldUseRedirect, order.paymentId])
+  }, [showWidget, confirmationToken, confirmationUrl, order.id, widgetScriptLoaded, widgetScriptError, shouldUseRedirect, order.paymentId])
 
 
   const handlePayment = async () => {
@@ -239,7 +336,23 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
           confirmationType: data.confirmationType,
           platform,
           shouldUseRedirect,
+          paymentId: data.paymentId,
+          fullResponse: data,
         })
+        
+        // ✅ ИСПРАВЛЕНО: Сохраняем confirmationUrl для fallback (ВАЖНО!)
+        if (data.confirmationUrl) {
+          console.log('💾 Сохраняем confirmationUrl для fallback:', data.confirmationUrl.substring(0, 50) + '...')
+          setConfirmationUrl(data.confirmationUrl)
+        } else {
+          console.warn('⚠️ confirmationUrl не получен в ответе API')
+        }
+        
+        // ✅ НОВОЕ: Сохраняем paymentId в order для fallback
+        if (data.paymentId && order) {
+          // Обновляем order с paymentId (если нужно)
+          console.log('💾 PaymentId получен:', data.paymentId)
+        }
         
         // ✅ ИЗМЕНЕНО: Логика выбора виджета или redirect
         if (shouldUseRedirect) {
@@ -297,18 +410,28 @@ export function PaymentModal({ order, total, userProfile, onClose, onPaymentComp
               variant="ghost" 
               size="icon" 
               onClick={() => {
+                // ✅ НОВОЕ: Не закрываем модальное окно, если активен fallback
+                if (isFallbackActive) {
+                  console.log('⚠️ Fallback активен, не закрываем модальное окно')
+                  return
+                }
+                
                 if (checkoutWidgetRef.current) {
                   try {
                     checkoutWidgetRef.current.destroy()
+                    checkoutWidgetRef.current = null
                   } catch (e) {
                     console.warn('Ошибка при уничтожении виджета:', e)
                   }
                 }
                 setShowWidget(false)
                 setConfirmationToken(null)
+                setConfirmationUrl(null)
                 setIsLoadingPayment(false)
+                setIsFallbackActive(false) // ✅ Очищаем флаг fallback
                 onClose()
               }}
+              disabled={isFallbackActive} // ✅ НОВОЕ: Блокируем кнопку закрытия во время fallback
             >
               <X className="w-5 h-5" />
             </Button>

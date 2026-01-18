@@ -1,0 +1,38 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+
+spawn ssh root@5.129.194.168
+
+expect {
+    "password:" {
+        send "pULRoAvF@P-@4Y\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "root@" {
+        send "cd /var/www/ogfoody\r"
+        expect "root@"
+        
+        send "echo '=== Verifying updated code ==='\r"
+        expect "root@"
+        send "grep -A 15 'YooKassa webhook received' app/api/payments/yookassa/webhook/route.ts\r"
+        expect "root@"
+        
+        send "echo '=== Checking for eventType ==='\r"
+        expect "root@"
+        send "grep 'eventType' app/api/payments/yookassa/webhook/route.ts | head -5\r"
+        expect "root@"
+        
+        send "echo '=== All webhook logs since restart (12:20) ==='\r"
+        expect "root@"
+        send "pm2 logs ogfoody --lines 200 --nostream 2>&1 | grep -iE 'webhook|payment' | grep '12:2' | tail -30\r"
+        expect "root@"
+        
+        send "exit\r"
+        expect eof
+    }
+}
